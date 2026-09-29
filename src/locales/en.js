@@ -322,7 +322,7 @@ module.exports = {
     residence_permit: "Residence permit",
     id_file: "Identity document (front/back, PDF or image)",
     address_file: "Proof of address less than 3 months old",
-    formats: "Accepted formats: PDF, JPG, PNG, WEBP — 10 MB maximum per file. Your documents are stored privately.",
+    formats: "Accepted formats: PDF, JPG, PNG, WEBP — 4 MB maximum per file. Your documents are stored privately.",
     submit: "Submit my documents",
     submitted: "Your documents have been submitted. You will be notified of the outcome.",
     note: "Reviewer comment"
@@ -510,7 +510,7 @@ module.exports = {
     csrf: "Your session has expired. Please reload the page and try again.",
     back_home: "Back to home",
     file_type: "File type not allowed.",
-    file_size: "File too large (10 MB maximum).",
+    file_size: "File too large (4 MB maximum).",
     too_many: "Too many requests. Please wait a few minutes."
   }
 };

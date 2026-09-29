@@ -13,21 +13,22 @@ const baseUrl = () => (process.env.BASE_URL || `http://localhost:${process.env.P
  * Crée une notification pour l'utilisateur et lui envoie un e-mail (journalisé).
  * `vars.amount_cents` est formaté automatiquement dans la langue du destinataire.
  */
-function notify(userId, key, vars = {}, link = '/account') {
-  const user = one('SELECT id, email, full_name, lang FROM users WHERE id = ?', userId);
+async function notify(userId, key, vars = {}, link = '/account') {
+  const user = await one('SELECT id, email, full_name, lang FROM users WHERE id = ?', userId);
   if (!user) return;
   const v = { note: '', ...vars };
   if (v.amount_cents != null) v.amount = money(v.amount_cents, 'EUR', user.lang);
   const message = t(user.lang, `notif.${key}`, v).trim();
-  run('INSERT INTO notifications (user_id, message, link) VALUES (?, ?, ?)', user.id, message, link);
+  await run('INSERT INTO notifications (user_id, message, link) VALUES (?, ?, ?)', user.id, message, link);
   const { text, html } = render({
     lang: user.lang, name: user.full_name,
     paragraphs: [message],
     cta: { label: t(user.lang, 'mail.open_account_btn'), url: baseUrl() + link }
   });
-  // Envoi asynchrone : le résultat (réussite ou échec) est consigné dans le journal d'envoi.
-  sendMail({ to: user.email, subject: `${settings.get('site_name')} — ${t(user.lang, 'mail.notif_subject')}`, text, html, kind: `notif:${key}`, userId: user.id })
-    .catch((err) => console.error('[mail] notification', err));
+  // Envoi attendu (en serverless, une tâche non attendue peut être interrompue) ; le résultat est journalisé.
+  try {
+    await sendMail({ to: user.email, subject: `${settings.get('site_name')} — ${t(user.lang, 'mail.notif_subject')}`, text, html, kind: `notif:${key}`, userId: user.id });
+  } catch (err) { console.error('[mail] notification', err); }
 }
 
 module.exports = { notify, baseUrl };

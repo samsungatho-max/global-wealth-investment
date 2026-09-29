@@ -11,15 +11,30 @@ const bcrypt = require('bcryptjs');
 const { one, run, DATA_DIR } = require('./db');
 const { randomToken } = require('./lib/security');
 
-function seedAdmin() {
-  if (one("SELECT id FROM users WHERE role = 'admin'")) return;
-  const email = process.env.ADMIN_EMAIL || 'admin@example.test';
+/**
+ * Compte administrateur initial :
+ *  - ADMIN_EMAIL + ADMIN_PASSWORD définis → compte créé avec ce mot de passe provisoire
+ *    (changement imposé à la première connexion en production, ou si ADMIN_FORCE_PASSWORD_CHANGE=true) ;
+ *  - sinon, en local : mot de passe généré et écrit dans data/initial-admin.txt ;
+ *  - sinon, en serverless (Vercel, disque en lecture seule) : aucun compte créé, avertissement dans les journaux.
+ */
+async function seedAdmin() {
+  if (await one("SELECT id FROM users WHERE role = 'admin'")) return;
+  const email = (process.env.ADMIN_EMAIL || 'admin@example.test').trim().toLowerCase();
   let password = process.env.ADMIN_PASSWORD;
   let generated = false;
-  if (!password) { password = randomToken(9) + 'A1'; generated = true; }
-  run(`INSERT INTO users (email, password_hash, full_name, country, phone, role, email_verified_at, kyc_status, must_change_password)
-       VALUES (?, ?, 'Administrateur', 'FR', '+33000000000', 'admin', datetime('now'), 'approved', ?)`,
-    email, bcrypt.hashSync(password, 12), generated ? 1 : 0);
+  if (!password) {
+    if (process.env.VERCEL) {
+      console.warn('[seed] Aucun administrateur : définissez ADMIN_EMAIL et ADMIN_PASSWORD (mot de passe provisoire) dans les variables d’environnement, puis redéployez.');
+      return;
+    }
+    password = randomToken(9) + 'A1'; generated = true;
+  }
+  const force = generated || process.env.ADMIN_FORCE_PASSWORD_CHANGE === 'true' ||
+    (process.env.NODE_ENV === 'production' && process.env.ADMIN_FORCE_PASSWORD_CHANGE !== 'false');
+  await run(`INSERT INTO users (email, password_hash, full_name, country, phone, role, email_verified_at, kyc_status, must_change_password)
+       VALUES (?, ?, 'Administrateur', 'FR', '+33000000000', 'admin', datetime('now'), 'approved', ?) ON CONFLICT (email) DO NOTHING`,
+    email, bcrypt.hashSync(password, 12), force ? 1 : 0);
   if (generated) {
     const file = path.join(DATA_DIR, 'initial-admin.txt');
     fs.writeFileSync(file, `Compte administrateur initial (à changer dès la première connexion)\nURL : /admin/login\nE-mail : ${email}\nMot de passe : ${password}\n`);
@@ -80,10 +95,10 @@ const PAGES = {
   }
 };
 
-function seedPages() {
+async function seedPages() {
   for (const [slug, i18n] of Object.entries(PAGES)) {
-    if (!one('SELECT slug FROM pages WHERE slug = ?', slug)) {
-      run('INSERT INTO pages (slug, i18n) VALUES (?, ?)', slug, JSON.stringify(i18n));
+    if (!await one('SELECT slug FROM pages WHERE slug = ?', slug)) {
+      await run('INSERT INTO pages (slug, i18n) VALUES (?, ?) ON CONFLICT (slug) DO NOTHING', slug, JSON.stringify(i18n));
     }
   }
 }
@@ -134,25 +149,25 @@ const DEMO_PROJECTS = [
   }
 ];
 
-function seedDemoProjects() {
-  if (one('SELECT id FROM projects LIMIT 1')) return;
+async function seedDemoProjects() {
+  if (await one('SELECT id FROM projects LIMIT 1')) return;
   if (process.env.SEED_DEMO === 'false') return;
   for (const p of DEMO_PROJECTS) {
     const i18n = {};
     for (const [lang, [title, summary, description, conditions, fees]] of Object.entries(p.t)) {
       i18n[lang] = { title, summary, description: `${description}\n\n**${DEMO_NOTE[lang]}**`, conditions, fees };
     }
-    run(`INSERT INTO projects (slug, sector, country, i18n, target_cents, min_ticket_cents, duration_months, risk_level, status, is_demo)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'open', 1)`,
+    await run(`INSERT INTO projects (slug, sector, country, i18n, target_cents, min_ticket_cents, duration_months, risk_level, status, is_demo)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'open', 1) ON CONFLICT (slug) DO NOTHING`,
       p.slug, p.sector, p.country, JSON.stringify(i18n), p.target * 100, p.ticket * 100, p.months, p.risk);
   }
   console.log('[seed] 4 fiches de démonstration créées (marquées comme fictives — à archiver avant la mise en production).');
 }
 
-function seed() {
-  seedAdmin();
-  seedPages();
-  seedDemoProjects();
+async function seed() {
+  await seedAdmin();
+  await seedPages();
+  await seedDemoProjects();
 }
 
 module.exports = { seed };

@@ -322,7 +322,7 @@ module.exports = {
     residence_permit: "Aufenthaltstitel",
     id_file: "Ausweisdokument (Vorder-/Rückseite, PDF oder Bild)",
     address_file: "Adressnachweis, nicht älter als 3 Monate",
-    formats: "Akzeptierte Formate: PDF, JPG, PNG, WEBP — max. 10 MB pro Datei. Ihre Dokumente werden vertraulich gespeichert.",
+    formats: "Akzeptierte Formate: PDF, JPG, PNG, WEBP — max. 4 MB pro Datei. Ihre Dokumente werden vertraulich gespeichert.",
     submit: "Unterlagen einreichen",
     submitted: "Ihre Unterlagen wurden übermittelt. Sie werden über das Ergebnis informiert.",
     note: "Kommentar des Prüfers"
@@ -510,7 +510,7 @@ module.exports = {
     csrf: "Ihre Sitzung ist abgelaufen. Bitte laden Sie die Seite neu und versuchen Sie es erneut.",
     back_home: "Zur Startseite",
     file_type: "Dateityp nicht zulässig.",
-    file_size: "Datei zu groß (max. 10 MB).",
+    file_size: "Datei zu groß (max. 4 MB).",
     too_many: "Zu viele Anfragen. Bitte warten Sie einige Minuten."
   }
 };

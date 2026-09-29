@@ -6,7 +6,7 @@ Application web complète et fonctionnelle : site public multilingue, simulateur
 
 ## Démarrage rapide
 
-Prérequis : **Node.js 22.5 ou plus récent** (la base SQLite intégrée à Node est utilisée ; aucun serveur de base de données à installer).
+Prérequis : **Node.js 22**. Base de données **PostgreSQL** : en local, PostgreSQL embarqué (PGlite, dans `data/pgdata`, rien à installer) ; en production, `DATABASE_URL` (Neon sur Vercel, ou tout PostgreSQL).
 
 ```bash
 npm install
@@ -25,8 +25,34 @@ Sans SMTP configuré, **aucun e-mail n'est envoyé** (codes de confirmation comp
 |---|---|
 | `npm start` | Lance le serveur |
 | `npm run dev` | Lance avec rechargement automatique |
-| `npm run check` | Test de bout en bout (20 scénarios, base temporaire) |
-| `npm run backup` | Sauvegarde cohérente de la base et des fichiers dans `backups/` |
+| `npm run check` | Test de bout en bout (27 scénarios, base et serveur SMTP temporaires) |
+| `npm run check:pg` | Même test à travers le pilote réseau PostgreSQL utilisé en production |
+| `npm run backup` | Export JSON complet de la base (fichiers inclus) dans `backups/` |
+| `npm run admin:reset -- --email vous@societe.com` | (Ré)initialise l'accès admin avec un mot de passe provisoire (avec `DATABASE_URL` pour la production) |
+
+## Déploiement sur Vercel
+
+L'application est prête pour Vercel (`vercel.json`, `api/index.js`) : toutes les données (comptes, transactions, sessions, documents KYC, photos de projets) sont dans PostgreSQL, rien sur le disque.
+
+1. Sur [vercel.com/new](https://vercel.com/new), importez le dépôt GitHub `global-wealth-investment` (aucun réglage de framework ni de commande à modifier).
+2. Dans le projet Vercel : **Storage → Create Database → Neon (Postgres)**, région proche de vos clients (ex. Francfort), connectez-la au projet : `DATABASE_URL` est ajoutée automatiquement.
+3. **Settings → Environment Variables** (Production) :
+
+| Variable | Valeur |
+|---|---|
+| `NODE_ENV` | `production` |
+| `SESSION_SECRET` | chaîne aléatoire d'au moins 32 caractères |
+| `BASE_URL` | l'adresse publique, ex. `https://global-wealth-investment.vercel.app` |
+| `ADMIN_EMAIL` | votre adresse administrateur |
+| `ADMIN_PASSWORD` | mot de passe **provisoire** (à changer à la 1re connexion, imposé par le site) |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | votre service d'envoi (voir « E-mails ») |
+| `EMAIL_WEBHOOK_TOKEN` | jeton aléatoire pour le suivi de remise (facultatif) |
+| `SEED_DEMO` | `false` si vous ne voulez pas les 4 fiches de démonstration |
+
+4. **Deployments → Redeploy**. Au premier accès, le schéma de base et le compte administrateur sont créés automatiquement.
+5. Connectez-vous sur `/admin/login`, changez le mot de passe provisoire, activez la 2FA, puis **supprimez `ADMIN_PASSWORD`** des variables Vercel.
+
+Limites propres au mode serverless : fichiers téléversés de **4 Mo maximum** (limite Vercel), limitation de débit des connexions par instance (le blocage après 5 échecs, lui, est en base et global).
 
 ## Fonctionnalités
 
@@ -73,7 +99,7 @@ Les 18 photos d’illustration (immobilier, villas, réunions, agriculture, indu
 1. **Réglementaire** : obtenir les autorisations requises dans chaque juridiction visée *avant* d'activer la réception de fonds. Renseigner dans **Paramètres** la raison sociale, l'immatriculation, l'adresse, le statut réglementaire exact et l'hébergeur. Ne jamais présenter la société comme une banque ou un établissement agréé si ce n'est pas le cas.
 2. **Juridique** : faire valider par un avocat les conditions générales, la politique de confidentialité, les mentions légales et la politique de risques (modèles fournis, marqués comme tels).
 3. **Contenu** : archiver les fiches de démonstration ; publier uniquement des projets réels et documentés, sans rendement garanti.
-4. **Technique** : `NODE_ENV=production`, `SESSION_SECRET` aléatoire (≥ 32 caractères), HTTPS via un reverse proxy (Nginx, Caddy…) avec `TRUST_PROXY=1`, SMTP transactionnel, `npm run backup` planifié chaque jour et sauvegardes copiées hors du serveur, 2FA activée pour chaque administrateur.
+4. **Technique** : `NODE_ENV=production`, `SESSION_SECRET` aléatoire (≥ 32 caractères), HTTPS (automatique sur Vercel ; sinon reverse proxy avec `TRUST_PROXY=1`), SMTP transactionnel, sauvegardes (restauration à un instant donné de Neon + `npm run backup` régulier), 2FA activée pour chaque administrateur.
 5. **Paiements** : le parcours actuel est le virement bancaire avec rapprochement manuel. Pour un prestataire (Stripe ou autre prestataire autorisé), vérifier d'abord l'éligibilité de votre activité auprès du prestataire, puis créer la transaction `deposit` en `pending` au moment de la session de paiement et ne la passer en `confirmed` que sur réception du webhook signé de paiement réussi (même logique que `POST /admin/transactions/:id/action`).
 
 ## Architecture
@@ -81,15 +107,16 @@ Les 18 photos d’illustration (immobilier, villas, réunions, agriculture, indu
 ```
 src/
   server.js          Application Express (sécurité, sessions, i18n, routes)
-  db.js              Schéma SQLite (node:sqlite), triggers d'audit
+  db.js              PostgreSQL (pg / PGlite), schéma, déclencheurs d'audit
   seed.js            Admin initial, pages, fiches de démonstration
   i18n.js, locales/  Traductions FR / EN / ES / DE
   lib/               ledger (soldes calculés), security, totp, mailer, notify, money, rates, settings, audit
   routes/            public, auth, account (investisseur), admin
 views/               Gabarits EJS (public, auth, account, admin, partials)
 public/              CSS, JS client, favicon
-scripts/             smoke-test.js (tests de bout en bout), backup.js
-data/                Base, fichiers téléversés, e-mails de dev (non versionné)
+api/index.js         Point d'entrée Vercel
+scripts/             smoke-test.js, check-pg.js (tests), backup.js, admin-reset.js
+data/                Base PostgreSQL embarquée de développement (non versionnée)
 ```
 
 Tous les montants sont stockés en centimes d'euro (entiers) ; les autres devises sont uniquement des conversions d'affichage.

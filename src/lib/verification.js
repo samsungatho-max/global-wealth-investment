@@ -29,8 +29,8 @@ function secondsSince(sqliteDate) {
 }
 
 /** État courant pour la page de confirmation (sans jamais exposer le code). */
-function state(userId) {
-  const last = one(`SELECT v.*, l.status AS mail_status, l.error AS mail_error FROM email_verifications v
+async function state(userId) {
+  const last = await one(`SELECT v.*, l.status AS mail_status, l.error AS mail_error FROM email_verifications v
     LEFT JOIN email_log l ON l.id = v.email_log_id WHERE v.user_id = ? ORDER BY v.id DESC LIMIT 1`, userId);
   if (!last) return { issued: false, waitSeconds: 0 };
   const since = secondsSince(last.created_at);
@@ -48,7 +48,7 @@ function state(userId) {
  */
 async function issueCode(user) {
   if (user.email_verified_at) return { ok: false, error: 'verified' };
-  const recent = all(`SELECT code_hash, created_at FROM email_verifications
+  const recent = await all(`SELECT code_hash, created_at FROM email_verifications
     WHERE user_id = ? AND created_at > datetime('now', '-1 hour') ORDER BY id DESC`, user.id);
   if (recent.length) {
     const since = secondsSince(recent[0].created_at);
@@ -64,11 +64,11 @@ async function issueCode(user) {
     hash = hashCode(user.id, code);
   } while (used.has(hash));
 
-  const verificationId = tx(() => {
-    run(`UPDATE email_verifications SET invalidated_at = datetime('now')
+  const verificationId = await tx(async () => {
+    await run(`UPDATE email_verifications SET invalidated_at = datetime('now')
          WHERE user_id = ? AND used_at IS NULL AND invalidated_at IS NULL`, user.id);
-    return run(`INSERT INTO email_verifications (user_id, code_hash, expires_at) VALUES (?, ?, datetime('now', ?))`,
-      user.id, hash, `+${CODE_TTL_MIN} minutes`).lastInsertRowid;
+    return (await run(`INSERT INTO email_verifications (user_id, code_hash, expires_at) VALUES (?, ?, datetime('now', ?))`,
+      user.id, hash, `+${CODE_TTL_MIN} minutes`)).lastInsertRowid;
   });
 
   const lang = user.lang || 'fr';
@@ -83,27 +83,27 @@ async function issueCode(user) {
     subject: `${t(lang, 'mail.verify_code_subject')} — ${settings.get('site_name')}`,
     text, html, kind: 'verify_code', userId: user.id
   });
-  run('UPDATE email_verifications SET email_log_id = ? WHERE id = ?', mail.id, verificationId);
+  await run('UPDATE email_verifications SET email_log_id = ? WHERE id = ?', mail.id, verificationId);
   return { ok: true, mail };
 }
 
 /** Vérifie un code saisi. Retourne { ok } ou { ok:false, error:'invalid'|'expired'|'too_many', remaining } */
-function verifyCode(user, input) {
+async function verifyCode(user, input) {
   const code = String(input || '').replace(/\D/g, '');
-  const v = one(`SELECT * FROM email_verifications WHERE user_id = ? AND used_at IS NULL AND invalidated_at IS NULL
+  const v = await one(`SELECT * FROM email_verifications WHERE user_id = ? AND used_at IS NULL AND invalidated_at IS NULL
     AND expires_at > datetime('now') ORDER BY id DESC LIMIT 1`, user.id);
   if (!v) return { ok: false, error: 'expired' };
   if (v.attempts >= MAX_ATTEMPTS) return { ok: false, error: 'too_many' };
   const expected = Buffer.from(v.code_hash, 'hex');
   const given = Buffer.from(hashCode(user.id, code), 'hex');
   if (code.length !== 6 || !crypto.timingSafeEqual(expected, given)) {
-    run('UPDATE email_verifications SET attempts = attempts + 1 WHERE id = ?', v.id);
+    await run('UPDATE email_verifications SET attempts = attempts + 1 WHERE id = ?', v.id);
     const remaining = MAX_ATTEMPTS - v.attempts - 1;
     return { ok: false, error: remaining > 0 ? 'invalid' : 'too_many', remaining };
   }
-  tx(() => {
-    run(`UPDATE email_verifications SET used_at = datetime('now') WHERE id = ?`, v.id);
-    run(`UPDATE users SET email_verified_at = datetime('now') WHERE id = ?`, user.id);
+  await tx(async () => {
+    await run(`UPDATE email_verifications SET used_at = datetime('now') WHERE id = ?`, v.id);
+    await run(`UPDATE users SET email_verified_at = datetime('now') WHERE id = ?`, user.id);
   });
   return { ok: true };
 }

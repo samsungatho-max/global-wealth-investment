@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const QRCode = require('qrcode');
 const { one, all, run, tx } = require('../db');
 const { t } = require('../i18n');
-const { requireAuth, verifyCsrf, makeUploader, privatePath } = require('../lib/security');
+const { requireAuth, verifyCsrf, makeUploader, sendStoredFile } = require('../lib/security');
 const ledger = require('../lib/ledger');
 const { parseAmount, money } = require('../lib/money');
 const { notify } = require('../lib/notify');
@@ -17,7 +17,7 @@ const { isStrongPassword, isPhone } = require('./auth');
 
 const router = express.Router();
 router.use(requireAuth);
-router.use((req, res, next) => { res.locals.section = 'account'; next(); });
+router.use(async (req, res, next) => { res.locals.section = 'account'; next(); });
 
 /** Référence unique lisible, ex. DEP-20260927-7K3QX9 */
 function makeReference(prefix) {
@@ -47,75 +47,75 @@ function withdrawalFee(amountCents) {
 }
 
 // ---------- Tableau de bord ----------
-router.get('/', (req, res) => {
-  const s = ledger.summary(req.user.id, req.lang);
+router.get('/', async (req, res) => {
+  const s = await ledger.summary(req.user.id, req.lang);
   res.render('account/overview', {
     title: t(req.lang, 'account.title'),
     s,
-    history: ledger.valuationHistory(req.user.id, req.lang).slice(0, 8),
-    recent: all('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 6', req.user.id),
-    withdrawals: all(`SELECT * FROM transactions WHERE user_id = ? AND type = 'withdrawal' ORDER BY created_at DESC LIMIT 5`, req.user.id)
+    history: (await ledger.valuationHistory(req.user.id, req.lang)).slice(0, 8),
+    recent: await all('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 6', req.user.id),
+    withdrawals: await all(`SELECT * FROM transactions WHERE user_id = ? AND type = 'withdrawal' ORDER BY created_at DESC LIMIT 5`, req.user.id)
   });
 });
 
-router.get('/investments', (req, res) => {
+router.get('/investments', async (req, res) => {
   res.render('account/investments', {
     title: t(req.lang, 'account.nav_investments'),
-    s: ledger.summary(req.user.id, req.lang),
-    history: ledger.valuationHistory(req.user.id, req.lang)
+    s: await ledger.summary(req.user.id, req.lang),
+    history: await ledger.valuationHistory(req.user.id, req.lang)
   });
 });
 
-router.get('/transactions', (req, res) => {
+router.get('/transactions', async (req, res) => {
   res.render('account/transactions', {
     title: t(req.lang, 'tx.title'),
-    rows: all('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC, id DESC', req.user.id),
-    s: ledger.summary(req.user.id, req.lang)
+    rows: await all('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC, id DESC', req.user.id),
+    s: await ledger.summary(req.user.id, req.lang)
   });
 });
 
-router.post('/transactions/:id/cancel', (req, res) => {
-  const row = one(`SELECT * FROM transactions WHERE id = ? AND user_id = ? AND type = 'withdrawal' AND status = 'pending'`, req.params.id, req.user.id);
+router.post('/transactions/:id/cancel', async (req, res) => {
+  const row = await one(`SELECT * FROM transactions WHERE id = ? AND user_id = ? AND type = 'withdrawal' AND status = 'pending'`, req.params.id, req.user.id);
   if (row) {
-    run(`UPDATE transactions SET status = 'cancelled', processed_at = datetime('now') WHERE id = ? AND status = 'pending'`, row.id);
-    audit(req, 'withdrawal.cancel_by_user', 'transaction', row.id, { reference: row.reference });
-    notify(req.user.id, 'withdrawal_cancelled', { ref: row.reference }, '/account/transactions');
+    await run(`UPDATE transactions SET status = 'cancelled', processed_at = datetime('now') WHERE id = ? AND status = 'pending'`, row.id);
+    await audit(req, 'withdrawal.cancel_by_user', 'transaction', row.id, { reference: row.reference });
+    await notify(req.user.id, 'withdrawal_cancelled', { ref: row.reference }, '/account/transactions');
     req.flash('success', t(req.lang, 'tx.cancelled_ok'));
   }
   res.redirect('/account/transactions');
 });
 
 // ---------- Dépôts ----------
-function depositContext(req) {
+async function depositContext(req) {
   return {
     title: t(req.lang, 'deposit.title'),
     fundsEnabled: settings.get('funds_enabled'),
     kycOk: req.user.kyc_status === 'approved',
     minCents: settings.get('deposit').min_cents,
-    pending: all(`SELECT * FROM transactions WHERE user_id = ? AND type = 'deposit' ORDER BY created_at DESC LIMIT 10`, req.user.id)
+    pending: await all(`SELECT * FROM transactions WHERE user_id = ? AND type = 'deposit' ORDER BY created_at DESC LIMIT 10`, req.user.id)
   };
 }
 
-router.get('/deposit', (req, res) => res.render('account/deposit', depositContext(req)));
+router.get('/deposit', async (req, res) => res.render('account/deposit', await depositContext(req)));
 
-router.post('/deposit', (req, res) => {
-  const ctx = depositContext(req);
+router.post('/deposit', async (req, res) => {
+  const ctx = await depositContext(req);
   if (!ctx.fundsEnabled || !ctx.kycOk) return res.status(403).render('account/deposit', ctx);
   const cents = parseAmount(req.body.amount);
   if (!cents || cents < ctx.minCents) {
     return res.status(400).render('account/deposit', { ...ctx, error: t(req.lang, 'deposit.min', { amount: money(ctx.minCents, 'EUR', req.lang) }) });
   }
   const reference = makeReference('DEP');
-  const info = run(`INSERT INTO transactions (user_id, type, amount_cents, status, reference, method) VALUES (?, 'deposit', ?, 'pending', ?, 'bank_transfer')`,
+  const info = await run(`INSERT INTO transactions (user_id, type, amount_cents, status, reference, method) VALUES (?, 'deposit', ?, 'pending', ?, 'bank_transfer')`,
     req.user.id, cents, reference);
-  audit(req, 'deposit.request', 'transaction', info.lastInsertRowid, { reference, amount_cents: cents });
-  notify(req.user.id, 'deposit_created', { ref: reference, amount_cents: cents }, `/account/deposit/${reference}`);
+  await audit(req, 'deposit.request', 'transaction', info.lastInsertRowid, { reference, amount_cents: cents });
+  await notify(req.user.id, 'deposit_created', { ref: reference, amount_cents: cents }, `/account/deposit/${reference}`);
   req.flash('success', t(req.lang, 'deposit.created', { ref: reference }));
   res.redirect(`/account/deposit/${reference}`);
 });
 
-router.get('/deposit/:ref', (req, res, next) => {
-  const row = one(`SELECT * FROM transactions WHERE reference = ? AND user_id = ? AND type = 'deposit'`, req.params.ref, req.user.id);
+router.get('/deposit/:ref', async (req, res, next) => {
+  const row = await one(`SELECT * FROM transactions WHERE reference = ? AND user_id = ? AND type = 'deposit'`, req.params.ref, req.user.id);
   if (!row) return next();
   const instr = settings.get('payment_instructions');
   res.render('account/deposit-instructions', {
@@ -124,21 +124,21 @@ router.get('/deposit/:ref', (req, res, next) => {
 });
 
 // ---------- Retraits ----------
-function withdrawContext(req) {
+async function withdrawContext(req) {
   return {
     title: t(req.lang, 'withdraw.title'),
     kycOk: req.user.kyc_status === 'approved',
     w: settings.get('withdrawal'),
-    available: ledger.availableBalance(req.user.id),
-    rows: all(`SELECT * FROM transactions WHERE user_id = ? AND type = 'withdrawal' ORDER BY created_at DESC LIMIT 20`, req.user.id),
+    available: await ledger.availableBalance(req.user.id),
+    rows: await all(`SELECT * FROM transactions WHERE user_id = ? AND type = 'withdrawal' ORDER BY created_at DESC LIMIT 20`, req.user.id),
     values: {}
   };
 }
 
-router.get('/withdraw', (req, res) => res.render('account/withdraw', withdrawContext(req)));
+router.get('/withdraw', async (req, res) => res.render('account/withdraw', await withdrawContext(req)));
 
-router.post('/withdraw', (req, res, next) => {
-  const ctx = withdrawContext(req);
+router.post('/withdraw', async (req, res, next) => {
+  const ctx = await withdrawContext(req);
   if (!ctx.kycOk) return res.status(403).render('account/withdraw', ctx);
   const v = {
     amount: String(req.body.amount || ''),
@@ -160,45 +160,47 @@ router.post('/withdraw', (req, res, next) => {
   try {
     const reference = makeReference('WDR');
     // Contrôle du solde et insertion dans la même transaction SQL (évite les doubles demandes concurrentes)
-    const id = tx(() => {
-      if (cents > ledger.availableBalance(req.user.id)) return null;
-      return run(`INSERT INTO transactions (user_id, type, amount_cents, fee_cents, status, reference, method, beneficiary)
+    const id = await tx(async () => {
+      // Verrou sur le compte : deux demandes simultanées ne peuvent pas dépasser le solde
+      await one('SELECT id FROM users WHERE id = ? FOR UPDATE', req.user.id);
+      if (cents > await ledger.availableBalance(req.user.id)) return null;
+      return (await run(`INSERT INTO transactions (user_id, type, amount_cents, fee_cents, status, reference, method, beneficiary)
         VALUES (?, 'withdrawal', ?, ?, 'pending', ?, 'bank_transfer', ?)`,
-        req.user.id, cents, fee, reference, JSON.stringify({ holder: v.holder, account, bic: v.bic, bank: v.bank })).lastInsertRowid;
+        req.user.id, cents, fee, reference, JSON.stringify({ holder: v.holder, account, bic: v.bic, bank: v.bank }))).lastInsertRowid;
     });
     if (!id) return fail(t(req.lang, 'withdraw.insufficient'));
-    audit(req, 'withdrawal.request', 'transaction', id, { reference, amount_cents: cents, fee_cents: fee });
-    notify(req.user.id, 'withdrawal_created', { ref: reference, amount_cents: cents }, '/account/withdraw');
+    await audit(req, 'withdrawal.request', 'transaction', id, { reference, amount_cents: cents, fee_cents: fee });
+    await notify(req.user.id, 'withdrawal_created', { ref: reference, amount_cents: cents }, '/account/withdraw');
     req.flash('success', t(req.lang, 'withdraw.created', { ref: reference }));
     res.redirect('/account/withdraw');
   } catch (e) { next(e); }
 });
 
 // ---------- Documents ----------
-router.get('/documents', (req, res) => {
+router.get('/documents', async (req, res) => {
   res.render('account/documents', {
     title: t(req.lang, 'docs.title'),
-    docs: all('SELECT * FROM user_documents WHERE user_id = ? ORDER BY created_at DESC', req.user.id)
+    docs: await all('SELECT * FROM user_documents WHERE user_id = ? ORDER BY created_at DESC', req.user.id)
   });
 });
 
-router.get('/documents/:id', (req, res, next) => {
-  const d = one('SELECT * FROM user_documents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+router.get('/documents/:id', async (req, res, next) => {
+  const d = await one('SELECT * FROM user_documents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
   if (!d) return next();
-  res.download(privatePath(d.file_path), d.original_name);
+  await sendStoredFile(res, d.file_path, d.original_name);
 });
 
 // ---------- KYC ----------
 const kycUpload = makeUploader({ id_file: 'doc', address_file: 'doc' });
 
-router.get('/kyc', (req, res) => {
+router.get('/kyc', async (req, res) => {
   res.render('account/kyc', {
     title: t(req.lang, 'kyc.title'),
-    last: one('SELECT * FROM kyc_submissions WHERE user_id = ? ORDER BY id DESC LIMIT 1', req.user.id)
+    last: await one('SELECT * FROM kyc_submissions WHERE user_id = ? ORDER BY id DESC LIMIT 1', req.user.id)
   });
 });
 
-router.post('/kyc', kycUpload.fields([{ name: 'id_file', maxCount: 1 }, { name: 'address_file', maxCount: 1 }]), verifyCsrf, (req, res) => {
+router.post('/kyc', kycUpload.fields([{ name: 'id_file', maxCount: 1 }, { name: 'address_file', maxCount: 1 }]), verifyCsrf, async (req, res) => {
   if (['pending', 'approved'].includes(req.user.kyc_status)) return res.redirect('/account/kyc');
   const idFile = req.files && req.files.id_file && req.files.id_file[0];
   const addrFile = req.files && req.files.address_file && req.files.address_file[0];
@@ -207,10 +209,10 @@ router.post('/kyc', kycUpload.fields([{ name: 'id_file', maxCount: 1 }, { name: 
     req.flash('error', t(req.lang, 'auth.err_required'));
     return res.redirect('/account/kyc');
   }
-  const info = run(`INSERT INTO kyc_submissions (user_id, doc_type, id_file, id_file_name, address_file, address_file_name) VALUES (?, ?, ?, ?, ?, ?)`,
+  const info = await run(`INSERT INTO kyc_submissions (user_id, doc_type, id_file, id_file_name, address_file, address_file_name) VALUES (?, ?, ?, ?, ?, ?)`,
     req.user.id, docType, idFile.filename, idFile.originalname.slice(0, 200), addrFile.filename, addrFile.originalname.slice(0, 200));
-  run(`UPDATE users SET kyc_status = 'pending' WHERE id = ?`, req.user.id);
-  audit(req, 'kyc.submit', 'kyc', info.lastInsertRowid);
+  await run(`UPDATE users SET kyc_status = 'pending' WHERE id = ?`, req.user.id);
+  await audit(req, 'kyc.submit', 'kyc', info.lastInsertRowid);
   req.flash('success', t(req.lang, 'kyc.submitted'));
   res.redirect('/account/kyc');
 });
@@ -229,7 +231,7 @@ router.get('/security', async (req, res, next) => {
   try { res.render('account/security', await securityContext(req)); } catch (e) { next(e); }
 });
 
-router.post('/security/profile', (req, res) => {
+router.post('/security/profile', async (req, res) => {
   const phone = String(req.body.phone || '').trim();
   const lang = ['fr', 'en', 'es', 'de'].includes(req.body.lang) ? req.body.lang : req.user.lang;
   if (!isPhone(phone)) { req.flash('error', t(req.lang, 'auth.err_phone')); return res.redirect('/account/security'); }
@@ -237,9 +239,9 @@ router.post('/security/profile', (req, res) => {
   const identityLocked = ['pending', 'approved'].includes(req.user.kyc_status);
   const fullName = identityLocked ? req.user.full_name : (String(req.body.full_name || '').trim().slice(0, 120) || req.user.full_name);
   const country = identityLocked || !CODES.includes(req.body.country) ? req.user.country : req.body.country;
-  run('UPDATE users SET phone = ?, lang = ?, full_name = ?, country = ? WHERE id = ?', phone, lang, fullName, country, req.user.id);
+  await run('UPDATE users SET phone = ?, lang = ?, full_name = ?, country = ? WHERE id = ?', phone, lang, fullName, country, req.user.id);
   req.session.lang = lang;
-  audit(req, 'profile.update', 'user', req.user.id);
+  await audit(req, 'profile.update', 'user', req.user.id);
   req.flash('success', t(lang, 'security.saved'));
   res.redirect('/account/security');
 });
@@ -257,10 +259,10 @@ router.post('/security/password', async (req, res, next) => {
         req.flash('error', t(req.lang, 'security.err_same'));
         return res.redirect('/account/security#password');
       }
-      run('UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?', await bcrypt.hash(req.body.password, 12), req.user.id);
-      run(`DELETE FROM sessions WHERE json_extract(sess, '$.userId') = ? AND sid != ?`, req.user.id, req.sessionID);
-      audit(req, 'password.change', 'user', req.user.id);
-      notify(req.user.id, 'password_changed', {}, '/account/security');
+      await run('UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?', await bcrypt.hash(req.body.password, 12), req.user.id);
+      await run(`DELETE FROM sessions WHERE json_extract(sess, '$.userId') = ? AND sid != ?`, req.user.id, req.sessionID);
+      await audit(req, 'password.change', 'user', req.user.id);
+      await notify(req.user.id, 'password_changed', {}, '/account/security');
       req.flash('success', t(req.lang, 'security.password_changed'));
       if (req.user.must_change_password && req.user.role === 'admin') return res.redirect('/admin');
     }
@@ -268,21 +270,21 @@ router.post('/security/password', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.post('/security/2fa/start', (req, res) => {
+router.post('/security/2fa/start', async (req, res) => {
   if (!req.user.totp_enabled) req.session.totpSetup = totp.generateSecret();
   res.redirect('/account/security#twofa');
 });
 
-router.post('/security/2fa/confirm', (req, res) => {
+router.post('/security/2fa/confirm', async (req, res) => {
   const secret = req.session.totpSetup;
   if (!secret || !totp.verify(secret, req.body.code)) {
     req.flash('error', t(req.lang, 'auth.err_code'));
     return res.redirect('/account/security#twofa');
   }
-  run('UPDATE users SET totp_secret = ?, totp_enabled = 1 WHERE id = ?', secret, req.user.id);
+  await run('UPDATE users SET totp_secret = ?, totp_enabled = 1 WHERE id = ?', secret, req.user.id);
   delete req.session.totpSetup;
-  audit(req, '2fa.enable', 'user', req.user.id);
-  notify(req.user.id, 'twofa_changed', {}, '/account/security');
+  await audit(req, '2fa.enable', 'user', req.user.id);
+  await notify(req.user.id, 'twofa_changed', {}, '/account/security');
   req.flash('success', t(req.lang, 'security.twofa_enabled'));
   res.redirect('/account/security#twofa');
 });
@@ -293,9 +295,9 @@ router.post('/security/2fa/disable', async (req, res, next) => {
     if (!okPass || !totp.verify(req.user.totp_secret, req.body.code)) {
       req.flash('error', t(req.lang, 'auth.err_code'));
     } else {
-      run('UPDATE users SET totp_secret = NULL, totp_enabled = 0 WHERE id = ?', req.user.id);
-      audit(req, '2fa.disable', 'user', req.user.id);
-      notify(req.user.id, 'twofa_changed', {}, '/account/security');
+      await run('UPDATE users SET totp_secret = NULL, totp_enabled = 0 WHERE id = ?', req.user.id);
+      await audit(req, '2fa.disable', 'user', req.user.id);
+      await notify(req.user.id, 'twofa_changed', {}, '/account/security');
       req.flash('success', t(req.lang, 'security.twofa_disabled'));
     }
     res.redirect('/account/security#twofa');
@@ -303,15 +305,15 @@ router.post('/security/2fa/disable', async (req, res, next) => {
 });
 
 // ---------- Notifications ----------
-router.get('/notifications', (req, res) => {
+router.get('/notifications', async (req, res) => {
   res.render('account/notifications', {
     title: t(req.lang, 'account.nav_notifications'),
-    rows: all('SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 100', req.user.id)
+    rows: await all('SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 100', req.user.id)
   });
 });
 
-router.post('/notifications/read', (req, res) => {
-  run(`UPDATE notifications SET read_at = datetime('now') WHERE user_id = ? AND read_at IS NULL`, req.user.id);
+router.post('/notifications/read', async (req, res) => {
+  await run(`UPDATE notifications SET read_at = datetime('now') WHERE user_id = ? AND read_at IS NULL`, req.user.id);
   res.redirect('/account/notifications');
 });
 

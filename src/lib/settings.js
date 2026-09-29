@@ -51,30 +51,52 @@ const DEFAULTS = {
   }
 };
 
-const cache = new Map();
+/*
+ * Cache mémoire rafraîchi depuis la base au plus toutes les TTL_MS (appel refresh() en début de requête),
+ * pour que plusieurs instances (Vercel) voient rapidement les changements faits dans l'administration.
+ * get() reste synchrone (utilisable dans les gabarits) ; set() est asynchrone.
+ */
+const TTL_MS = 5000;
+let cache = new Map();
+let loadedAt = 0;
+let loading = null;
 
 function isPlainObject(v) { return v && typeof v === 'object' && !Array.isArray(v); }
 
-function get(key) {
-  if (cache.has(key)) return cache.get(key);
-  const row = one('SELECT value FROM settings WHERE key = ?', key);
-  let value = row ? JSON.parse(row.value) : DEFAULTS[key];
-  if (row && isPlainObject(DEFAULTS[key]) && isPlainObject(value)) value = { ...DEFAULTS[key], ...value };
-  cache.set(key, value);
+function merge(key, raw) {
+  let value = raw;
+  if (isPlainObject(DEFAULTS[key]) && isPlainObject(value)) value = { ...DEFAULTS[key], ...value };
   return value;
 }
 
-function set(key, value) {
-  run('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+async function refresh({ force = false } = {}) {
+  if (!force && Date.now() - loadedAt < TTL_MS) return;
+  if (!loading) {
+    loading = all('SELECT key, value FROM settings').then((rows) => {
+      const next = new Map();
+      for (const r of rows) { try { next.set(r.key, merge(r.key, JSON.parse(r.value))); } catch { /* valeur corrompue ignorée */ } }
+      cache = next;
+      loadedAt = Date.now();
+    }).finally(() => { loading = null; });
+  }
+  return loading;
+}
+
+function get(key) {
+  return cache.has(key) ? cache.get(key) : DEFAULTS[key];
+}
+
+async function set(key, value) {
+  await run('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
     key, JSON.stringify(value));
-  cache.set(key, value);
+  cache.set(key, merge(key, value));
 }
 
 function allSettings() {
   const out = {};
   for (const k of Object.keys(DEFAULTS)) out[k] = get(k);
-  for (const r of all('SELECT key FROM settings')) if (!(r.key in out)) out[r.key] = get(r.key);
+  for (const k of cache.keys()) if (!(k in out)) out[k] = get(k);
   return out;
 }
 
-module.exports = { get, set, allSettings, DEFAULTS };
+module.exports = { get, set, refresh, allSettings, DEFAULTS };

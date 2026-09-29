@@ -322,7 +322,7 @@ module.exports = {
     residence_permit: "Permiso de residencia",
     id_file: "Documento de identidad (anverso/reverso, PDF o imagen)",
     address_file: "Justificante de domicilio de menos de 3 meses",
-    formats: "Formatos aceptados: PDF, JPG, PNG, WEBP — 10 MB máximo por archivo. Sus documentos se almacenan de forma privada.",
+    formats: "Formatos aceptados: PDF, JPG, PNG, WEBP — 4 MB máximo por archivo. Sus documentos se almacenan de forma privada.",
     submit: "Enviar mis documentos",
     submitted: "Sus documentos han sido enviados. Se le notificará el resultado.",
     note: "Comentario del verificador"
@@ -510,7 +510,7 @@ module.exports = {
     csrf: "Su sesión ha caducado. Vuelva a cargar la página e inténtelo de nuevo.",
     back_home: "Volver al inicio",
     file_type: "Tipo de archivo no autorizado.",
-    file_size: "Archivo demasiado grande (10 MB máximo).",
+    file_size: "Archivo demasiado grande (4 MB máximo).",
     too_many: "Demasiadas solicitudes. Espere unos minutos."
   }
 };

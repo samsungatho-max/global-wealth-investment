@@ -38,7 +38,7 @@ function normalize(e) {
   };
 }
 
-router.post('/email', (req, res) => {
+router.post('/email', async (req, res) => {
   const expected = process.env.EMAIL_WEBHOOK_TOKEN;
   const given = String(req.query.token || req.get('x-webhook-token') || '');
   if (!expected) return res.status(404).json({ ok: false, error: 'webhook disabled' });
@@ -49,7 +49,7 @@ router.post('/email', (req, res) => {
   for (const e of events.slice(0, 500)) {
     if (!e || typeof e !== 'object') continue;
     const n = normalize(e);
-    if (recordDeliveryEvent(n.messageId, n.status, n.detail, n.raw)) matched++;
+    if (await recordDeliveryEvent(n.messageId, n.status, n.detail, n.raw)) matched++;
   }
   res.json({ ok: true, received: events.length, matched });
 });

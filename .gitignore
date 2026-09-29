@@ -4,3 +4,4 @@ backups/
 .env
 *.log
 .claude/
+.vercel/

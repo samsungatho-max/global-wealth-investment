@@ -33,7 +33,7 @@
       </div>
       <div class="form-row form-row-2">
         <div>
-          <label for="p-image">Photographie (JPG, PNG, WEBP — 10 Mo max)</label>
+          <label for="p-image">Photographie (JPG, PNG, WEBP — 4 Mo max)</label>
           <input id="p-image" name="image" type="file" accept=".jpg,.jpeg,.png,.webp">
           <% if (p.image_path) { %><div class="flex mt-1"><img src="/media/<%= p.image_path %>" alt="" style="width:140px;border-radius:8px"><label class="check"><input type="checkbox" name="remove_image"> Retirer l'image</label></div><% } %>
         </div>

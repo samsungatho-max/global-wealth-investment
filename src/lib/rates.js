@@ -19,7 +19,7 @@ async function refreshRates({ force = false } = {}) {
       values: { EUR: 1, USD: data.rates.USD, GBP: data.rates.GBP, XOF: XOF_PEG },
       fetched_at: new Date().toISOString()
     };
-    settings.set('rates', next);
+    await settings.set('rates', next);
     return next;
   } catch (err) {
     console.warn('[rates] Échec de la mise à jour des taux :', err.message);

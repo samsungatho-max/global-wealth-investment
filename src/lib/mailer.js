@@ -86,11 +86,11 @@ function transporter() {
 
 const mask = (email) => String(email).replace(/^(.)[^@]*(@.*)$/, '$1•••$2');
 
-function appendEvent(id, event) {
-  const row = one('SELECT events FROM email_log WHERE id = ?', id);
+async function appendEvent(id, event) {
+  const row = await one('SELECT events FROM email_log WHERE id = ?', id);
   const events = row ? JSON.parse(row.events || '[]') : [];
   events.push({ at: new Date().toISOString(), ...event });
-  run(`UPDATE email_log SET events = ?, updated_at = datetime('now') WHERE id = ?`, JSON.stringify(events.slice(-50)), id);
+  await run(`UPDATE email_log SET events = ?, updated_at = datetime('now') WHERE id = ?`, JSON.stringify(events.slice(-50)), id);
 }
 
 function isTransient(err) {
@@ -113,17 +113,19 @@ async function sendMail({ to, subject, text, html, kind = 'other', userId = null
   const domain = cfg.fromDomain || 'localhost';
   const messageId = `${crypto.randomBytes(12).toString('hex')}@${domain}`;
   const t = transporter();
-  const logId = run(`INSERT INTO email_log (kind, to_email, user_id, subject, message_id, transport) VALUES (?, ?, ?, ?, ?, ?)`,
-    kind, to, userId, subject, messageId, t ? 'smtp' : 'none').lastInsertRowid;
+  const logId = (await run(`INSERT INTO email_log (kind, to_email, user_id, subject, message_id, transport) VALUES (?, ?, ?, ?, ?, ?)`,
+    kind, to, userId, subject, messageId, t ? 'smtp' : 'none')).lastInsertRowid;
 
   if (!t) {
-    fs.mkdirSync(OUTBOX, { recursive: true });
-    fs.writeFileSync(path.join(OUTBOX, `${Date.now()}-${logId}.txt`), `From: ${cfg.from}\nTo: ${to}\nSubject: ${subject}\n\n${text}\n`);
-    const error = 'Aucun serveur SMTP configuré : e-mail NON envoyé (copie locale dans data/outbox/).';
-    run(`UPDATE email_log SET status = 'not_sent', error = ?, failed_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`, error, logId);
-    appendEvent(logId, { type: 'not_sent', detail: error });
+    try {
+      fs.mkdirSync(OUTBOX, { recursive: true });
+      fs.writeFileSync(path.join(OUTBOX, `${Date.now()}-${logId}.txt`), `From: ${cfg.from}\nTo: ${to}\nSubject: ${subject}\n\n${text}\n`);
+    } catch { /* système de fichiers en lecture seule (serverless) */ }
+    const error = 'Aucun serveur SMTP configuré : e-mail NON envoyé.';
+    await run(`UPDATE email_log SET status = 'not_sent', error = ?, failed_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`, error, logId);
+    await appendEvent(logId, { type: 'not_sent', detail: error });
     console.warn(`[mail] #${logId} ${kind} → ${mask(to)} : NON ENVOYÉ (aucun SMTP configuré)`);
-    return one('SELECT * FROM email_log WHERE id = ?', logId);
+    return await one('SELECT * FROM email_log WHERE id = ?', logId);
   }
 
   const message = {
@@ -134,37 +136,37 @@ async function sendMail({ to, subject, text, html, kind = 'other', userId = null
   };
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    run('UPDATE email_log SET attempts = ? WHERE id = ?', attempt, logId);
+    await run('UPDATE email_log SET attempts = ? WHERE id = ?', attempt, logId);
     try {
       const info = await t.sendMail(message);
       const accepted = (info.accepted || []).map(String).map((s) => s.toLowerCase());
       if (accepted.includes(String(to).toLowerCase())) {
-        run(`UPDATE email_log SET status = 'relay_accepted', smtp_response = ?, error = NULL, relay_accepted_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`,
+        await run(`UPDATE email_log SET status = 'relay_accepted', smtp_response = ?, error = NULL, relay_accepted_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`,
           String(info.response || '').slice(0, 500), logId);
-        appendEvent(logId, { type: 'relay_accepted', attempt, detail: info.response });
+        await appendEvent(logId, { type: 'relay_accepted', attempt, detail: info.response });
         console.log(`[mail] #${logId} ${kind} → ${mask(to)} : accepté par le serveur SMTP (${info.response})`);
       } else {
         const error = `Destinataire refusé par le serveur SMTP : ${JSON.stringify(info.rejected || [])} ${info.response || ''}`.slice(0, 1000);
-        run(`UPDATE email_log SET status = 'failed', smtp_response = ?, error = ?, failed_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`,
+        await run(`UPDATE email_log SET status = 'failed', smtp_response = ?, error = ?, failed_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`,
           String(info.response || '').slice(0, 500), error, logId);
-        appendEvent(logId, { type: 'failed', attempt, detail: error });
+        await appendEvent(logId, { type: 'failed', attempt, detail: error });
         console.error(`[mail] #${logId} ${kind} → ${mask(to)} : REFUSÉ — ${error}`);
       }
-      return one('SELECT * FROM email_log WHERE id = ?', logId);
+      return await one('SELECT * FROM email_log WHERE id = ?', logId);
     } catch (err) {
       const error = describeError(err);
-      appendEvent(logId, { type: 'error', attempt, detail: error });
+      await appendEvent(logId, { type: 'error', attempt, detail: error });
       if (attempt < MAX_ATTEMPTS && isTransient(err)) {
         console.warn(`[mail] #${logId} ${kind} → ${mask(to)} : erreur temporaire (tentative ${attempt}/${MAX_ATTEMPTS}) — ${error}`);
         await sleep(800 * attempt);
         continue;
       }
-      run(`UPDATE email_log SET status = 'failed', error = ?, failed_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`, error, logId);
+      await run(`UPDATE email_log SET status = 'failed', error = ?, failed_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`, error, logId);
       console.error(`[mail] #${logId} ${kind} → ${mask(to)} : ÉCHEC après ${attempt} tentative(s) — ${error}`);
-      return one('SELECT * FROM email_log WHERE id = ?', logId);
+      return await one('SELECT * FROM email_log WHERE id = ?', logId);
     }
   }
-  return one('SELECT * FROM email_log WHERE id = ?', logId);
+  return await one('SELECT * FROM email_log WHERE id = ?', logId);
 }
 
 /** Teste la connexion et l'authentification SMTP (sans envoyer de message). */
@@ -182,21 +184,21 @@ async function verifyConnection() {
 const STATUS_RANK = { queued: 0, not_sent: 1, failed: 1, relay_accepted: 2, deferred: 3, delivered: 4, bounced: 5, complained: 6 };
 
 /** Enregistre un événement de remise reçu d'un service d'envoi (webhook). */
-function recordDeliveryEvent(messageId, status, detail, raw) {
+async function recordDeliveryEvent(messageId, status, detail, raw) {
   const id = String(messageId || '').replace(/^<|>$/g, '').trim();
   if (!id) return false;
-  const row = one('SELECT * FROM email_log WHERE message_id = ?', id);
+  const row = await one('SELECT * FROM email_log WHERE message_id = ?', id);
   if (!row) return false;
-  appendEvent(row.id, { type: `webhook:${raw || status}`, detail });
+  await appendEvent(row.id, { type: `webhook:${raw || status}`, detail });
   if (!status) return true;
   // On ne revient jamais en arrière (ex. « deferred » reçu après « delivered »), sauf rebond/plainte.
   if ((STATUS_RANK[status] || 0) < (STATUS_RANK[row.status] || 0) && !['bounced', 'complained'].includes(status)) return true;
   if (status === 'delivered') {
-    run(`UPDATE email_log SET status = 'delivered', delivered_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`, row.id);
+    await run(`UPDATE email_log SET status = 'delivered', delivered_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`, row.id);
   } else if (status === 'bounced' || status === 'complained') {
-    run(`UPDATE email_log SET status = ?, error = ?, failed_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`, status, String(detail || '').slice(0, 1000), row.id);
+    await run(`UPDATE email_log SET status = ?, error = ?, failed_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`, status, String(detail || '').slice(0, 1000), row.id);
   } else {
-    run(`UPDATE email_log SET status = ?, updated_at = datetime('now') WHERE id = ?`, status, row.id);
+    await run(`UPDATE email_log SET status = ?, updated_at = datetime('now') WHERE id = ?`, status, row.id);
   }
   console.log(`[mail] #${row.id} événement de remise : ${status}${detail ? ' — ' + detail : ''}`);
   return true;

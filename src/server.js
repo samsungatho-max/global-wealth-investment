@@ -9,7 +9,7 @@ const express = require('express');
 const session = require('express-session');
 const helmet = require('helmet');
 
-const { one } = require('./db');
+const { one, ensureSchema } = require('./db');
 const i18n = require('./i18n');
 const settings = require('./lib/settings');
 const { money, LOCALES, CURRENCY_LABELS } = require('./lib/money');
@@ -19,18 +19,38 @@ const photos = require('./lib/photos');
 const { seed } = require('./seed');
 
 const PROD = process.env.NODE_ENV === 'production';
-if (PROD && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32)) {
-  console.error('SESSION_SECRET (32 caractères minimum) est obligatoire en production.');
-  process.exit(1);
+const SECRET_OK = !PROD || (process.env.SESSION_SECRET && process.env.SESSION_SECRET.length >= 32);
+if (!SECRET_OK) console.error('SESSION_SECRET (32 caractères minimum) est obligatoire en production.');
+
+/** Initialisation unique par instance : schéma, données de départ. */
+let initPromise = null;
+function init() {
+  if (!initPromise) {
+    initPromise = (async () => {
+      await ensureSchema();
+      await seed();
+      await settings.refresh({ force: true });
+    })().catch((err) => { initPromise = null; throw err; });
+  }
+  return initPromise;
 }
 
-seed();
+/** Taux de change : actualisés à la demande quand ils ont plus de 12 h (pas de tâche de fond en serverless). */
+let ratesRefreshing = false;
+function maybeRefreshRates() {
+  const r = settings.get('rates');
+  const age = r.fetched_at ? Date.now() - Date.parse(r.fetched_at) : Infinity;
+  if (r.manual || age < 12 * 3600 * 1000 || ratesRefreshing) return;
+  ratesRefreshing = true;
+  refreshRates().catch(() => {}).finally(() => { ratesRefreshing = false; });
+}
 
 const app = express();
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '..', 'views'));
 app.disable('x-powered-by');
-if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PROXY) || 1);
+// Derrière le proxy HTTPS de Vercel (ou TRUST_PROXY) : IP réelle et cookies « Secure » corrects
+if (process.env.TRUST_PROXY || process.env.VERCEL) app.set('trust proxy', Number(process.env.TRUST_PROXY) || 1);
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -50,13 +70,29 @@ app.use(helmet({
 
 app.use('/static/img/photos', express.static(path.join(__dirname, '..', 'public', 'img', 'photos'), { maxAge: '30d', immutable: true }));
 app.use('/static', express.static(path.join(__dirname, '..', 'public'), { maxAge: PROD ? '7d' : 0 }));
-app.use('/media', express.static(security.PUBLIC_DIR, { maxAge: '7d', index: false }));
+app.get('/healthz', (req, res) => res.json({ ok: true }));
+
+// Base prête (schéma + données de départ) et paramètres à jour avant tout traitement
+app.use(async (req, res, next) => {
+  try {
+    if (!SECRET_OK) return res.status(503).type('text').send('Configuration incomplète : SESSION_SECRET manquant (32 caractères minimum).');
+    if (process.env.VERCEL && !process.env.DATABASE_URL && !process.env.POSTGRES_URL) {
+      return res.status(503).type('text').send('Configuration incomplète : aucune base de données. Ajoutez une base Neon (onglet Storage de Vercel) pour définir DATABASE_URL, puis redéployez.');
+    }
+    await init();
+    await settings.refresh();
+    maybeRefreshRates();
+    next();
+  } catch (err) { next(err); }
+});
+
 app.use(express.urlencoded({ extended: false, limit: '300kb' }));
 
 app.use(session({
   name: 'gwi.sid',
   secret: process.env.SESSION_SECRET || 'dev-only-secret-change-me-in-production-please',
-  store: new security.SQLiteStore(),
+  store: new security.PgStore(),
+  proxy: !!(process.env.TRUST_PROXY || process.env.VERCEL),
   resave: false,
   saveUninitialized: false,
   rolling: true,
@@ -68,7 +104,7 @@ app.use(i18n.middleware);
 app.use(security.csrfToken);
 
 // Variables communes aux vues
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   const currencies = settings.get('currencies');
   if (req.query.currency && currencies.includes(req.query.currency)) req.session.currency = req.query.currency;
   const currency = currencies.includes(req.session.currency) ? req.session.currency : 'EUR';
@@ -97,9 +133,11 @@ app.use((req, res, next) => {
   res.locals.flash = req.session.flash || [];
   delete req.session.flash;
   req.flash = (type, msg) => { (req.session.flash = req.session.flash || []).push({ type, msg }); };
-  res.locals.unread = req.user ? one('SELECT COUNT(*) AS n FROM notifications WHERE user_id = ? AND read_at IS NULL', req.user.id).n : 0;
   res.locals.title = null;
-  next();
+  try {
+    res.locals.unread = req.user ? (await one('SELECT COUNT(*) AS n FROM notifications WHERE user_id = ? AND read_at IS NULL', req.user.id)).n : 0;
+    next();
+  } catch (err) { next(err); }
 });
 
 // Webhooks des services d'envoi : authentifiés par jeton, hors protection CSRF (appels serveur à serveur).
@@ -124,6 +162,7 @@ app.use((err, req, res, next) => {
   if (err.code === 'CSRF') message = t('common.csrf');
   else if (err.code === 'FILE_TYPE') message = t('common.file_type');
   else if (err.code === 'LIMIT_FILE_SIZE') { status = 400; message = t('common.file_size'); }
+  else if (err.code === '22P02' || err.code === '22003') { status = 404; message = t('common.not_found'); } // identifiant invalide dans l'URL
   else if (status === 403) message = t('common.forbidden');
   else if (status === 404) message = t('common.not_found');
   if (status >= 500) console.error(err);
@@ -136,9 +175,9 @@ app.use((err, req, res, next) => {
 
 const PORT = Number(process.env.PORT || 3000);
 if (require.main === module) {
-  app.listen(PORT, () => console.log(`Global Wealth Investment — http://localhost:${PORT}`));
-  refreshRates();
-  setInterval(refreshRates, 12 * 60 * 60 * 1000).unref();
+  init()
+    .then(() => app.listen(PORT, () => console.log(`Global Wealth Investment — http://localhost:${PORT}`)))
+    .catch((err) => { console.error('Initialisation impossible :', err); process.exit(1); });
 }
 
 module.exports = app;

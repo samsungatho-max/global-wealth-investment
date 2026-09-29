@@ -322,7 +322,7 @@ module.exports = {
     residence_permit: "Titre de séjour",
     id_file: "Pièce d'identité (recto/verso, PDF ou image)",
     address_file: "Justificatif de domicile de moins de 3 mois",
-    formats: "Formats acceptés : PDF, JPG, PNG, WEBP — 10 Mo maximum par fichier. Vos documents sont stockés de manière privée.",
+    formats: "Formats acceptés : PDF, JPG, PNG, WEBP — 4 Mo maximum par fichier. Vos documents sont stockés de manière privée.",
     submit: "Soumettre mes documents",
     submitted: "Vos documents ont été transmis. Vous serez notifié du résultat.",
     note: "Commentaire du vérificateur"
@@ -510,7 +510,7 @@ module.exports = {
     csrf: "Votre session a expiré. Veuillez recharger la page et réessayer.",
     back_home: "Retour à l'accueil",
     file_type: "Type de fichier non autorisé.",
-    file_size: "Fichier trop volumineux (10 Mo maximum).",
+    file_size: "Fichier trop volumineux (4 Mo maximum).",
     too_many: "Trop de requêtes. Veuillez patienter quelques minutes."
   }
 };

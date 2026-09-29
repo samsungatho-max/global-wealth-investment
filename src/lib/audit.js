@@ -1,10 +1,10 @@
 'use strict';
-/** Journal d'audit en ajout seul (les triggers SQL interdisent UPDATE/DELETE). */
+/** Journal d'audit en ajout seul (un déclencheur PostgreSQL interdit UPDATE / DELETE / TRUNCATE). */
 const { run } = require('../db');
 
-function audit(req, action, targetType, targetId, details) {
+async function audit(req, action, targetType, targetId, details) {
   const u = req && req.user;
-  run(`INSERT INTO audit_log (actor_id, actor_email, action, target_type, target_id, details, ip)
+  await run(`INSERT INTO audit_log (actor_id, actor_email, action, target_type, target_id, details, ip)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
     u ? u.id : null, u ? u.email : null, action, targetType || null,
     targetId != null ? String(targetId) : null,
