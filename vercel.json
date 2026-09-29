@@ -3,6 +3,7 @@
   "framework": null,
   "buildCommand": "node -e \"console.log('Aucune compilation nécessaire')\"",
   "outputDirectory": "public",
+  "regions": ["fra1"],
   "functions": {
     "api/index.js": {
       "maxDuration": 30,
