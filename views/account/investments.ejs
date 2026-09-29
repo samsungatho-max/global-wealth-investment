@@ -1,0 +1,16 @@
+<%- include('../partials/top') %>
+<div class="container dash">
+  <%- include('../partials/account-nav') %>
+  <div>
+    <div class="dash-head"><h1><%= t('account.nav_investments') %></h1></div>
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-label"><%= t('account.invested') %></div><div class="kpi-value"><%= money(s.invested) %></div></div>
+      <div class="kpi dark"><div class="kpi-label"><%= t('account.value') %></div><div class="kpi-value"><%= money(s.value) %></div><div class="kpi-note"><%= t('account.value_note') %></div></div>
+      <div class="kpi"><div class="kpi-label"><%= t('account.cash') %></div><div class="kpi-value"><%= money(s.available) %></div></div>
+    </div>
+    <section class="panel"><div class="panel-head"><h2><%= t('account.active') %></h2></div><%- include('../partials/inv-table', { items: s.active }) %></section>
+    <section class="panel"><div class="panel-head"><h2><%= t('account.matured') %></h2></div><%- include('../partials/inv-table', { items: s.matured }) %></section>
+    <section class="panel" id="history"><div class="panel-head"><h2><%= t('account.perf_title') %></h2></div><%- include('../partials/perf-table', { history: history }) %></section>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

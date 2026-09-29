@@ -1,0 +1,32 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div>
+    <div class="dash-head"><h1>Investisseurs</h1></div>
+    <form class="flex mb-2" method="get" action="/admin/users">
+      <input type="search" name="q" value="<%= q %>" placeholder="Nom, e-mail, téléphone…" style="max-width:320px">
+      <select name="kyc" style="width:auto"><option value="">KYC : tous</option><% ['none','pending','approved','rejected'].forEach(function (k) { %><option value="<%= k %>" <%= kyc === k ? 'selected' : '' %>><%= t('kyc.' + k) %></option><% }) %></select>
+      <button class="btn btn-navy btn-sm" type="submit">Filtrer</button>
+    </form>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nom</th><th>E-mail</th><th>Pays</th><th>KYC</th><th class="num">Solde</th><th>Inscription</th><th>Statut</th></tr></thead>
+        <tbody>
+        <% if (!rows.length) { %><tr><td colspan="7" class="empty">Aucun résultat.</td></tr><% } %>
+        <% rows.forEach(function (u) { %>
+          <tr>
+            <td><a href="/admin/users/<%= u.id %>"><strong><%= u.full_name %></strong></a><% if (u.role === 'admin') { %> <span class="chip chip-navy">admin</span><% } %></td>
+            <td class="small"><%= u.email %><% if (!u.email_verified_at) { %> <span class="chip chip-warning">non vérifié</span><% } %></td>
+            <td class="small"><%= countryName(u.country) %></td>
+            <td><span class="chip <%= { approved: 'chip-success', pending: 'chip-warning', rejected: 'chip-danger' }[u.kyc_status] || '' %>"><%= t('kyc.' + u.kyc_status) %></span></td>
+            <td class="num"><%= eur(u.cash) %></td>
+            <td class="small"><%= fmtDate(u.created_at) %></td>
+            <td><span class="chip <%= u.status === 'active' ? 'chip-success' : 'chip-danger' %>"><%= u.status === 'active' ? 'Actif' : 'Suspendu' %></span></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

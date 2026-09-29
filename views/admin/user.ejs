@@ -1,0 +1,161 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div>
+    <div class="dash-head">
+      <div><a class="small" href="/admin/users">← Investisseurs</a><h1><%= u.full_name %></h1></div>
+      <div class="actions">
+        <span class="chip <%= u.status === 'active' ? 'chip-success' : 'chip-danger' %>"><%= u.status === 'active' ? 'Actif' : 'Suspendu' %></span>
+        <span class="chip <%= { approved: 'chip-success', pending: 'chip-warning', rejected: 'chip-danger' }[u.kyc_status] || '' %>">KYC : <%= t('kyc.' + u.kyc_status) %></span>
+        <% if (u.totp_enabled) { %><span class="chip chip-navy">2FA</span><% } %>
+      </div>
+    </div>
+
+    <div class="grid grid-2 panel">
+      <div class="card">
+        <h2 style="font-size:1.1rem">Profil</h2>
+        <dl class="kv">
+          <dt>E-mail</dt><dd><%= u.email %> <%= u.email_verified_at ? '✓' : '(non vérifié)' %></dd>
+          <dt>Téléphone</dt><dd><%= u.phone %></dd>
+          <dt>Pays</dt><dd><%= countryName(u.country) %></dd>
+          <dt>Langue</dt><dd><%= u.lang.toUpperCase() %></dd>
+          <dt>Rôle</dt><dd><%= u.role %></dd>
+          <dt>Inscription</dt><dd><%= fmtDate(u.created_at, true) %></dd>
+          <dt>Dernière connexion</dt><dd><%= fmtDate(u.last_login_at, true) %></dd>
+        </dl>
+        <div class="actions mt-2">
+          <% if (u.id !== user.id) { %>
+          <form method="post" action="/admin/users/<%= u.id %>/status" data-confirm="Confirmer ?"><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="status" value="<%= u.status === 'active' ? 'suspended' : 'active' %>"><button class="btn <%= u.status === 'active' ? 'btn-danger' : 'btn-navy' %> btn-sm" type="submit"><%= u.status === 'active' ? 'Suspendre le compte' : 'Réactiver le compte' %></button></form>
+          <form method="post" action="/admin/users/<%= u.id %>/role" data-confirm="Modifier le rôle de ce compte ?"><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="role" value="<%= u.role === 'admin' ? 'investor' : 'admin' %>"><button class="btn btn-ghost btn-sm" type="submit"><%= u.role === 'admin' ? 'Retirer le rôle admin' : 'Nommer administrateur' %></button></form>
+          <% } %>
+          <% if (!u.email_verified_at) { %><form method="post" action="/admin/users/<%= u.id %>/verify-email"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-ghost btn-sm" type="submit">Marquer l'e-mail vérifié</button></form><% } %>
+        </div>
+      </div>
+      <div class="card">
+        <h2 style="font-size:1.1rem">Situation (calculée depuis la base)</h2>
+        <dl class="kv">
+          <dt>Solde en compte</dt><dd><strong><%= eur(s.cash) %></strong></dd>
+          <dt>Disponible</dt><dd><%= eur(s.available) %><% if (s.reserved) { %> <span class="muted small">(<%= eur(s.reserved) %> réservés)</span><% } %></dd>
+          <dt>Capital investi (actif)</dt><dd><%= eur(s.invested) %></dd>
+          <dt>Valeur estimée</dt><dd><%= eur(s.value) %></dd>
+        </dl>
+        <h3 class="mt-2" style="font-size:.95rem">Vérifications KYC</h3>
+        <% if (!kycs.length) { %><p class="muted small">Aucune soumission.</p><% } %>
+        <% kycs.forEach(function (k) { %>
+          <div class="small">#<%= k.id %> · <%= fmtDate(k.created_at) %> · <%= t('kyc.' + k.doc_type) %> · <strong><%= t('kyc.' + k.status) %></strong>
+            · <a href="/admin/kyc/<%= k.id %>/file/id">pièce d'identité</a> · <a href="/admin/kyc/<%= k.id %>/file/address">justificatif</a>
+            <% if (k.review_note) { %><div class="muted">Note : <%= k.review_note %></div><% } %></div>
+        <% }) %>
+      </div>
+    </div>
+
+    <section class="panel" id="invest">
+      <div class="panel-head"><h2>Investissements</h2></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Projet</th><th class="num">Montant</th><th>Période</th><th class="num">Dernière valeur</th><th>Statut</th><th>Actions</th></tr></thead>
+          <tbody>
+          <% if (!s.items.length) { %><tr><td colspan="6" class="empty">Aucun investissement.</td></tr><% } %>
+          <% s.items.forEach(function (i) { %>
+            <tr>
+              <td><strong><%= i.title %></strong><div class="small muted">#<%= i.id %></div></td>
+              <td class="num"><%= eur(i.amount_cents) %></td>
+              <td class="small"><%= fmtDate(i.start_date) %> → <%= fmtDate(i.end_date) %></td>
+              <td class="num"><%= eur(i.current_value) %><div class="small muted"><%= i.valued ? fmtDate(i.last_value_date) : 'non valorisé' %> · <%= pct(i.perf) %></div></td>
+              <td><span class="chip <%= i.status === 'active' ? 'chip-success' : '' %>"><%= t('account.inv_' + i.status) %></span></td>
+              <td style="min-width:260px">
+                <% if (i.status === 'active') { %>
+                <details class="box"><summary>Enregistrer une valorisation</summary>
+                  <form class="form" method="post" action="/admin/investments/<%= i.id %>/valuations">
+                    <input type="hidden" name="_csrf" value="<%= csrf %>">
+                    <div class="form-row form-row-2">
+                      <div><label>Valeur (€)</label><input name="value" type="text" inputmode="decimal" required></div>
+                      <div><label>Date</label><input name="date" type="date" required max="<%= today %>" value="<%= today %>"></div>
+                    </div>
+                    <div><label>Source / justification *</label><input name="note" type="text" required maxlength="500" placeholder="Rapport de gestion T3, expertise…"></div>
+                    <button class="btn btn-navy btn-sm" type="submit">Enregistrer</button>
+                  </form>
+                </details>
+                <details class="box"><summary>Clôturer à l'échéance</summary>
+                  <form class="form" method="post" action="/admin/investments/<%= i.id %>/mature" data-confirm="Clôturer cet investissement et créditer le montant final ?">
+                    <input type="hidden" name="_csrf" value="<%= csrf %>">
+                    <div class="form-row form-row-2">
+                      <div><label>Montant final versé (€)</label><input name="payout" type="text" inputmode="decimal" required></div>
+                      <div><label>Date</label><input name="date" type="date" required max="<%= today %>" value="<%= today %>"></div>
+                    </div>
+                    <div><label>Justification *</label><input name="note" type="text" required maxlength="500"></div>
+                    <label class="check"><input type="checkbox" name="verified" required> Je confirme le contrôle effectif des fonds disponibles pour ce versement.</label>
+                    <button class="btn btn-gold btn-sm" type="submit">Clôturer et créditer</button>
+                  </form>
+                </details>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card mt-2">
+        <h3 style="font-size:1rem">Enregistrer un nouvel investissement</h3>
+        <% if (u.kyc_status !== 'approved') { %>
+          <p class="alert alert-warning small mb-0">L'identité de l'investisseur doit être vérifiée avant tout investissement.</p>
+        <% } else if (!openProjects.length) { %>
+          <p class="muted small mb-0">Aucun projet ouvert.</p>
+        <% } else { %>
+          <p class="small muted">Le montant est débité du solde disponible de l'investisseur (dépôts confirmés). Fiches de démonstration exclues.</p>
+          <form class="form" method="post" action="/admin/users/<%= u.id %>/investments" data-confirm="Enregistrer cet investissement ?">
+            <input type="hidden" name="_csrf" value="<%= csrf %>">
+            <div class="form-row form-row-2">
+              <div><label>Projet</label><select name="project_id" required><% openProjects.forEach(function (p) { %><option value="<%= p.id %>"><%= p.title %></option><% }) %></select></div>
+              <div><label>Montant (€) — disponible : <%= eur(s.available) %></label><input name="amount" type="text" inputmode="decimal" required></div>
+            </div>
+            <div class="form-row form-row-2">
+              <div><label>Date de début</label><input name="start_date" type="date" required value="<%= today %>"></div>
+              <div><label>Échéance prévue</label><input name="end_date" type="date" required></div>
+            </div>
+            <div><button class="btn btn-gold btn-sm" type="submit">Enregistrer l'investissement</button></div>
+          </form>
+        <% } %>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Historique des valorisations</h2></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Date</th><th>Projet</th><th class="num">Valeur</th><th class="num">Variation</th><th>Justification</th></tr></thead>
+        <tbody>
+          <% if (!history.length) { %><tr><td colspan="5" class="empty">Aucune valorisation.</td></tr><% } %>
+          <% history.forEach(function (v) { %><tr><td><%= fmtDate(v.valuation_date) %></td><td><%= v.title %></td><td class="num"><%= eur(v.value_cents) %></td><td class="num <%= v.perf >= 0 ? 'pos' : 'neg' %>"><%= pct(v.perf) %></td><td class="small"><%= v.note %></td></tr><% }) %>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Transactions</h2><a class="small" href="/admin/transactions">Toutes les transactions →</a></div>
+      <%- include('_tx-admin-table', { rows: txs.map(function (x) { return Object.assign({}, x, { full_name: u.full_name, email: u.email, kyc_status: u.kyc_status }); }) }) %>
+    </section>
+
+    <section class="panel" id="docs">
+      <div class="panel-head"><h2>Documents contractuels et relevés</h2></div>
+      <div class="card">
+        <% if (docs.length) { %><ul class="doc-list"><% docs.forEach(function (d) { %><li><span>📄 <strong><%= d.title %></strong> <span class="small muted">— <%= t('docs.' + d.category) %> · <%= fmtDate(d.created_at) %></span></span><a class="btn btn-ghost btn-sm" href="/admin/users/<%= u.id %>/documents/<%= d.id %>">Télécharger</a></li><% }) %></ul><% } else { %><p class="muted">Aucun document.</p><% } %>
+        <form class="form mt-2" method="post" action="/admin/users/<%= u.id %>/documents" enctype="multipart/form-data">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <div class="form-row form-row-3">
+            <div><label>Titre *</label><input name="title" type="text" required maxlength="200"></div>
+            <div><label>Catégorie</label><select name="category"><option value="contract">Contrat</option><option value="statement">Relevé</option><option value="other">Autre</option></select></div>
+            <div><label>Fichier *</label><input name="file" type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp"></div>
+          </div>
+          <div><button class="btn btn-navy btn-sm" type="submit">Ajouter et notifier</button></div>
+        </form>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Dernières tentatives de connexion</h2></div>
+      <%- include('_logins-table', { rows: logins }) %>
+    </section>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

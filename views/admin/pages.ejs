@@ -1,0 +1,20 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div>
+    <div class="dash-head"><h1>Pages institutionnelles</h1></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Page</th><th>Adresse</th><th>Mise à jour</th><th></th></tr></thead>
+        <tbody>
+        <% rows.forEach(function (p) { %>
+          <tr><td><strong><%= p.tr.title %></strong></td><td class="mono small">/page/<%= p.slug %></td><td class="small"><%= fmtDate(p.updated_at, true) %></td>
+            <td><div class="actions"><a class="btn btn-ghost btn-sm" href="/admin/pages/<%= p.slug %>/edit">Modifier</a><a class="btn btn-ghost btn-sm" href="/page/<%= p.slug %>" target="_blank">Voir ↗</a></div></td></tr>
+        <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint mt-1">Les informations légales de la société (raison sociale, immatriculation, statut réglementaire…) se modifient dans <a href="/admin/settings">Paramètres</a> et s'affichent automatiquement dans les mentions légales et le pied de page.</p>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

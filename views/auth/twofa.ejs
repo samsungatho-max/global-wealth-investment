@@ -1,0 +1,16 @@
+<%- include('../partials/top') %>
+<div class="container">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <h1><%= t('auth.twofa_title') %></h1>
+      <p class="muted"><%= t('auth.twofa_text') %></p>
+      <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error" role="alert"><%= error %></div><% } %>
+      <form class="form" method="post" action="/login/2fa">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <div><label for="f-code"><%= t('auth.twofa_code') %></label><input id="f-code" class="code-input" name="code" type="text" inputmode="numeric" pattern="[0-9 ]{6,7}" maxlength="7" required autocomplete="one-time-code" autofocus></div>
+        <button class="btn btn-gold btn-block" type="submit"><%= t('auth.twofa_submit') %></button>
+      </form>
+    </div>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

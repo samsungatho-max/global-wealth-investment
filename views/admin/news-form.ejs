@@ -1,0 +1,19 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div>
+    <div class="dash-head"><div><a class="small" href="/admin/news">← Actualités</a><h1><%= title %></h1></div></div>
+    <form class="card form" method="post" action="<%= n.id ? '/admin/news/' + n.id : '/admin/news' %>" enctype="multipart/form-data">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div class="form-row form-row-3">
+        <div><label for="n-kind">Type</label><select id="n-kind" name="kind"><option value="news" <%= n.kind === 'news' ? 'selected' : '' %>>Actualité</option><option value="report" <%= n.kind === 'report' ? 'selected' : '' %>>Rapport financier</option></select></div>
+        <div><label for="n-image">Image (optionnelle)</label><input id="n-image" name="image" type="file" accept=".jpg,.jpeg,.png,.webp"><% if (n.image_path) { %><img class="mt-1" src="/media/<%= n.image_path %>" alt="" style="width:120px;border-radius:6px"><% } %></div>
+        <div><label for="n-file">Document PDF (optionnel)</label><input id="n-file" name="file" type="file" accept=".pdf"><% if (n.file_name) { %><p class="hint">Actuel : <%= n.file_name %></p><% } %></div>
+      </div>
+      <%- include('../partials/lang-fields', { values: n.i18n || {}, fields: [['title', 'Titre', 'text'], ['summary', 'Résumé', 'textarea', 2], ['body', 'Contenu', 'textarea', 12]] }) %>
+      <label class="check"><input type="checkbox" name="published" <%= n.published ? 'checked' : '' %>> Publier sur le site</label>
+      <div><button class="btn btn-gold" type="submit">Enregistrer</button></div>
+    </form>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

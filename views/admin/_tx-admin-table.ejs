@@ -1,0 +1,36 @@
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Date</th><th>Investisseur</th><th>Type</th><th>Référence</th><th class="num">Montant</th><th>Statut</th><th>Traitement</th></tr></thead>
+    <tbody>
+    <% if (!rows.length) { %><tr><td colspan="7" class="empty">Aucune transaction.</td></tr><% } %>
+    <% rows.forEach(function (r) { var b = r.beneficiary ? JSON.parse(r.beneficiary) : null; %>
+      <tr>
+        <td class="small" style="white-space:nowrap"><%= fmtDate(r.created_at, true) %></td>
+        <td class="small"><a href="/admin/users/<%= r.user_id %>"><%= r.full_name %></a><div class="muted"><%= r.email %></div><% if (r.kyc_status !== 'approved') { %><span class="chip chip-danger">KYC non validé</span><% } %></td>
+        <td><%= t('tx.' + r.type) %></td>
+        <td class="mono"><%= r.reference %><% if (r.external_ref) { %><div class="small muted">Réf. ext. : <%= r.external_ref %></div><% } %></td>
+        <td class="num"><%= eur(r.amount_cents) %><% if (r.fee_cents) { %><div class="small muted">frais <%= eur(r.fee_cents) %> · net <%= eur(r.amount_cents - r.fee_cents) %></div><% } %></td>
+        <td><%- include('../partials/tx-status', { status: r.status }) %><% if (r.admin_note) { %><div class="small muted"><%= r.admin_note %></div><% } %></td>
+        <td style="min-width:240px">
+          <% if (b) { %><div class="small"><strong><%= b.holder %></strong><br><span class="mono"><%= b.account %></span><br><%= b.bank %> <%= b.bic || '' %></div><% } %>
+          <% if (['deposit','withdrawal'].includes(r.type) && ['pending','processing'].includes(r.status)) { %>
+            <details class="box mt-1"><summary>Traiter</summary>
+              <form class="form" method="post" action="/admin/transactions/<%= r.id %>/action">
+                <input type="hidden" name="_csrf" value="<%= csrf %>">
+                <div><label>Référence bancaire / prestataire</label><input name="external_ref" type="text" maxlength="120"></div>
+                <div><label>Commentaire (obligatoire pour un refus)</label><input name="note" type="text" maxlength="1000"></div>
+                <label class="check"><input type="checkbox" name="verified"> <%= r.type === 'deposit' ? 'Je confirme avoir vérifié la réception effective des fonds sur le compte officiel.' : 'Je confirme avoir vérifié l\'identité et le compte bénéficiaire, et exécuté le virement.' %></label>
+                <div class="actions">
+                  <button class="btn btn-gold btn-sm" name="action" value="confirm" type="submit">Confirmer</button>
+                  <% if (r.type === 'withdrawal' && r.status === 'pending') { %><button class="btn btn-ghost btn-sm" name="action" value="processing" type="submit">En traitement</button><% } %>
+                  <button class="btn btn-danger btn-sm" name="action" value="reject" type="submit">Refuser</button>
+                </div>
+              </form>
+            </details>
+          <% } %>
+        </td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,54 @@
+<%- include('../partials/top') %>
+<div class="container dash">
+  <%- include('../partials/account-nav') %>
+  <div>
+    <div class="dash-head">
+      <div><p class="muted mb-0"><%= t('account.title') %></p><h1><%= t('account.welcome', { name: user.full_name }) %></h1></div>
+      <div class="actions"><a class="btn btn-gold btn-sm" href="/opportunities"><%= t('hero.cta_discover') %></a></div>
+    </div>
+
+    <% if (user.kyc_status !== 'approved') { %>
+      <div class="alert alert-warning flex between"><span><strong><%= t('kyc.title') %> — <%= t('kyc.' + user.kyc_status) %>.</strong> <%= t('account.kyc_banner') %></span><% if (user.kyc_status !== 'pending') { %><a class="btn btn-navy btn-sm" href="/account/kyc"><%= t('account.kyc_banner_cta') %></a><% } %></div>
+    <% } %>
+
+    <div class="kpis">
+      <div class="kpi">
+        <div class="kpi-label"><%= t('account.invested') %></div>
+        <div class="kpi-value"><%= money(s.invested) %></div>
+        <div class="kpi-note"><%= s.active.length %> × <%= t('account.active').toLowerCase() %></div>
+      </div>
+      <div class="kpi dark">
+        <div class="kpi-label"><%= t('account.value') %></div>
+        <div class="kpi-value"><%= money(s.value) %></div>
+        <div class="kpi-note"><% if (s.invested) { %><%= pct((s.value - s.invested) / s.invested) %> · <% } %><%= t('account.value_note') %></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label"><%= t('account.cash') %></div>
+        <div class="kpi-value"><%= money(s.available) %></div>
+        <div class="kpi-note"><% if (s.reserved) { %><%= t('account.reserved', { amount: money(s.reserved) }) %><% } else { %><%= t('tx.confirmed_only') %><% } %></div>
+      </div>
+    </div>
+    <% if (s.unvalued) { %><p class="alert alert-info small"><%= t('account.unvalued', { n: s.unvalued }) %></p><% } %>
+
+    <section class="panel">
+      <div class="panel-head"><h2><%= t('account.active') %></h2><a class="small" href="/account/investments"><%= t('account.see_all') %> →</a></div>
+      <%- include('../partials/inv-table', { items: s.active }) %>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2><%= t('account.perf_title') %></h2><a class="small" href="/account/investments#history"><%= t('account.see_all') %> →</a></div>
+      <%- include('../partials/perf-table', { history: history }) %>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2><%= t('account.recent') %></h2><a class="small" href="/account/transactions"><%= t('account.see_all') %> →</a></div>
+      <%- include('../partials/tx-table', { rows: recent }) %>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2><%= t('account.withdrawals_title') %></h2><a class="small" href="/account/withdraw"><%= t('withdraw.title') %> →</a></div>
+      <%- include('../partials/tx-table', { rows: withdrawals }) %>
+    </section>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

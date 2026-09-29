@@ -1,0 +1,267 @@
+'use strict';
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const rateLimit = require('express-rate-limit');
+const { one, run } = require('../db');
+const { t } = require('../i18n');
+const { randomToken, sha256, safeEqual } = require('../lib/security');
+const { sendMail } = require('../lib/mailer');
+const { wrapMail, baseUrl, notify } = require('../lib/notify');
+const { audit } = require('../lib/audit');
+const totp = require('../lib/totp');
+const settings = require('../lib/settings');
+const { countries, CODES } = require('../lib/countries');
+
+const router = express.Router();
+
+const MAX_FAILS = 5;
+const LOCK_MINUTES = 15;
+const DUMMY_HASH = bcrypt.hashSync('timing-equalizer', 12);
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: 'draft-7', legacyHeaders: false,
+  handler: (req, res) => res.status(429).render('error', { title: res.locals.t('common.too_many'), status: 429, message: res.locals.t('common.too_many') })
+});
+
+const isEmail = (s) => /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/.test(s);
+const isStrongPassword = (p) => typeof p === 'string' && p.length >= 10 && p.length <= 200 && /[A-Za-z]/.test(p) && /\d/.test(p);
+const isPhone = (p) => /^\+?[0-9 ().-]{6,20}$/.test(p);
+
+function logAttempt(req, email, success, reason) {
+  run('INSERT INTO login_attempts (email, ip, success, reason, user_agent) VALUES (?, ?, ?, ?, ?)',
+    email || null, req.ip, success ? 1 : 0, reason || null, String(req.get('user-agent') || '').slice(0, 300));
+}
+
+function isLocked(email) {
+  const r = one(`SELECT COUNT(*) AS n FROM login_attempts WHERE email = ? COLLATE NOCASE AND success = 0
+    AND created_at > datetime('now', ?)`, email, `-${LOCK_MINUTES} minutes`);
+  return r.n >= MAX_FAILS;
+}
+
+async function sendVerification(user) {
+  const token = randomToken(32);
+  run(`UPDATE users SET email_verify_token_hash = ?, email_verify_expires = datetime('now', '+24 hours') WHERE id = ?`,
+    sha256(token), user.id);
+  const link = `${baseUrl()}/verify-email/${token}`;
+  await sendMail({
+    to: user.email,
+    subject: `${settings.get('site_name')} — ${t(user.lang, 'mail.verify_subject')}`,
+    text: wrapMail(user, t(user.lang, 'mail.verify_body', { link }))
+  });
+}
+
+/** Ouvre la session après authentification complète (mot de passe + éventuellement 2FA). */
+function completeLogin(req, res, user, returnTo) {
+  req.session.regenerate((err) => {
+    if (err) throw err;
+    req.session.userId = user.id;
+    req.session.lang = user.lang;
+    run(`UPDATE users SET last_login_at = datetime('now') WHERE id = ?`, user.id);
+    logAttempt(req, user.email, true, user.totp_enabled ? 'password+2fa' : 'password');
+    if (user.role === 'admin') { req.user = user; audit(req, 'admin.login', 'user', user.id); }
+    const safeReturn = typeof returnTo === 'string' && /^\/(?!\/)/.test(returnTo) ? returnTo : null;
+    res.redirect(safeReturn || (user.role === 'admin' ? '/admin' : '/account'));
+  });
+}
+
+// ---------- Inscription ----------
+router.get('/register', (req, res) => {
+  if (req.user) return res.redirect('/account');
+  res.render('auth/register', { title: t(req.lang, 'auth.register_title'), values: {}, countries: countries(req.lang) });
+});
+
+router.post('/register', authLimiter, async (req, res, next) => {
+  try {
+    const v = {
+      full_name: String(req.body.full_name || '').trim().slice(0, 120),
+      email: String(req.body.email || '').trim().toLowerCase().slice(0, 200),
+      country: String(req.body.country || ''),
+      phone: String(req.body.phone || '').trim().slice(0, 20)
+    };
+    const render = (key) => res.status(400).render('auth/register', {
+      title: t(req.lang, 'auth.register_title'), values: v, countries: countries(req.lang), error: t(req.lang, key)
+    });
+    if (!v.full_name || !v.email || !v.country || !v.phone || !req.body.password) return render('auth.err_required');
+    if (!isEmail(v.email)) return render('auth.err_email');
+    if (!CODES.includes(v.country)) return render('auth.err_required');
+    if (!isPhone(v.phone)) return render('auth.err_phone');
+    if (!isStrongPassword(req.body.password)) return render('auth.err_password_weak');
+    if (req.body.password !== req.body.password_confirm) return render('auth.err_password_mismatch');
+    if (req.body.accept !== 'on') return render('auth.err_accept');
+    if (one('SELECT id FROM users WHERE email = ?', v.email)) return render('auth.err_email_taken');
+
+    const hash = await bcrypt.hash(req.body.password, 12);
+    const info = run('INSERT INTO users (email, password_hash, full_name, country, phone, lang) VALUES (?, ?, ?, ?, ?, ?)',
+      v.email, hash, v.full_name, v.country, v.phone, req.lang);
+    const user = one('SELECT * FROM users WHERE id = ?', info.lastInsertRowid);
+    await sendVerification(user);
+    req.session.regenerate((err) => {
+      if (err) return next(err);
+      req.session.userId = user.id;
+      req.session.lang = user.lang;
+      res.redirect('/verify-email/pending');
+    });
+  } catch (e) { next(e); }
+});
+
+// ---------- Vérification de l'e-mail ----------
+router.get('/verify-email/pending', (req, res) => {
+  if (!req.user) return res.redirect('/login');
+  if (req.user.email_verified_at) return res.redirect('/account');
+  res.render('auth/verify', { title: t(req.lang, 'auth.verify_title') });
+});
+
+router.post('/verify-email/resend', authLimiter, async (req, res, next) => {
+  try {
+    if (!req.user) return res.redirect('/login');
+    if (!req.user.email_verified_at) await sendVerification(req.user);
+    req.flash('success', t(req.lang, 'auth.verify_resent'));
+    res.redirect('/verify-email/pending');
+  } catch (e) { next(e); }
+});
+
+router.get('/verify-email/:token', (req, res) => {
+  const user = one(`SELECT * FROM users WHERE email_verify_token_hash = ? AND email_verify_expires > datetime('now')`, sha256(req.params.token));
+  if (!user) {
+    return res.status(400).render('error', { title: t(req.lang, 'auth.verify_invalid'), status: 400, message: t(req.lang, 'auth.verify_invalid') });
+  }
+  run(`UPDATE users SET email_verified_at = datetime('now'), email_verify_token_hash = NULL, email_verify_expires = NULL WHERE id = ?`, user.id);
+  req.flash('success', t(req.lang, 'auth.verified'));
+  res.redirect(req.user && req.user.id === user.id ? '/account' : '/login');
+});
+
+// ---------- Connexion ----------
+function renderLogin(req, res, opts = {}) {
+  const admin = req.path.startsWith('/admin');
+  res.status(opts.status || 200).render('auth/login', {
+    title: t(req.lang, admin ? 'auth.admin_login_title' : 'auth.login_title'),
+    admin, action: admin ? '/admin/login' : '/login', email: opts.email || '', error: opts.error
+  });
+}
+
+router.get(['/login', '/admin/login'], (req, res) => {
+  if (req.user) return res.redirect(req.user.role === 'admin' && req.path.startsWith('/admin') ? '/admin' : '/account');
+  renderLogin(req, res);
+});
+
+router.post(['/login', '/admin/login'], authLimiter, async (req, res, next) => {
+  try {
+    const admin = req.path.startsWith('/admin');
+    const email = String(req.body.email || '').trim().toLowerCase().slice(0, 200);
+    const password = String(req.body.password || '');
+    if (!email || !password) return renderLogin(req, res, { status: 400, email, error: t(req.lang, 'auth.err_required') });
+    if (isLocked(email)) {
+      logAttempt(req, email, false, 'locked');
+      return renderLogin(req, res, { status: 429, email, error: t(req.lang, 'auth.err_locked') });
+    }
+    const user = one('SELECT * FROM users WHERE email = ?', email);
+    const ok = await bcrypt.compare(password, user ? user.password_hash : DUMMY_HASH);
+    if (!user || !ok || (admin && user.role !== 'admin')) {
+      logAttempt(req, email, false, !user ? 'unknown_user' : !ok ? 'bad_password' : 'not_admin');
+      return renderLogin(req, res, { status: 401, email, error: t(req.lang, 'auth.err_credentials') });
+    }
+    if (user.status !== 'active') {
+      logAttempt(req, email, false, 'suspended');
+      return renderLogin(req, res, { status: 403, email, error: t(req.lang, 'auth.err_suspended') });
+    }
+    const returnTo = req.session.returnTo;
+    if (user.totp_enabled) {
+      req.session.pending2fa = { userId: user.id, at: Date.now(), returnTo };
+      return res.redirect('/login/2fa');
+    }
+    completeLogin(req, res, user, returnTo);
+  } catch (e) { next(e); }
+});
+
+router.get('/login/2fa', (req, res) => {
+  if (!req.session.pending2fa) return res.redirect('/login');
+  res.render('auth/twofa', { title: t(req.lang, 'auth.twofa_title') });
+});
+
+router.post('/login/2fa', authLimiter, (req, res) => {
+  const pending = req.session.pending2fa;
+  if (!pending || Date.now() - pending.at > 5 * 60 * 1000) {
+    delete req.session.pending2fa;
+    return res.redirect('/login');
+  }
+  const user = one('SELECT * FROM users WHERE id = ?', pending.userId);
+  if (!user || isLocked(user.email)) {
+    delete req.session.pending2fa;
+    return renderLogin(req, res, { status: 429, error: t(req.lang, 'auth.err_locked') });
+  }
+  if (!totp.verify(user.totp_secret, req.body.code)) {
+    logAttempt(req, user.email, false, 'bad_2fa');
+    return res.status(401).render('auth/twofa', { title: t(req.lang, 'auth.twofa_title'), error: t(req.lang, 'auth.err_code') });
+  }
+  delete req.session.pending2fa;
+  completeLogin(req, res, user, pending.returnTo);
+});
+
+router.post('/logout', (req, res) => {
+  const lang = req.lang;
+  req.session.regenerate(() => {
+    req.session.lang = lang;
+    req.session.flash = [{ type: 'success', msg: t(lang, 'auth.logged_out') }];
+    res.redirect('/');
+  });
+});
+
+// ---------- Mot de passe oublié (code à 6 chiffres par e-mail) ----------
+router.get('/forgot-password', (req, res) => res.render('auth/forgot', { title: t(req.lang, 'auth.forgot_title') }));
+
+router.post('/forgot-password', authLimiter, async (req, res, next) => {
+  try {
+    const email = String(req.body.email || '').trim().toLowerCase().slice(0, 200);
+    const user = email ? one(`SELECT * FROM users WHERE email = ? AND status = 'active'`, email) : null;
+    if (user) {
+      run('UPDATE password_resets SET used_at = datetime(\'now\') WHERE user_id = ? AND used_at IS NULL', user.id);
+      const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+      run(`INSERT INTO password_resets (user_id, code_hash, expires_at) VALUES (?, ?, datetime('now', '+15 minutes'))`,
+        user.id, sha256(`${user.id}:${code}`));
+      await sendMail({
+        to: user.email,
+        subject: `${settings.get('site_name')} — ${t(user.lang, 'mail.reset_subject')}`,
+        text: wrapMail(user, t(user.lang, 'mail.reset_body', { code }))
+      });
+    }
+    req.session.resetEmail = email;
+    req.flash('success', t(req.lang, 'auth.reset_sent'));
+    res.redirect('/reset-password');
+  } catch (e) { next(e); }
+});
+
+router.get('/reset-password', (req, res) => {
+  res.render('auth/reset', { title: t(req.lang, 'auth.reset_title'), email: req.session.resetEmail || '' });
+});
+
+router.post('/reset-password', authLimiter, async (req, res, next) => {
+  try {
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const code = String(req.body.code || '').replace(/\s/g, '');
+    const fail = (key) => res.status(400).render('auth/reset', { title: t(req.lang, 'auth.reset_title'), email, error: t(req.lang, key) });
+    if (!isStrongPassword(req.body.password)) return fail('auth.err_password_weak');
+    if (req.body.password !== req.body.password_confirm) return fail('auth.err_password_mismatch');
+    const user = one('SELECT * FROM users WHERE email = ?', email);
+    const reset = user && one(`SELECT * FROM password_resets WHERE user_id = ? AND used_at IS NULL
+      AND expires_at > datetime('now') ORDER BY id DESC LIMIT 1`, user.id);
+    if (!reset || reset.attempts >= 5) return fail('auth.err_code');
+    if (!safeEqual(reset.code_hash, sha256(`${user.id}:${code}`))) {
+      run('UPDATE password_resets SET attempts = attempts + 1 WHERE id = ?', reset.id);
+      return fail('auth.err_code');
+    }
+    const hash = await bcrypt.hash(req.body.password, 12);
+    run('UPDATE users SET password_hash = ? WHERE id = ?', hash, user.id);
+    run(`UPDATE password_resets SET used_at = datetime('now') WHERE id = ?`, reset.id);
+    // Invalide toutes les sessions existantes de cet utilisateur
+    run(`DELETE FROM sessions WHERE json_extract(sess, '$.userId') = ?`, user.id);
+    notify(user.id, 'password_changed', {}, '/account/security');
+    delete req.session.resetEmail;
+    req.flash('success', t(req.lang, 'auth.reset_ok'));
+    res.redirect(user.role === 'admin' ? '/admin/login' : '/login');
+  } catch (e) { next(e); }
+});
+
+module.exports = router;
+module.exports.isStrongPassword = isStrongPassword;
+module.exports.isPhone = isPhone;

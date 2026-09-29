@@ -1,0 +1,16 @@
+<nav class="side-nav" aria-label="<%= t('account.title') %>">
+  <div class="nav-title"><%= t('account.title') %></div>
+  <% [
+    ['/account', 'nav_overview'], ['/account/investments', 'nav_investments'], ['/account/transactions', 'nav_transactions'],
+    ['/account/deposit', 'nav_deposit'], ['/account/withdraw', 'nav_withdraw'], ['/account/documents', 'nav_documents'],
+    ['/account/kyc', 'nav_kyc'], ['/account/notifications', 'nav_notifications'], ['/account/security', 'nav_security']
+  ].forEach(function (item) {
+    var full = path.replace(/\/$/, '');
+    var current = item[0] === '/account' ? full === '/account' : full.indexOf(item[0]) === 0; %>
+    <a href="<%= item[0] %>" <%- current ? 'aria-current="page"' : '' %>>
+      <span><%= t('account.' + item[1]) %></span>
+      <% if (item[1] === 'nav_kyc' && user.kyc_status !== 'approved') { %><span class="badge-dot">!</span><% } %>
+      <% if (item[1] === 'nav_notifications' && unread) { %><span class="badge-dot"><%= unread %></span><% } %>
+    </a>
+  <% }) %>
+</nav>

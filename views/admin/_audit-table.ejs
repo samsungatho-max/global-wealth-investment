@@ -1,0 +1,19 @@
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>#</th><th>Date</th><th>Auteur</th><th>Action</th><th>Cible</th><th>Détails</th><th>IP</th></tr></thead>
+    <tbody>
+    <% if (!rows.length) { %><tr><td colspan="7" class="empty">Aucune entrée.</td></tr><% } %>
+    <% rows.forEach(function (a) { %>
+      <tr>
+        <td class="mono small"><%= a.id %></td>
+        <td class="small" style="white-space:nowrap"><%= fmtDate(a.created_at, true) %></td>
+        <td class="small"><%= a.actor_email || '—' %></td>
+        <td><span class="chip"><%= a.action %></span></td>
+        <td class="small"><%= a.target_type || '' %> <%= a.target_id || '' %></td>
+        <td class="mono small" style="max-width:320px;word-break:break-all"><%= a.details || '' %></td>
+        <td class="mono small"><%= a.ip || '' %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+</div>

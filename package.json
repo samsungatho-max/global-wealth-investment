@@ -1,0 +1,29 @@
+{
+  "name": "global-wealth-investment",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Plateforme internationale d'investissement — Global Wealth Investment",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "check": "node scripts/smoke-test.js",
+    "backup": "node scripts/backup.js",
+    "admin:reset": "node scripts/admin-reset.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "ejs": "^6.0.1",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "express-session": "^1.19.0",
+    "helmet": "^8.3.0",
+    "multer": "^2.4.0",
+    "nodemailer": "^10.0.11",
+    "qrcode": "^1.5.4"
+  }
+}

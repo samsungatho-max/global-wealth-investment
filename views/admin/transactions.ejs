@@ -1,0 +1,15 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div>
+    <div class="dash-head"><h1>Dépôts, retraits et transactions</h1></div>
+    <form class="flex mb-2" method="get" action="/admin/transactions">
+      <select name="type" style="width:auto"><option value="">Tous types</option><% ['deposit','withdrawal','investment','payout','fee'].forEach(function (x) { %><option value="<%= x %>" <%= type === x ? 'selected' : '' %>><%= t('tx.' + x) %></option><% }) %></select>
+      <select name="status" style="width:auto"><option value="">Tous statuts</option><% ['pending','processing','confirmed','rejected','cancelled'].forEach(function (x) { %><option value="<%= x %>" <%= status === x ? 'selected' : '' %>><%= t('tx.' + x) %></option><% }) %></select>
+      <button class="btn btn-navy btn-sm" type="submit">Filtrer</button>
+    </form>
+    <p class="alert alert-info small">Un dépôt ne doit être confirmé qu'après constat de la réception effective des fonds sur le compte officiel (relevé bancaire ou confirmation du prestataire de paiement). Chaque décision est tracée dans le journal d'audit.</p>
+    <%- include('_tx-admin-table', { rows: rows }) %>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

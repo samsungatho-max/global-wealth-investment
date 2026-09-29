@@ -1,0 +1,34 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div>
+    <div class="dash-head"><h1>Manifestations d'intérêt</h1></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Projet</th><th>Contact</th><th class="num">Montant indicatif</th><th>Message</th><th>Statut</th></tr></thead>
+        <tbody>
+        <% if (!rows.length) { %><tr><td colspan="6" class="empty">Aucune manifestation d'intérêt.</td></tr><% } %>
+        <% rows.forEach(function (r) { %>
+          <tr>
+            <td class="small"><%= fmtDate(r.created_at, true) %></td>
+            <td><a href="/opportunities/<%= r.slug %>" target="_blank"><%= r.project %></a></td>
+            <td><strong><%= r.name %></strong><div class="small"><a href="mailto:<%= r.email %>"><%= r.email %></a></div><% if (r.user_id) { %><a class="small" href="/admin/users/<%= r.user_id %>">Compte investisseur →</a><% } %></td>
+            <td class="num"><%= r.amount_cents ? eur(r.amount_cents) : '—' %></td>
+            <td class="small" style="max-width:280px;white-space:pre-wrap"><%= r.message || '' %></td>
+            <td>
+              <form method="post" action="/admin/interests/<%= r.id %>/status" class="flex">
+                <input type="hidden" name="_csrf" value="<%= csrf %>">
+                <select name="status" style="width:auto;padding:6px 8px;font-size:.85rem">
+                  <% [['new','Nouveau'],['contacted','Contacté'],['converted','Converti'],['declined','Sans suite']].forEach(function (s) { %><option value="<%= s[0] %>" <%= r.status === s[0] ? 'selected' : '' %>><%= s[1] %></option><% }) %>
+                </select>
+                <button class="btn btn-ghost btn-sm" type="submit">OK</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

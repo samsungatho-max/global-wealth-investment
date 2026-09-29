@@ -1,0 +1,76 @@
+<%- include('../partials/top') %>
+<%
+  var rateMap = { EUR: 1 };
+  currencies.forEach(function (c) { if (rates.values && rates.values[c.code]) rateMap[c.code] = rates.values[c.code]; });
+  var simCurrency = rateMap[currency] ? currency : 'EUR';
+  var startCapital = simCurrency === 'XOF' ? Math.round(sim.capital * rateMap.XOF) : Math.round(sim.capital * rateMap[simCurrency] * 100) / 100;
+  var locales = { fr: 'fr-FR', en: 'en-GB', es: 'es-ES', de: 'de-DE' };
+%>
+<%- include("../partials/page-hero", { heroPhoto: "graphiques", heroEyebrow: t("nav.simulator"), heroTitle: t("sim.title"), heroText: t("sim.subtitle") }) %>
+
+<section class="section">
+  <div class="container">
+    <div id="simulator" class="sim"
+         data-config='<%= JSON.stringify(sim) %>'
+         data-rates='<%= JSON.stringify(rateMap) %>'
+         data-locale="<%= locales[lang] %>"
+         data-labels='<%= JSON.stringify({ year: t("sim.year"), chart: t("sim.table") }) %>'>
+      <div class="sim-panel">
+        <form class="form" data-sim-form>
+          <% if (Object.keys(rateMap).length > 1) { %>
+          <div>
+            <label for="sim-currency"><%= t('sim.currency') %></label>
+            <select id="sim-currency">
+              <% Object.keys(rateMap).forEach(function (c) { %><option value="<%= c %>" <%= c === simCurrency ? 'selected' : '' %>><%= c === 'XOF' ? 'FCFA (XOF)' : c %></option><% }) %>
+            </select>
+          </div>
+          <% } %>
+          <div>
+            <label for="sim-capital"><%= t('sim.capital') %></label>
+            <input id="sim-capital" type="number" min="0" step="any" value="<%= startCapital %>" inputmode="decimal">
+          </div>
+          <div>
+            <label for="sim-rate"><%= t('sim.rate') %> (%)</label>
+            <div class="range-row">
+              <input id="sim-rate-range" type="range" min="<%= sim.min_rate %>" max="<%= sim.max_rate %>" step="0.5" value="<%= sim.rate %>" aria-label="<%= t('sim.rate') %>">
+              <input id="sim-rate" type="number" min="<%= sim.min_rate %>" max="<%= sim.max_rate %>" step="0.1" value="<%= sim.rate %>">
+            </div>
+            <div class="preset-row" aria-label="<%= t('sim.presets') %>">
+              <% sim.presets.forEach(function (p) { %><button type="button" data-preset="<%= p %>"><%= p > 0 ? '+' : '' %><%= p %> %</button><% }) %>
+            </div>
+          </div>
+          <div>
+            <label for="sim-years"><%= t('sim.years') %> (<%= t('sim.years_unit') %>)</label>
+            <div class="range-row">
+              <input id="sim-years-range" type="range" min="1" max="<%= sim.max_years %>" step="1" value="<%= sim.years %>" aria-label="<%= t('sim.years') %>">
+              <input id="sim-years" type="number" min="1" max="<%= sim.max_years %>" step="1" value="<%= sim.years %>">
+            </div>
+          </div>
+        </form>
+        <p class="sim-disclaimer"><%= t('sim.disclaimer') %></p>
+      </div>
+
+      <div class="sim-result" aria-live="polite">
+        <h3><%= t('sim.final') %></h3>
+        <div class="sim-big" id="sim-final">—</div>
+        <h3><%= t('sim.gain') %></h3>
+        <div class="sim-gain" id="sim-gain">—</div>
+        <div class="sim-chart" id="sim-chart"></div>
+        <p class="sim-disclaimer"><%= t('sim.subtitle') %></p>
+      </div>
+    </div>
+
+    <div class="panel mt-4">
+      <h2 class="small" style="font-size:1.15rem"><%= t('sim.table') %></h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th><%= t('sim.year') %></th><th class="num"><%= t('sim.value') %></th><th class="num"><%= t('sim.gain') %></th></tr></thead>
+          <tbody id="sim-table"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="risk-banner"><%= t('home.risk_text') %></div>
+  </div>
+</section>
+
+<%- include('../partials/bottom') %>

@@ -1,0 +1,94 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<% var labels = { legal_name: 'Raison sociale', legal_form: 'Forme juridique', registration: 'Immatriculation (RCS, n° d\'entreprise…)', address: 'Adresse du siège', email: 'E-mail de contact', phone: 'Téléphone', director: 'Directeur de la publication', host: 'Hébergeur du site', regulatory_status: 'Statut réglementaire et autorisations (affiché dans le pied de page)' }; %>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div>
+    <div class="dash-head"><h1>Paramètres du site</h1></div>
+
+    <form class="card panel form" method="post" action="/admin/settings/general">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <h2 style="font-size:1.2rem">Société et informations légales</h2>
+      <div><label for="s-site">Nom du site</label><input id="s-site" name="site_name" type="text" maxlength="120" value="<%= s.site_name %>"></div>
+      <div class="form-row form-row-2">
+        <% Object.keys(labels).forEach(function (k) { if (k === 'regulatory_status') return; %>
+          <div><label for="c-<%= k %>"><%= labels[k] %></label><input id="c-<%= k %>" name="company_<%= k %>" type="text" maxlength="2000" value="<%= s.company[k] %>"></div>
+        <% }) %>
+      </div>
+      <div><label for="c-reg"><%= labels.regulatory_status %></label><textarea id="c-reg" name="company_regulatory_status" rows="3"><%= s.company.regulatory_status %></textarea>
+        <p class="hint">Ne présentez pas la société comme une banque ou un établissement agréé si elle ne possède pas ce statut. Indiquez l'autorité et le numéro d'agrément le cas échéant.</p></div>
+
+      <h2 style="font-size:1.2rem" class="mt-2">Langues et devises</h2>
+      <div class="flex">
+        <% langs.forEach(function (l) { %><label class="check"><input type="checkbox" name="lang_<%= l %>" <%= s.languages.includes(l) ? 'checked' : '' %>> <%= l.toUpperCase() %></label><% }) %>
+      </div>
+      <div class="flex">
+        <label class="check"><input type="checkbox" checked disabled> EUR (référence)</label>
+        <% ['USD','GBP','XOF'].forEach(function (c) { %><label class="check"><input type="checkbox" name="cur_<%= c %>" <%= s.currencies.includes(c) ? 'checked' : '' %>> <%= c === 'XOF' ? 'FCFA (XOF)' : c %></label><% }) %>
+      </div>
+
+      <h2 style="font-size:1.2rem" class="mt-2">Réception de fonds</h2>
+      <div class="alert <%= s.funds_enabled ? 'alert-success' : 'alert-warning' %> small">Actuellement : <strong><%= s.funds_enabled ? 'activée' : 'désactivée' %></strong>. Lorsqu'elle est désactivée, les investisseurs ne peuvent pas déclarer de dépôt.</div>
+      <label class="check"><input type="checkbox" name="funds_enabled" <%= s.funds_enabled ? 'checked' : '' %>> Autoriser les demandes de dépôt</label>
+      <label class="check"><input type="checkbox" name="funds_ack"> Je confirme que la société dispose des autorisations réglementaires nécessaires dans chaque juridiction concernée, d'un prestataire de paiement réglementé, et que les informations légales ci-dessus sont exactes.</label>
+      <div><button class="btn btn-gold" type="submit">Enregistrer</button></div>
+    </form>
+
+    <form class="card panel form" id="simulator" method="post" action="/admin/settings/simulator">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <h2 style="font-size:1.2rem">Simulateur — hypothèses</h2>
+      <div class="form-row form-row-3">
+        <div><label>Capital initial par défaut (€)</label><input name="capital" type="number" step="any" min="1" value="<%= s.simulator.capital %>"></div>
+        <div><label>Rendement annuel par défaut (%)</label><input name="rate" type="number" step="0.1" value="<%= s.simulator.rate %>"></div>
+        <div><label>Durée par défaut (ans)</label><input name="years" type="number" min="1" value="<%= s.simulator.years %>"></div>
+      </div>
+      <div class="form-row form-row-3">
+        <div><label>Hypothèses proposées (%, séparées par ;)</label><input name="presets" type="text" value="<%= s.simulator.presets.join('; ') %>"></div>
+        <div><label>Rendement min / max (%)</label><div class="flex"><input name="min_rate" type="number" step="0.1" value="<%= s.simulator.min_rate %>" style="width:45%"><input name="max_rate" type="number" step="0.1" value="<%= s.simulator.max_rate %>" style="width:45%"></div></div>
+        <div><label>Durée max (ans) / capital max (€)</label><div class="flex"><input name="max_years" type="number" min="1" value="<%= s.simulator.max_years %>" style="width:35%"><input name="max_capital" type="number" min="1" value="<%= s.simulator.max_capital %>" style="width:55%"></div></div>
+      </div>
+      <p class="hint">Conservez au moins une hypothèse négative afin d'illustrer le risque de perte.</p>
+      <div><button class="btn btn-gold" type="submit">Enregistrer</button></div>
+    </form>
+
+    <form class="card panel form" id="payments" method="post" action="/admin/settings/payments">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <h2 style="font-size:1.2rem">Paiements, frais et délais</h2>
+      <p class="small muted">Les instructions ci-dessous s'affichent à l'investisseur après une demande de dépôt, avec sa référence unique. Indiquez uniquement les coordonnées du compte officiel de la société ou de son prestataire de paiement réglementé.</p>
+      <% langs.forEach(function (l) { %>
+        <div><label>Instructions de paiement officielles (<%= l.toUpperCase() %>)</label><textarea name="instr_<%= l %>" rows="4"><%= s.payment_instructions[l] || '' %></textarea></div>
+      <% }) %>
+      <div class="form-row form-row-3">
+        <div><label>Dépôt minimum (€)</label><input name="deposit_min" type="text" inputmode="decimal" value="<%= (s.deposit.min_cents / 100).toFixed(2) %>"></div>
+        <div><label>Retrait minimum (€)</label><input name="withdraw_min" type="text" inputmode="decimal" value="<%= (s.withdrawal.min_cents / 100).toFixed(2) %>"></div>
+        <div><label>Délai de traitement des retraits (jours ouvrés)</label><input name="delay_days" type="number" min="0" value="<%= s.withdrawal.delay_days %>"></div>
+      </div>
+      <div class="form-row form-row-2">
+        <div><label>Frais fixes de retrait (€)</label><input name="fee_fixed" type="text" inputmode="decimal" value="<%= (s.withdrawal.fee_fixed_cents / 100).toFixed(2) %>"></div>
+        <div><label>Frais proportionnels de retrait (%)</label><input name="fee_percent" type="number" step="0.01" min="0" max="20" value="<%= s.withdrawal.fee_percent %>"></div>
+      </div>
+      <div><button class="btn btn-gold" type="submit">Enregistrer</button></div>
+    </form>
+
+    <section class="card panel" id="rates">
+      <h2 style="font-size:1.2rem">Taux de change</h2>
+      <p class="small">Source : <strong><%= s.rates.source %></strong> — date du taux : <strong><%= s.rates.date || 'non disponible' %></strong><%= s.rates.manual ? ' (saisie manuelle)' : '' %>. Mise à jour automatique toutes les 12 heures.</p>
+      <form method="post" action="/admin/settings/rates" class="mb-2"><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="mode" value="refresh"><button class="btn btn-navy btn-sm" type="submit">Actualiser maintenant (source BCE)</button></form>
+      <details class="box"><summary>Saisir les taux manuellement</summary>
+        <form class="form" method="post" action="/admin/settings/rates">
+          <input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="mode" value="manual">
+          <div class="form-row form-row-3">
+            <div><label>1 EUR = … USD</label><input name="USD" type="text" value="<%= s.rates.values.USD || '' %>"></div>
+            <div><label>1 EUR = … GBP</label><input name="GBP" type="text" value="<%= s.rates.values.GBP || '' %>"></div>
+            <div><label>1 EUR = … XOF</label><input name="XOF" type="text" value="<%= s.rates.values.XOF || 655.957 %>"></div>
+          </div>
+          <div class="form-row form-row-2">
+            <div><label>Date du taux</label><input name="date" type="date" value="<%= s.rates.date || '' %>"></div>
+            <div><label>Source</label><input name="source" type="text" value="Saisie manuelle"></div>
+          </div>
+          <div><button class="btn btn-ghost btn-sm" type="submit">Enregistrer les taux</button></div>
+        </form>
+      </details>
+    </section>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

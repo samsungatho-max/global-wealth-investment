@@ -1,0 +1,19 @@
+<%- include('../partials/top') %>
+<div class="container dash">
+  <%- include('../partials/account-nav') %>
+  <div>
+    <div class="dash-head"><h1><%= t('docs.title') %></h1></div>
+    <% if (!docs.length) { %><p class="empty card card-muted"><%= t('docs.none') %></p><% } %>
+    <% ['contract', 'statement', 'other'].forEach(function (cat) { var list = docs.filter(function (d) { return d.category === cat; }); if (!list.length) return; %>
+      <section class="panel">
+        <div class="panel-head"><h2><%= t('docs.' + cat) %></h2></div>
+        <ul class="doc-list card">
+          <% list.forEach(function (d) { %>
+            <li><span>📄 <strong><%= d.title %></strong> <span class="small muted">— <%= t('docs.added') %> <%= fmtDate(d.created_at) %></span></span><a class="btn btn-ghost btn-sm" href="/account/documents/<%= d.id %>"><%= t('docs.download') %></a></li>
+          <% }) %>
+        </ul>
+      </section>
+    <% }) %>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

@@ -1,0 +1,25 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div>
+    <div class="dash-head"><h1>Actualités et rapports</h1><a class="btn btn-gold btn-sm" href="/admin/news/new">+ Nouvelle publication</a></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Titre</th><th>Type</th><th>Statut</th><th>Publié le</th><th></th></tr></thead>
+        <tbody>
+        <% if (!rows.length) { %><tr><td colspan="5" class="empty">Aucune publication.</td></tr><% } %>
+        <% rows.forEach(function (n) { %>
+          <tr>
+            <td><strong><%= n.tr.title %></strong></td>
+            <td><%= n.kind === 'report' ? 'Rapport financier' : 'Actualité' %></td>
+            <td><span class="chip <%= n.published ? 'chip-success' : '' %>"><%= n.published ? 'Publié' : 'Brouillon' %></span></td>
+            <td class="small"><%= fmtDate(n.published_at) %></td>
+            <td><div class="actions"><a class="btn btn-ghost btn-sm" href="/admin/news/<%= n.id %>/edit">Modifier</a><% if (n.published) { %><a class="btn btn-ghost btn-sm" href="/news/<%= n.slug %>" target="_blank">Voir ↗</a><% } %></div></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

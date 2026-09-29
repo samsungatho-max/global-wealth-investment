@@ -1,0 +1,12 @@
+<%# En-tête de page avec photo de fond. Paramètres : heroPhoto (clé), heroEyebrow, heroTitle, heroText, heroBack ([url, texte]) %>
+<% var hp = photo(typeof heroPhoto !== 'undefined' ? heroPhoto : 'skyline'); %>
+<section class="page-hero has-photo">
+  <img class="page-hero-bg" src="<%= hp.large %>" srcset="<%= hp.small %> 800w, <%= hp.large %> 1600w" sizes="100vw" alt="" fetchpriority="high" decoding="async">
+  <div class="container page-hero-inner">
+    <% if (typeof heroBack !== 'undefined' && heroBack) { %><div class="breadcrumb"><a href="<%= heroBack[0] %>">← <%= heroBack[1] %></a></div><% } %>
+    <% if (typeof heroEyebrow !== 'undefined' && heroEyebrow) { %><div class="eyebrow"><%= heroEyebrow %></div><% } %>
+    <h1><%= heroTitle %></h1>
+    <% if (typeof heroText !== 'undefined' && heroText) { %><p><%= heroText %></p><% } %>
+  </div>
+  <span class="ph-label ph-label-hero" title="<%= t('ux.credits_by', { author: hp.author }) %>"><%= t('ux.photo_label') %></span>
+</section>

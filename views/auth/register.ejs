@@ -1,0 +1,34 @@
+<%- include('../partials/top') %>
+<div class="auth-split">
+  <%- include("../partials/auth-visual", { visual: "villa" }) %>
+  <div class="auth-wrap wide">
+    <div class="auth-card">
+      <h1><%= t('auth.register_title') %></h1>
+      <p class="muted"><%= t('auth.register_intro') %></p>
+      <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error" role="alert"><%= error %></div><% } %>
+      <form class="form" method="post" action="/register" novalidate>
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <div><label for="r-name"><%= t('auth.full_name') %></label><input id="r-name" name="full_name" type="text" required maxlength="120" autocomplete="name" value="<%= values.full_name || '' %>"></div>
+        <div class="form-row form-row-2">
+          <div><label for="r-email"><%= t('auth.email') %></label><input id="r-email" name="email" type="email" required maxlength="200" autocomplete="email" value="<%= values.email || '' %>"></div>
+          <div><label for="r-phone"><%= t('auth.phone') %></label><input id="r-phone" name="phone" type="tel" required maxlength="20" autocomplete="tel" placeholder="+33 6 12 34 56 78" value="<%= values.phone || '' %>"></div>
+        </div>
+        <div>
+          <label for="r-country"><%= t('auth.country') %></label>
+          <select id="r-country" name="country" required autocomplete="country">
+            <option value="">—</option>
+            <% countries.forEach(function (c) { %><option value="<%= c.code %>" <%= values.country === c.code ? 'selected' : '' %>><%= c.name %></option><% }) %>
+          </select>
+        </div>
+        <div class="form-row form-row-2">
+          <div><label for="r-pass"><%= t('auth.password') %></label><input id="r-pass" name="password" type="password" required minlength="10" maxlength="200" autocomplete="new-password"><p class="hint"><%= t('auth.password_hint') %></p></div>
+          <div><label for="r-pass2"><%= t('auth.password_confirm') %></label><input id="r-pass2" name="password_confirm" type="password" required minlength="10" maxlength="200" autocomplete="new-password"></div>
+        </div>
+        <label class="check"><input type="checkbox" name="accept" required> <span><%= t('auth.accept') %> (<a href="/page/terms" target="_blank"><%= t('footer.terms') %></a>, <a href="/page/privacy" target="_blank"><%= t('footer.privacy') %></a>, <a href="/page/risks" target="_blank"><%= t('footer.risks') %></a>)</span></label>
+        <button class="btn btn-gold btn-block" type="submit"><%= t('auth.submit_register') %></button>
+      </form>
+      <p class="auth-foot"><%= t('auth.have_account') %> <a href="/login"><%= t('nav.login') %></a></p>
+    </div>
+  </div>
+</div>
+<%- include("../partials/bottom") %>

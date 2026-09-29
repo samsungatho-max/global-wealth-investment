@@ -1,0 +1,27 @@
+<%- include('../partials/top') %>
+
+<%- include("../partials/page-hero", { heroPhoto: "grues", heroEyebrow: t("nav.opportunities"), heroTitle: t("project.title"), heroText: t("project.intro") }) %>
+
+<section class="section">
+  <div class="container">
+    <nav class="tabs" aria-label="<%= t('project.sector') %>">
+      <a href="/opportunities" <%- !sector ? 'aria-current="true"' : '' %>><%= t('project.all') %></a>
+      <% sectors.forEach(function (s) { %>
+        <a href="/opportunities?sector=<%= s %>" <%- sector === s ? 'aria-current="true"' : '' %>><%= t('sector.' + s) %></a>
+      <% }) %>
+    </nav>
+    <% if (sector) { %><p class="muted"><%= t('sector.' + sector + '_d') %></p><% } %>
+
+    <% if (projects.length) { %>
+      <div class="grid grid-3 mt-3">
+        <% projects.forEach(function (p) { %><%- include('../partials/project-card', { p: p }) %><% }) %>
+      </div>
+    <% } else { %>
+      <p class="empty card card-muted mt-3"><%= t('project.none') %></p>
+    <% } %>
+
+    <div class="risk-banner mt-4"><strong><%= t('risk.label') %> —</strong> <%= t('risk.scale') %> <%= t('project.no_guarantee') %> <a href="/page/risks"><%= t('common.learn_more') %></a></div>
+  </div>
+</section>
+
+<%- include('../partials/bottom') %>

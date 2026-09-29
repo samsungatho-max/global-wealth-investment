@@ -1,0 +1,33 @@
+<%- include('../partials/top') %>
+<% var pagePhotos = { about: "reunion", strategies: "graphiques", sectors: "eolien", risks: "chantier", faq: "poignee-main" }; %><%- include("../partials/page-hero", { heroPhoto: pagePhotos[slug] || "immeuble-2", heroTitle: tr.title }) %>
+<section class="section">
+  <div class="container">
+    <div class="prose">
+      <%- bodyHtml %>
+      <% if (slug === 'legal') { %>
+        <h2><%= t('contact.company') %></h2>
+        <dl class="kv card">
+          <dt>Raison sociale / Company</dt><dd><%= company.legal_name %></dd>
+          <dt>Forme juridique / Legal form</dt><dd><%= company.legal_form %></dd>
+          <dt>Immatriculation / Registration</dt><dd><%= company.registration %></dd>
+          <dt>Siège / Head office</dt><dd><%= company.address %></dd>
+          <dt>E-mail</dt><dd><a href="mailto:<%= company.email %>"><%= company.email %></a></dd>
+          <dt>Téléphone / Phone</dt><dd><%= company.phone %></dd>
+          <dt>Directeur de la publication</dt><dd><%= company.director %></dd>
+          <dt>Hébergeur / Host</dt><dd><%= company.host %></dd>
+          <dt><%= t('footer.regulatory') %></dt><dd><%= company.regulatory_status %></dd>
+        </dl>
+      <% } %>
+      <% if (slug === 'risks') { %>
+        <h2><%= t('risk.label') %></h2>
+        <div class="table-wrap"><table>
+          <% [1,2,3,4,5].forEach(function (r) { %>
+            <tr><td style="white-space:nowrap"><span class="risk-meter r<%= r %>"><% for (var i = 1; i <= 5; i++) { %><i class="<%= i <= r ? 'on' : '' %>"></i><% } %></span> <strong><%= r %> — <%= t('risk.' + r) %></strong></td><td><%= t('risk.d' + r) %></td></tr>
+          <% }) %>
+        </table></div>
+      <% } %>
+      <p class="small muted mt-3"><%= fmtDate(updated) %></p>
+    </div>
+  </div>
+</section>
+<%- include('../partials/bottom') %>

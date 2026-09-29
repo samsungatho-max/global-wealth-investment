@@ -1,0 +1,105 @@
+<%- include('../partials/top') %>
+
+<% var sp = sectorPhoto(project.sector); %>
+<section class="page-hero has-photo project-hero">
+  <% if (project.image_path) { %>
+    <img class="page-hero-bg" src="/media/<%= project.image_path %>" alt="" fetchpriority="high">
+  <% } else { %>
+    <img class="page-hero-bg" src="<%= sp.large %>" srcset="<%= sp.small %> 800w, <%= sp.large %> 1600w" sizes="100vw" alt="" fetchpriority="high" decoding="async">
+    <span class="ph-label ph-label-hero" title="<%= t('ux.credits_by', { author: sp.author }) %>"><%= t('ux.project_photo_label') %></span>
+  <% } %>
+  <div class="container page-hero-inner">
+    <div class="breadcrumb"><a href="/opportunities">← <%= t('project.back') %></a></div>
+    <div class="flex" style="margin-bottom:12px">
+      <span class="chip chip-gold"><%= t('sector.' + project.sector) %></span>
+      <span class="chip chip-navy">📍 <%= project.country %></span>
+      <span class="chip chip-navy"><%= t('project.status_' + project.status) %></span>
+      <% if (project.is_demo) { %><span class="chip chip-demo"><%= t('project.demo_badge') %></span><% } %>
+    </div>
+    <h1><%= project.tr.title %></h1>
+    <p><%= project.tr.summary %></p>
+  </div>
+</section>
+
+<div class="container">
+  <div class="project-layout">
+    <div>
+      <% if (project.is_demo) { %><div class="alert alert-warning"><strong><%= t('project.demo_badge') %>.</strong> <%= t('project.demo_note') %></div><% } %>
+      <div class="facts-strip">
+        <div><%- include('../partials/icon', { name: 'wallet', size: 20 }) %><span><%= t('project.target') %></span><strong><%= money(project.target_cents) %></strong></div>
+        <div><%- include('../partials/icon', { name: 'clock', size: 20 }) %><span><%= t('project.duration') %></span><strong><%= t('project.months', { n: project.duration_months }) %></strong></div>
+        <div><%- include('../partials/icon', { name: 'alert', size: 20 }) %><span><%= t('risk.label') %></span><strong><%= project.risk_level %>/5 · <%= t('risk.' + project.risk_level) %></strong></div>
+        <div><%- include('../partials/icon', { name: 'pie', size: 20 }) %><span><%= t('project.min_ticket') %></span><strong><%= project.min_ticket_cents ? money(project.min_ticket_cents) : '—' %></strong></div>
+      </div>
+
+      <h2><%= t('project.description') %></h2>
+      <div class="prose"><%- descriptionHtml %></div>
+
+      <h2 class="mt-4"><%= t('risk.label') %> : <%= project.risk_level %>/5 — <%= t('risk.' + project.risk_level) %></h2>
+      <p><span class="risk-meter r<%= project.risk_level %>"><% for (var i = 1; i <= 5; i++) { %><i class="<%= i <= project.risk_level ? 'on' : '' %>"></i><% } %></span></p>
+      <p><%= t('risk.d' + project.risk_level) %> <span class="muted"><%= t('risk.scale') %></span></p>
+
+      <h2 class="mt-4"><%= t('project.conditions') %></h2>
+      <p><%= project.tr.conditions || '—' %></p>
+
+      <h2 class="mt-4"><%= t('project.fees') %></h2>
+      <p><%= project.tr.fees || '—' %></p>
+
+      <h2 class="mt-4" id="docs"><%= t('project.documents') %></h2>
+      <% var visibleDocs = docs.filter(function (d) { return d.visibility === 'public' || canSeeInvestorDocs; }); %>
+      <% if (visibleDocs.length) { %>
+        <ul class="doc-list card">
+          <% visibleDocs.forEach(function (d) { %>
+            <li><span>📄 <%= d.title %> <span class="muted small">(<%= fmtDate(d.created_at) %>)</span></span><a class="btn btn-ghost btn-sm" href="/opportunities/<%= project.slug %>/documents/<%= d.id %>"><%= t('common.download') %></a></li>
+          <% }) %>
+        </ul>
+      <% } else { %>
+        <p class="muted"><%= t('project.documents_none') %></p>
+      <% } %>
+      <% if (!canSeeInvestorDocs && docs.some(function (d) { return d.visibility !== 'public'; })) { %>
+        <p class="alert alert-info"><%= t('project.documents_login') %></p>
+      <% } %>
+    </div>
+
+    <aside>
+      <div class="card sticky-card">
+        <dl class="kv">
+          <dt><%= t('project.target') %></dt><dd><strong><%= money(project.target_cents) %></strong></dd>
+          <dt><%= t('project.raised') %></dt><dd><strong><%= money(project.raised) %></strong></dd>
+        </dl>
+        <div class="mt-2">
+          <div class="progress"><span style="width:<%= project.pct %>%"></span></div>
+          <div class="progress-label"><span><%= t('project.progress', { p: num(project.pct) }) %></span></div>
+          <p class="hint"><%= t('project.raised_note') %></p>
+        </div>
+        <dl class="kv mt-2">
+          <dt><%= t('project.duration') %></dt><dd><%= t('project.months', { n: project.duration_months }) %></dd>
+          <dt><%= t('project.min_ticket') %></dt><dd><%= project.min_ticket_cents ? money(project.min_ticket_cents) : '—' %></dd>
+          <dt><%= t('project.country') %></dt><dd><%= project.country %></dd>
+          <dt><%= t('risk.label') %></dt><dd><%= project.risk_level %>/5 — <%= t('risk.' + project.risk_level) %></dd>
+        </dl>
+        <p class="alert alert-warning small mt-2 mb-0"><%= t('project.no_guarantee') %></p>
+
+        <% if (project.status === 'open') { %>
+        <hr style="border:0;border-top:1px solid var(--gray-200);margin:22px 0">
+        <h3 id="interest"><%= t('project.interest_title') %></h3>
+        <% if (sent) { %>
+          <div class="alert alert-success"><%= t('project.interest_thanks') %></div>
+        <% } else { %>
+          <p class="small muted"><%= t('project.interest_intro') %></p>
+          <form class="form" method="post" action="/opportunities/<%= project.slug %>/interest">
+            <input type="hidden" name="_csrf" value="<%= csrf %>">
+            <div><label for="i-name"><%= t('contact.name') %></label><input id="i-name" name="name" type="text" required maxlength="120" value="<%= user ? user.full_name : '' %>" autocomplete="name"></div>
+            <div><label for="i-email"><%= t('auth.email') %></label><input id="i-email" name="email" type="email" required maxlength="200" value="<%= user ? user.email : '' %>" autocomplete="email"></div>
+            <div><label for="i-amount"><%= t('project.interest_amount') %> <span class="hint">(<%= t('common.optional') %>)</span></label><input id="i-amount" name="amount" type="text" inputmode="decimal" pattern="[0-9 ]+([.,][0-9]{1,2})?"></div>
+            <div><label for="i-msg"><%= t('contact.message') %> <span class="hint">(<%= t('common.optional') %>)</span></label><textarea id="i-msg" name="message" maxlength="3000" rows="3"></textarea></div>
+            <button class="btn btn-gold btn-block" type="submit"><%= t('project.interest_btn') %></button>
+          </form>
+        <% } %>
+        <% } %>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<%- include('../partials/bottom') %>

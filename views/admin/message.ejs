@@ -1,0 +1,19 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div>
+    <div class="dash-head"><div><a class="small" href="/admin/messages">← Messages</a><h1><%= m.subject %></h1></div></div>
+    <div class="card panel">
+      <dl class="kv"><dt>De</dt><dd><%= m.name %> &lt;<%= m.email %>&gt;<% if (m.user_id) { %> — <a href="/admin/users/<%= m.user_id %>">fiche investisseur</a><% } %></dd><dt>Reçu le</dt><dd><%= fmtDate(m.created_at, true) %></dd></dl>
+      <p class="mt-2" style="white-space:pre-wrap"><%= m.body %></p>
+    </div>
+    <% if (m.reply) { %><div class="alert alert-success"><strong>Réponse envoyée le <%= fmtDate(m.replied_at, true) %> :</strong><div style="white-space:pre-wrap"><%= m.reply %></div></div><% } %>
+    <form class="card form" method="post" action="/admin/messages/<%= m.id %>/reply">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div><label for="reply">Réponse (envoyée par e-mail<%= m.user_id ? ' et visible dans l\'espace client' : '' %>)</label><textarea id="reply" name="reply" rows="7" required maxlength="5000"></textarea></div>
+      <div class="actions"><button class="btn btn-gold" type="submit">Envoyer la réponse</button></div>
+    </form>
+    <% if (m.status !== 'closed') { %><form class="mt-2" method="post" action="/admin/messages/<%= m.id %>/close"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-ghost btn-sm" type="submit">Clore la demande</button></form><% } %>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

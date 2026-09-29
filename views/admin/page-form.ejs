@@ -1,0 +1,13 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div>
+    <div class="dash-head"><div><a class="small" href="/admin/pages">← Pages</a><h1><%= title %> — /page/<%= p.slug %></h1></div></div>
+    <form class="card form" method="post" action="/admin/pages/<%= p.slug %>">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <%- include('../partials/lang-fields', { values: p.i18n || {}, fields: [['title', 'Titre', 'text'], ['body', 'Contenu', 'textarea', 18]] }) %>
+      <div><button class="btn btn-gold" type="submit">Enregistrer</button></div>
+    </form>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

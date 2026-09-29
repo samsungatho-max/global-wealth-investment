@@ -1,0 +1,15 @@
+<%- include('../partials/top') %>
+<div class="container dash">
+  <%- include('../partials/account-nav') %>
+  <div>
+    <div class="dash-head"><h1><%= t('tx.title') %></h1>
+      <div class="actions"><a class="btn btn-gold btn-sm" href="/account/deposit"><%= t('account.nav_deposit') %></a><a class="btn btn-ghost btn-sm" href="/account/withdraw"><%= t('account.nav_withdraw') %></a></div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-label"><%= t('account.cash') %></div><div class="kpi-value"><%= money(s.available) %></div><% if (s.reserved) { %><div class="kpi-note"><%= t('account.reserved', { amount: money(s.reserved) }) %></div><% } %></div>
+    </div>
+    <p class="alert alert-info small"><%= t('tx.confirmed_only') %></p>
+    <%- include('../partials/tx-table', { rows: rows, withActions: true }) %>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

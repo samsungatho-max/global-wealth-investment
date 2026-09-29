@@ -1,0 +1,35 @@
+<%- include('../partials/top') %>
+<div class="container dash">
+  <%- include('../partials/account-nav') %>
+  <div>
+    <div class="dash-head"><h1><%= t('withdraw.title') %></h1></div>
+    <% if (!kycOk) { %>
+      <div class="alert alert-warning flex between"><span><%= t('deposit.kyc_required') %></span><a class="btn btn-navy btn-sm" href="/account/kyc"><%= t('account.kyc_banner_cta') %></a></div>
+    <% } else { %>
+      <div class="card">
+        <p><%= t('withdraw.intro') %></p>
+        <p><strong><%= t('withdraw.available', { amount: eur(available) }) %></strong></p>
+        <p class="small muted"><%= t('withdraw.fees', { fixed: eur(w.fee_fixed_cents), percent: w.fee_percent, days: w.delay_days }) %> <%= t('withdraw.min', { amount: eur(w.min_cents) }) %></p>
+        <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><%= error %></div><% } %>
+        <form class="form" method="post" action="/account/withdraw" autocomplete="off">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <div class="form-row form-row-2">
+            <div><label for="w-amount"><%= t('withdraw.amount') %></label><input id="w-amount" name="amount" type="text" inputmode="decimal" required pattern="[0-9 ]+([.,][0-9]{1,2})?" value="<%= values.amount || '' %>"></div>
+            <div><label for="w-holder"><%= t('withdraw.holder') %></label><input id="w-holder" name="holder" type="text" required maxlength="120" value="<%= values.holder || user.full_name %>"></div>
+          </div>
+          <div class="form-row form-row-3">
+            <div><label for="w-iban"><%= t('withdraw.iban') %></label><input id="w-iban" name="iban" type="text" required maxlength="50" value="<%= values.iban || '' %>"></div>
+            <div><label for="w-bic"><%= t('withdraw.bic') %> <span class="hint">(<%= t('common.optional') %>)</span></label><input id="w-bic" name="bic" type="text" maxlength="11" value="<%= values.bic || '' %>"></div>
+            <div><label for="w-bank"><%= t('withdraw.bank') %></label><input id="w-bank" name="bank" type="text" required maxlength="120" value="<%= values.bank || '' %>"></div>
+          </div>
+          <div><button class="btn btn-gold" type="submit"><%= t('withdraw.submit') %></button></div>
+        </form>
+      </div>
+    <% } %>
+    <section class="panel mt-3">
+      <div class="panel-head"><h2><%= t('account.withdrawals_title') %></h2></div>
+      <%- include('../partials/tx-table', { rows: rows, withActions: true }) %>
+    </section>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

@@ -1,0 +1,34 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div>
+    <div class="dash-head"><h1>Tableau de bord</h1><span class="muted small">Connecté : <%= user.email %></span></div>
+
+    <% if (!fundsEnabled) { %>
+      <div class="alert alert-warning"><strong>Réception de fonds désactivée.</strong> Les investisseurs ne peuvent pas déclarer de dépôt. Activez-la dans <a href="/admin/settings">Paramètres</a> uniquement après obtention des autorisations réglementaires et renseignement des informations légales.</div>
+    <% } %>
+    <% if (stats.demo) { %>
+      <div class="alert alert-warning"><strong><%= stats.demo %> fiche(s) de démonstration publiée(s).</strong> Elles sont clairement marquées comme fictives ; archivez-les avant la mise en production depuis <a href="/admin/projects">Projets</a>.</div>
+    <% } %>
+    <% if (!user.totp_enabled) { %>
+      <div class="alert alert-info">Recommandé : <a href="/account/security#twofa">activez l'authentification à deux facteurs</a> sur votre compte administrateur.</div>
+    <% } %>
+
+    <div class="kpis four">
+      <a class="kpi" href="/admin/kyc" style="text-decoration:none"><div class="kpi-label">KYC à examiner</div><div class="kpi-value"><%= stats.kyc %></div></a>
+      <a class="kpi" href="/admin/transactions?type=deposit&status=pending" style="text-decoration:none"><div class="kpi-label">Dépôts à vérifier</div><div class="kpi-value"><%= stats.deposits %></div></a>
+      <a class="kpi" href="/admin/transactions?type=withdrawal" style="text-decoration:none"><div class="kpi-label">Retraits en cours</div><div class="kpi-value"><%= stats.withdrawals %></div></a>
+      <a class="kpi" href="/admin/messages" style="text-decoration:none"><div class="kpi-label">Nouveaux messages</div><div class="kpi-value"><%= stats.messages %></div></a>
+      <a class="kpi" href="/admin/interests" style="text-decoration:none"><div class="kpi-label">Nouveaux intérêts</div><div class="kpi-value"><%= stats.interests %></div></a>
+      <a class="kpi" href="/admin/users" style="text-decoration:none"><div class="kpi-label">Investisseurs inscrits</div><div class="kpi-value"><%= stats.investors %></div></a>
+      <div class="kpi dark"><div class="kpi-label">Capital investi (actif)</div><div class="kpi-value"><%= eur(stats.invested) %></div><div class="kpi-note">Dépôts confirmés cumulés : <%= eur(stats.deposited) %></div></div>
+      <a class="kpi" href="/admin/logins?failed=1" style="text-decoration:none"><div class="kpi-label">Échecs de connexion (24 h)</div><div class="kpi-value"><%= stats.failedLogins %></div></a>
+    </div>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Activité administrative récente</h2><a class="small" href="/admin/audit">Journal complet →</a></div>
+      <%- include('_audit-table', { rows: audits }) %>
+    </section>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

@@ -1,0 +1,15 @@
+<nav class="side-nav" aria-label="Administration">
+  <div class="nav-title">Administration</div>
+  <% [
+    ['/admin', 'Tableau de bord'], ['/admin/projects', 'Projets'], ['/admin/interests', 'Intérêts manifestés'],
+    ['/admin/users', 'Investisseurs'], ['/admin/kyc', 'Vérifications KYC'], ['/admin/transactions', 'Dépôts & retraits'],
+    ['/admin/messages', 'Messages clients'], ['/admin/news', 'Actualités & rapports'], ['/admin/pages', 'Pages institutionnelles'],
+    ['/admin/settings', 'Paramètres'], ['/admin/audit', 'Journal d\'audit'], ['/admin/logins', 'Connexions']
+  ].forEach(function (item) {
+    var current = item[0] === '/admin' ? path === '/admin' || path === '/admin/' : path.indexOf(item[0]) === 0; %>
+    <a href="<%= item[0] %>" <%- current ? 'aria-current="page"' : '' %>><span><%= item[1] %></span></a>
+  <% }) %>
+  <div class="nav-title">Site</div>
+  <a href="/" target="_blank">Voir le site public ↗</a>
+  <a href="/account/security">Ma sécurité (2FA)</a>
+</nav>

@@ -1,0 +1,13 @@
+<% var av = photo(typeof visual !== 'undefined' ? visual : 'villa-2'); %>
+<aside class="auth-visual">
+  <img src="<%= av.large %>" srcset="<%= av.small %> 800w, <%= av.large %> 1600w" sizes="(min-width: 1000px) 45vw, 0px" alt="" decoding="async">
+  <div class="auth-visual-inner">
+    <p class="auth-quote">« <%= t('slogan') %> »</p>
+    <ul class="hero-trust">
+      <% [['shield','trust1'],['clock','trust2'],['eye','trust3']].forEach(function (x) { %>
+        <li><%- include('icon', { name: x[0], size: 18 }) %><span><%= t('ux.' + x[1]) %></span></li>
+      <% }) %>
+    </ul>
+  </div>
+  <span class="ph-label ph-label-hero" title="<%= t('ux.credits_by', { author: av.author }) %>"><%= t('ux.photo_label') %></span>
+</aside>

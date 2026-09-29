@@ -1,0 +1,47 @@
+<%- include('../partials/top') %>
+<%- include("../partials/page-hero", { heroPhoto: "poignee-main", heroEyebrow: t("nav.contact"), heroTitle: t("contact.title"), heroText: t("contact.intro") }) %>
+<section class="section">
+  <div class="container">
+    <div class="grid grid-2" style="align-items:start">
+      <div class="card">
+        <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><%= error %></div><% } %>
+        <form class="form" method="post" action="/contact">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <% if (!user) { %>
+          <div class="form-row form-row-2">
+            <div><label for="c-name"><%= t('contact.name') %></label><input id="c-name" name="name" type="text" required maxlength="120" value="<%= values.name || '' %>" autocomplete="name"></div>
+            <div><label for="c-email"><%= t('auth.email') %></label><input id="c-email" name="email" type="email" required maxlength="200" value="<%= values.email || '' %>" autocomplete="email"></div>
+          </div>
+          <% } %>
+          <div><label for="c-subject"><%= t('contact.subject') %></label><input id="c-subject" name="subject" type="text" required maxlength="200" value="<%= values.subject || '' %>"></div>
+          <div><label for="c-body"><%= t('contact.message') %></label><textarea id="c-body" name="body" required maxlength="5000" rows="7"><%= values.body || '' %></textarea></div>
+          <button class="btn btn-gold" type="submit"><%= t('contact.send') %></button>
+        </form>
+      </div>
+      <div>
+        <div class="card card-muted">
+          <h3><%= t('contact.company') %></h3>
+          <dl class="kv">
+            <dt><%= site %></dt><dd><%= company.legal_name %></dd>
+            <dt>📍</dt><dd><%= company.address %></dd>
+            <dt>✉️</dt><dd><a href="mailto:<%= company.email %>"><%= company.email %></a></dd>
+            <dt>☎️</dt><dd><%= company.phone %></dd>
+          </dl>
+        </div>
+        <% if (mine.length) { %>
+        <div class="mt-3">
+          <h3><%= t('contact.my_messages') %></h3>
+          <% mine.forEach(function (m) { %>
+            <details class="box">
+              <summary><%= m.subject %> <span class="muted small">— <%= fmtDate(m.created_at, true) %></span></summary>
+              <p style="white-space:pre-wrap"><%= m.body %></p>
+              <% if (m.reply) { %><div class="alert alert-info"><strong><%= t('contact.reply') %> (<%= fmtDate(m.replied_at, true) %>) :</strong><div style="white-space:pre-wrap"><%= m.reply %></div></div><% } %>
+            </details>
+          <% }) %>
+        </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>
+<%- include('../partials/bottom') %>

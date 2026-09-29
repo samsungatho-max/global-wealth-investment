@@ -1,0 +1,15 @@
+<%- include('../partials/top') %>
+<div class="container">
+  <div class="auth-wrap">
+    <div class="auth-card text-center">
+      <div style="font-size:2.6rem">✉️</div>
+      <h1><%= t('auth.verify_title') %></h1>
+      <p class="muted"><%= t('auth.verify_text', { email: user.email }) %></p>
+      <form method="post" action="/verify-email/resend" class="mt-2">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <button class="btn btn-ghost" type="submit"><%= t('auth.verify_resend') %></button>
+      </form>
+    </div>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

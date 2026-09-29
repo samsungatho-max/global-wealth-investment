@@ -1,0 +1,18 @@
+<div class="table-wrap">
+  <table>
+    <thead><tr><th><%= t('account.val_date') %></th><th><%= t('account.project') %></th><th class="num"><%= t('account.amount') %></th><th class="num"><%= t('account.current') %></th><th class="num"><%= t('account.perf') %></th></tr></thead>
+    <tbody>
+    <% if (!history.length) { %><tr><td colspan="5" class="empty"><%= t('account.perf_none') %></td></tr><% } %>
+    <% history.forEach(function (v) { %>
+      <tr>
+        <td><%= fmtDate(v.valuation_date) %><div class="small muted"><%= t('account.start') %> : <%= fmtDate(v.start_date) %></div></td>
+        <td><%= v.title %></td>
+        <td class="num"><%= money(v.amount_cents) %></td>
+        <td class="num"><%= money(v.value_cents) %></td>
+        <td class="num <%= v.perf >= 0 ? 'pos' : 'neg' %>"><%= pct(v.perf) %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+</div>
+<p class="hint mt-1"><%= t('account.perf_note') %></p>

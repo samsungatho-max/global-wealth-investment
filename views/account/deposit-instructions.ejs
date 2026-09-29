@@ -1,0 +1,21 @@
+<%- include('../partials/top') %>
+<div class="container dash">
+  <%- include('../partials/account-nav') %>
+  <div>
+    <div class="dash-head"><h1><%= t('deposit.instructions') %></h1><%- include('../partials/tx-status', { status: row.status }) %></div>
+    <div class="card">
+      <dl class="kv">
+        <dt><%= t('tx.amount') %></dt><dd><strong><%= eur(row.amount_cents) %></strong><% if (currency !== 'EUR') { %> <span class="muted">(≈ <%= money(row.amount_cents) %>)</span><% } %></dd>
+        <dt><%= t('tx.date') %></dt><dd><%= fmtDate(row.created_at, true) %></dd>
+      </dl>
+      <p class="mt-3 mb-0"><strong><%= t('deposit.ref_label') %> :</strong></p>
+      <p class="ref-box mt-1"><%= row.reference %></p>
+      <h3 class="mt-3"><%= t('deposit.instructions') %></h3>
+      <p style="white-space:pre-wrap"><%= instructions %></p>
+      <p class="alert alert-warning small">⚠️ <%= t('deposit.warning') %></p>
+      <p class="small muted"><%= t('tx.confirmed_only') %></p>
+      <a class="btn btn-ghost btn-sm" href="/account/transactions">← <%= t('tx.title') %></a>
+    </div>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

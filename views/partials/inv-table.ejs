@@ -1,0 +1,22 @@
+<div class="table-wrap">
+  <table>
+    <thead><tr>
+      <th><%= t('account.project') %></th><th class="num"><%= t('account.amount') %></th><th><%= t('account.start') %></th><th><%= t('account.end') %></th>
+      <th class="num"><%= t('account.current') %></th><th class="num"><%= t('account.perf') %></th><th><%= t('account.status') %></th>
+    </tr></thead>
+    <tbody>
+    <% if (!items.length) { %><tr><td colspan="7" class="empty"><%= t('account.none') %></td></tr><% } %>
+    <% items.forEach(function (i) { %>
+      <tr>
+        <td><strong><%= i.title %></strong><div class="small muted"><%= t('sector.' + i.sector) %> · <%= i.country %></div></td>
+        <td class="num"><%= money(i.amount_cents) %></td>
+        <td><%= fmtDate(i.start_date) %></td>
+        <td><%= fmtDate(i.end_date) %></td>
+        <td class="num"><%= money(i.current_value) %><div class="small muted"><%= i.valued ? t('account.val_date') + ' : ' + fmtDate(i.last_value_date) : '—' %></div></td>
+        <td class="num <%= i.perf == null ? 'muted' : (i.perf >= 0 ? 'pos' : 'neg') %>"><%= pct(i.perf) %></td>
+        <td><span class="chip <%= i.status === 'active' ? 'chip-success' : '' %>"><%= t('account.inv_' + i.status) %></span></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+</div>

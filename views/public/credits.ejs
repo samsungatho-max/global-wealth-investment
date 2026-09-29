@@ -1,0 +1,16 @@
+<%- include('../partials/top') %>
+<%- include('../partials/page-hero', { heroPhoto: 'skyline', heroTitle: t('ux.credits'), heroText: t('ux.credits_intro') }) %>
+<section class="section">
+  <div class="container">
+    <div class="credits-grid">
+      <% list.forEach(function (c) { var p = photo(c.key); %>
+        <figure class="credit-item">
+          <img src="<%= p.small %>" alt="<%= p.alt %>" loading="lazy" decoding="async" width="800" height="600">
+          <figcaption><strong><%= p.alt %></strong><span><%= t('ux.credits_by', { author: c.author }) %></span></figcaption>
+        </figure>
+      <% }) %>
+    </div>
+    <p class="small muted mt-3">Unsplash License — <a href="https://unsplash.com/license" rel="noopener" target="_blank">unsplash.com/license</a></p>
+  </div>
+</section>
+<%- include('../partials/bottom') %>

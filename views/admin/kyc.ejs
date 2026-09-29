@@ -1,0 +1,43 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div>
+    <div class="dash-head"><h1>Vérifications d'identité</h1></div>
+    <nav class="tabs">
+      <% [['pending','À examiner'],['approved','Validées'],['rejected','Refusées']].forEach(function (s) { %><a href="/admin/kyc?status=<%= s[0] %>" <%- status === s[0] ? 'aria-current="true"' : '' %>><%= s[1] %></a><% }) %>
+    </nav>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Soumis le</th><th>Investisseur</th><th>Pièce</th><th>Documents</th><th>Décision</th></tr></thead>
+        <tbody>
+        <% if (!rows.length) { %><tr><td colspan="5" class="empty">Aucune demande.</td></tr><% } %>
+        <% rows.forEach(function (k) { %>
+          <tr>
+            <td class="small"><%= fmtDate(k.created_at, true) %></td>
+            <td><a href="/admin/users/<%= k.user_id %>"><strong><%= k.full_name %></strong></a><div class="small muted"><%= k.email %> · <%= countryName(k.country) %></div></td>
+            <td class="small"><%= t('kyc.' + k.doc_type) %></td>
+            <td class="small"><a href="/admin/kyc/<%= k.id %>/file/id">📄 Pièce d'identité</a><br><a href="/admin/kyc/<%= k.id %>/file/address">📄 Justificatif de domicile</a></td>
+            <td style="min-width:260px">
+              <% if (k.status === 'pending') { %>
+              <form class="form" method="post" action="/admin/kyc/<%= k.id %>/review">
+                <input type="hidden" name="_csrf" value="<%= csrf %>">
+                <input name="note" type="text" maxlength="1000" placeholder="Motif (obligatoire en cas de refus)">
+                <div class="actions">
+                  <button class="btn btn-gold btn-sm" name="decision" value="approve" type="submit">Valider l'identité</button>
+                  <button class="btn btn-danger btn-sm" name="decision" value="reject" type="submit">Refuser</button>
+                </div>
+              </form>
+              <% } else { %>
+                <span class="chip <%= k.status === 'approved' ? 'chip-success' : 'chip-danger' %>"><%= t('kyc.' + k.status) %></span>
+                <div class="small muted"><%= fmtDate(k.reviewed_at, true) %><% if (k.review_note) { %> — <%= k.review_note %><% } %></div>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint mt-1">Chaque consultation de document d'identité est enregistrée dans le journal d'audit.</p>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

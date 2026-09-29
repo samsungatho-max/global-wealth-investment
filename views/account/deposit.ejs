@@ -1,0 +1,28 @@
+<%- include('../partials/top') %>
+<div class="container dash">
+  <%- include('../partials/account-nav') %>
+  <div>
+    <div class="dash-head"><h1><%= t('deposit.title') %></h1></div>
+    <% if (!fundsEnabled) { %>
+      <div class="alert alert-warning"><%= t('deposit.disabled') %></div>
+    <% } else if (!kycOk) { %>
+      <div class="alert alert-warning flex between"><span><%= t('deposit.kyc_required') %></span><a class="btn btn-navy btn-sm" href="/account/kyc"><%= t('account.kyc_banner_cta') %></a></div>
+    <% } else { %>
+      <div class="card">
+        <p><%= t('deposit.intro') %></p>
+        <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><%= error %></div><% } %>
+        <form class="form" method="post" action="/account/deposit" style="max-width:420px">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <div><label for="d-amount"><%= t('deposit.amount') %></label><input id="d-amount" name="amount" type="text" inputmode="decimal" required pattern="[0-9 ]+([.,][0-9]{1,2})?"><p class="hint"><%= t('deposit.min', { amount: eur(minCents) }) %></p></div>
+          <button class="btn btn-gold" type="submit"><%= t('deposit.submit') %></button>
+        </form>
+      </div>
+    <% } %>
+    <p class="alert alert-info small mt-3">⚠️ <%= t('deposit.warning') %></p>
+    <section class="panel mt-3">
+      <div class="panel-head"><h2><%= t('tx.title') %> — <%= t('tx.deposit') %></h2></div>
+      <%- include('../partials/tx-table', { rows: pending, withActions: true }) %>
+    </section>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

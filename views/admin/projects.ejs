@@ -1,0 +1,33 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div>
+    <div class="dash-head"><h1>Projets d'investissement</h1><a class="btn btn-gold btn-sm" href="/admin/projects/new">+ Nouveau projet</a></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Projet</th><th>Secteur / pays</th><th class="num">Recherché</th><th class="num">Mobilisé (vérifié)</th><th>Risque</th><th>Statut</th><th>Actions</th></tr></thead>
+        <tbody>
+        <% if (!rows.length) { %><tr><td colspan="7" class="empty">Aucun projet.</td></tr><% } %>
+        <% rows.forEach(function (p) { %>
+          <tr>
+            <td><strong><%= p.tr.title %></strong><% if (p.is_demo) { %> <span class="chip chip-demo">Démo fictive</span><% } %><div class="small muted mono">/<%= p.slug %></div></td>
+            <td class="small"><%= t('sector.' + p.sector) %><br><%= p.country %></td>
+            <td class="num"><%= eur(p.target_cents) %></td>
+            <td class="num"><%= eur(p.raised) %></td>
+            <td><%= p.risk_level %>/5</td>
+            <td><span class="chip <%= { open: 'chip-success', suspended: 'chip-warning', archived: '', draft: 'chip-gold', closed: 'chip-navy' }[p.status] %>"><%= t('project.status_' + p.status) %></span></td>
+            <td>
+              <div class="actions">
+                <a class="btn btn-ghost btn-sm" href="/admin/projects/<%= p.id %>/edit">Modifier</a>
+                <% if (['open','closed'].includes(p.status)) { %><a class="btn btn-ghost btn-sm" href="/opportunities/<%= p.slug %>" target="_blank">Voir ↗</a><% } %>
+              </div>
+            </td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint mt-1">Le montant mobilisé est calculé automatiquement à partir des investissements enregistrés — il n'est pas modifiable manuellement.</p>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

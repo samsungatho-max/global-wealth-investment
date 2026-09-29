@@ -1,0 +1,38 @@
+<%- include('../partials/top') %>
+<div class="container dash">
+  <%- include('../partials/account-nav') %>
+  <div>
+    <div class="dash-head"><h1><%= t('kyc.title') %></h1>
+      <% var kcls = { none: '', pending: 'chip-warning', approved: 'chip-success', rejected: 'chip-danger' }[user.kyc_status]; %>
+      <span class="chip <%= kcls %>"><%= t('kyc.status') %> : <%= t('kyc.' + user.kyc_status) %></span>
+    </div>
+    <div class="card">
+      <p><%= t('kyc.intro') %></p>
+      <% if (last && last.review_note && user.kyc_status === 'rejected') { %><div class="alert alert-error"><strong><%= t('kyc.note') %> :</strong> <%= last.review_note %></div><% } %>
+      <% if (user.kyc_status === 'approved') { %>
+        <div class="alert alert-success">✅ <%= t('kyc.approved') %><% if (last) { %> — <%= fmtDate(last.reviewed_at) %><% } %></div>
+      <% } else if (user.kyc_status === 'pending') { %>
+        <div class="alert alert-info">⏳ <%= t('kyc.submitted') %><% if (last) { %> (<%= fmtDate(last.created_at, true) %>)<% } %></div>
+      <% } else { %>
+        <form class="form" method="post" action="/account/kyc" enctype="multipart/form-data">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <div>
+            <label for="k-type"><%= t('kyc.doc_type') %></label>
+            <select id="k-type" name="doc_type" required>
+              <option value="passport"><%= t('kyc.passport') %></option>
+              <option value="id_card"><%= t('kyc.id_card') %></option>
+              <option value="residence_permit"><%= t('kyc.residence_permit') %></option>
+            </select>
+          </div>
+          <div class="form-row form-row-2">
+            <div><label for="k-id"><%= t('kyc.id_file') %></label><input id="k-id" name="id_file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" required></div>
+            <div><label for="k-addr"><%= t('kyc.address_file') %></label><input id="k-addr" name="address_file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" required></div>
+          </div>
+          <p class="hint"><%= t('kyc.formats') %></p>
+          <div><button class="btn btn-gold" type="submit"><%= t('kyc.submit') %></button></div>
+        </form>
+      <% } %>
+    </div>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

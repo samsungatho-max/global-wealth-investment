@@ -1,0 +1,79 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div>
+    <div class="dash-head">
+      <div><a class="small" href="/admin/projects">← Projets</a><h1><%= title %></h1></div>
+      <% if (p.id) { %><span class="chip"><%= t('project.status_' + p.status) %></span><% } %>
+    </div>
+
+    <% if (p.id) { %>
+    <section class="card panel">
+      <div class="panel-head"><h2>Publication</h2><span class="small muted">Montant mobilisé vérifié : <strong><%= eur(raised) %></strong></span></div>
+      <div class="actions">
+        <% [['open','Publier / ouvrir','btn-gold'],['suspended','Suspendre','btn-ghost'],['closed','Clôturer','btn-ghost'],['draft','Repasser en brouillon','btn-ghost'],['archived','Archiver','btn-danger']].forEach(function (s) { if (s[0] === p.status) return; %>
+          <form method="post" action="/admin/projects/<%= p.id %>/status" data-confirm="Confirmer : <%= s[1] %> ?"><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="status" value="<%= s[0] %>"><button class="btn <%= s[2] %> btn-sm" type="submit"><%= s[1] %></button></form>
+        <% }) %>
+      </div>
+    </section>
+    <% } %>
+
+    <form class="card panel form" method="post" action="<%= p.id ? '/admin/projects/' + p.id : '/admin/projects' %>" enctype="multipart/form-data">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <h2 style="font-size:1.2rem">Caractéristiques</h2>
+      <div class="form-row form-row-3">
+        <div><label for="p-sector">Secteur *</label><select id="p-sector" name="sector" required><% sectors.forEach(function (s) { %><option value="<%= s %>" <%= p.sector === s ? 'selected' : '' %>><%= t('sector.' + s) %></option><% }) %></select></div>
+        <div><label for="p-country">Pays concerné *</label><input id="p-country" name="country" type="text" required maxlength="80" value="<%= p.country || '' %>"></div>
+        <div><label for="p-risk">Niveau de risque (1–5) *</label><select id="p-risk" name="risk_level"><% [1,2,3,4,5].forEach(function (r) { %><option value="<%= r %>" <%= p.risk_level == r ? 'selected' : '' %>><%= r %> — <%= t('risk.' + r) %></option><% }) %></select></div>
+      </div>
+      <div class="form-row form-row-3">
+        <div><label for="p-target">Montant total recherché (€) *</label><input id="p-target" name="target" type="text" inputmode="decimal" required value="<%= p.target_cents ? (p.target_cents / 100).toFixed(2) : '' %>"></div>
+        <div><label for="p-ticket">Ticket minimum (€)</label><input id="p-ticket" name="min_ticket" type="text" inputmode="decimal" value="<%= p.min_ticket_cents ? (p.min_ticket_cents / 100).toFixed(2) : '' %>"></div>
+        <div><label for="p-duration">Durée prévisionnelle (mois) *</label><input id="p-duration" name="duration_months" type="number" min="1" max="600" required value="<%= p.duration_months %>"></div>
+      </div>
+      <div class="form-row form-row-2">
+        <div>
+          <label for="p-image">Photographie (JPG, PNG, WEBP — 10 Mo max)</label>
+          <input id="p-image" name="image" type="file" accept=".jpg,.jpeg,.png,.webp">
+          <% if (p.image_path) { %><div class="flex mt-1"><img src="/media/<%= p.image_path %>" alt="" style="width:140px;border-radius:8px"><label class="check"><input type="checkbox" name="remove_image"> Retirer l'image</label></div><% } %>
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <label class="check"><input type="checkbox" name="is_demo" <%= p.is_demo ? 'checked' : '' %>> Fiche de démonstration (affichée comme « projet fictif », aucun investissement possible)</label>
+        </div>
+      </div>
+
+      <h2 style="font-size:1.2rem" class="mt-2">Contenus multilingues</h2>
+      <%- include('../partials/lang-fields', { values: p.i18n || {}, fields: [
+        ['title', 'Nom du projet', 'text'], ['summary', 'Résumé (fiche)', 'textarea', 2], ['description', 'Description détaillée', 'textarea', 8],
+        ['conditions', 'Conditions de participation', 'textarea', 3], ['fees', 'Frais applicables', 'textarea', 3]
+      ] }) %>
+      <p class="alert alert-warning small">N'indiquez jamais de rendement garanti ni de chiffre de performance non vérifié. Les informations doivent correspondre à un projet réel et documenté (sauf fiche de démonstration).</p>
+      <div><button class="btn btn-gold" type="submit">Enregistrer</button></div>
+    </form>
+
+    <% if (p.id) { %>
+    <section class="card panel" id="docs">
+      <h2 style="font-size:1.2rem">Documents juridiques et financiers</h2>
+      <% if (docs.length) { %>
+        <ul class="doc-list">
+          <% docs.forEach(function (d) { %>
+            <li><span>📄 <strong><%= d.title %></strong> <span class="small muted">— <%= d.original_name %> · <%= d.visibility === 'public' ? 'public' : 'investisseurs vérifiés' %> · <%= fmtDate(d.created_at) %></span></span>
+              <form method="post" action="/admin/projects/<%= p.id %>/documents/<%= d.id %>/delete" data-confirm="Retirer ce document ?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-ghost btn-sm" type="submit">Retirer</button></form></li>
+          <% }) %>
+        </ul>
+      <% } else { %><p class="muted">Aucun document.</p><% } %>
+      <form class="form mt-2" method="post" action="/admin/projects/<%= p.id %>/documents" enctype="multipart/form-data">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <div class="form-row form-row-3">
+          <div><label for="doc-title">Titre *</label><input id="doc-title" name="title" type="text" required maxlength="200"></div>
+          <div><label for="doc-file">Fichier (PDF ou image) *</label><input id="doc-file" name="file" type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp"></div>
+          <div><label for="doc-vis">Visibilité</label><select id="doc-vis" name="visibility"><option value="investors">Investisseurs vérifiés (KYC)</option><option value="public">Public</option></select></div>
+        </div>
+        <div><button class="btn btn-navy btn-sm" type="submit">Ajouter le document</button></div>
+      </form>
+    </section>
+    <% } %>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

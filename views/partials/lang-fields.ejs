@@ -1,0 +1,21 @@
+<%# Champs multilingues avec onglets FR / EN / ES / DE. Paramètres : fields [[name, label, type]], values (objet i18n) %>
+<div>
+  <div class="tabs" data-lang-tabs role="tablist">
+    <% langs.forEach(function (l, idx) { %><button type="button" role="tab" data-lang-tab="<%= l %>" aria-selected="<%= idx === 0 ? 'true' : 'false' %>"><%= l.toUpperCase() %><%= l === 'fr' ? ' *' : '' %></button><% }) %>
+  </div>
+  <% langs.forEach(function (l, idx) { var v = values[l] || {}; %>
+    <div class="lang-pane form" data-lang-pane="<%= l %>" <%= idx === 0 ? '' : 'hidden' %>>
+      <% fields.forEach(function (f) { %>
+        <div>
+          <label for="f-<%= f[0] %>-<%= l %>"><%= f[1] %> (<%= l.toUpperCase() %>)</label>
+          <% if (f[2] === 'textarea') { %>
+            <textarea id="f-<%= f[0] %>-<%= l %>" name="<%= f[0] %>_<%= l %>" rows="<%= f[3] || 5 %>"><%= v[f[0]] || '' %></textarea>
+          <% } else { %>
+            <input id="f-<%= f[0] %>-<%= l %>" name="<%= f[0] %>_<%= l %>" type="text" value="<%= v[f[0]] || '' %>" <%= l === 'fr' && f[0] === 'title' ? 'required' : '' %>>
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
+  <% }) %>
+  <p class="hint">FR obligatoire ; les langues non renseignées reprennent le texte français. Mise en forme : « ## Titre », « - élément de liste », « **gras** », « [lien](https://…) ».</p>
+</div>

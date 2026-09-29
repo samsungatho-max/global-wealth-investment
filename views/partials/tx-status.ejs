@@ -1,0 +1,1 @@
+<% var cls = { pending: 'chip-warning', processing: 'chip-gold', confirmed: 'chip-success', rejected: 'chip-danger', cancelled: '' }[status] || ''; %><span class="chip <%= cls %>"><%= t('tx.' + status) %></span>

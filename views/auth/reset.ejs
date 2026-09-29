@@ -1,0 +1,19 @@
+<%- include('../partials/top') %>
+<div class="container">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <h1><%= t('auth.reset_title') %></h1>
+      <p class="muted"><%= t('auth.reset_text') %></p>
+      <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error" role="alert"><%= error %></div><% } %>
+      <form class="form" method="post" action="/reset-password">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <div><label for="rs-email"><%= t('auth.email') %></label><input id="rs-email" name="email" type="email" required autocomplete="email" value="<%= email %>"></div>
+        <div><label for="rs-code"><%= t('auth.code') %></label><input id="rs-code" class="code-input" name="code" type="text" inputmode="numeric" pattern="[0-9 ]{6,7}" maxlength="7" required autocomplete="one-time-code"></div>
+        <div><label for="rs-pass"><%= t('auth.new_password') %></label><input id="rs-pass" name="password" type="password" required minlength="10" autocomplete="new-password"><p class="hint"><%= t('auth.password_hint') %></p></div>
+        <div><label for="rs-pass2"><%= t('auth.password_confirm') %></label><input id="rs-pass2" name="password_confirm" type="password" required minlength="10" autocomplete="new-password"></div>
+        <button class="btn btn-gold btn-block" type="submit"><%= t('auth.reset_submit') %></button>
+      </form>
+    </div>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

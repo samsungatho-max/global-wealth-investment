@@ -1,0 +1,18 @@
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Date</th><th>E-mail</th><th>Résultat</th><th>Motif</th><th>IP</th><th>Navigateur</th></tr></thead>
+    <tbody>
+    <% if (!rows.length) { %><tr><td colspan="6" class="empty">Aucune tentative.</td></tr><% } %>
+    <% rows.forEach(function (l) { %>
+      <tr>
+        <td class="small" style="white-space:nowrap"><%= fmtDate(l.created_at, true) %></td>
+        <td class="small"><%= l.email || '—' %></td>
+        <td><span class="chip <%= l.success ? 'chip-success' : 'chip-danger' %>"><%= l.success ? 'Succès' : 'Échec' %></span></td>
+        <td class="small"><%= l.reason || '' %></td>
+        <td class="mono small"><%= l.ip %></td>
+        <td class="small muted" style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><%= l.user_agent %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+</div>

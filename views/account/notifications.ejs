@@ -1,0 +1,21 @@
+<%- include('../partials/top') %>
+<div class="container dash">
+  <%- include('../partials/account-nav') %>
+  <div>
+    <div class="dash-head"><h1><%= t('account.nav_notifications') %></h1>
+      <% if (unread) { %><form method="post" action="/account/notifications/read"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-ghost btn-sm" type="submit"><%= t('account.mark_read') %></button></form><% } %>
+    </div>
+    <% if (!rows.length) { %><p class="empty card card-muted"><%= t('account.notifications_none') %></p><% } else { %>
+      <div class="table-wrap"><table><tbody>
+        <% rows.forEach(function (n) { %>
+          <tr>
+            <td style="width:1%;white-space:nowrap" class="small muted"><%= fmtDate(n.created_at, true) %></td>
+            <td><% if (!n.read_at) { %><span class="badge-dot">•</span> <strong><% } %><%= n.message %><% if (!n.read_at) { %></strong><% } %></td>
+            <td style="width:1%"><% if (n.link) { %><a class="btn btn-ghost btn-sm" href="<%= n.link %>"><%= t('common.view') %></a><% } %></td>
+          </tr>
+        <% }) %>
+      </tbody></table></div>
+    <% } %>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

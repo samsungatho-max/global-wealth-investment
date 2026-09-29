@@ -1,0 +1,11 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div>
+    <div class="dash-head"><h1>Tentatives de connexion</h1></div>
+    <nav class="tabs"><a href="/admin/logins" <%- !failed ? 'aria-current="true"' : '' %>>Toutes</a><a href="/admin/logins?failed=1" <%- failed ? 'aria-current="true"' : '' %>>Échecs uniquement</a></nav>
+    <p class="hint">Blocage automatique après 5 échecs en 15 minutes pour une même adresse, et limitation du nombre de requêtes par adresse IP.</p>
+    <%- include('_logins-table', { rows: rows }) %>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

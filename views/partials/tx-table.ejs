@@ -1,0 +1,28 @@
+<div class="table-wrap">
+  <table>
+    <thead><tr>
+      <th><%= t('tx.date') %></th><th><%= t('tx.type') %></th><th><%= t('tx.reference') %></th>
+      <th class="num"><%= t('tx.amount') %></th><th><%= t('tx.status') %></th><% if (typeof withActions !== 'undefined' && withActions) { %><th></th><% } %>
+    </tr></thead>
+    <tbody>
+    <% if (!rows.length) { %><tr><td colspan="6" class="empty"><%= t('account.none') %></td></tr><% } %>
+    <% rows.forEach(function (r) { var credit = r.type === 'deposit' || r.type === 'payout'; %>
+      <tr>
+        <td><%= fmtDate(r.created_at, true) %><% if (r.processed_at) { %><div class="small muted"><%= t('tx.processed') %> <%= fmtDate(r.processed_at) %></div><% } %></td>
+        <td><%= t('tx.' + r.type) %><% if (r.admin_note && (r.type === 'investment' || r.status === 'rejected')) { %><div class="small muted"><%= r.admin_note %></div><% } %></td>
+        <td class="mono"><%= r.reference %></td>
+        <td class="num <%= r.status === 'confirmed' ? (credit ? 'pos' : '') : 'muted' %>"><%= credit ? '+' : '−' %><%= money(r.amount_cents) %>
+          <% if (r.fee_cents) { %><div class="small muted"><%= t('tx.fee_col') %> <%= money(r.fee_cents) %> · <%= t('tx.net') %> <%= money(r.amount_cents - r.fee_cents) %></div><% } %></td>
+        <td><%- include('tx-status', { status: r.status }) %></td>
+        <% if (typeof withActions !== 'undefined' && withActions) { %>
+        <td><% if (r.type === 'withdrawal' && r.status === 'pending') { %>
+          <form method="post" action="/account/transactions/<%= r.id %>/cancel" data-confirm="<%= t('tx.cancel') %> ?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-ghost btn-sm" type="submit"><%= t('tx.cancel') %></button></form>
+        <% } else if (r.type === 'deposit' && r.status === 'pending') { %>
+          <a class="btn btn-ghost btn-sm" href="/account/deposit/<%= r.reference %>"><%= t('deposit.instructions') %></a>
+        <% } %></td>
+        <% } %>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+</div>

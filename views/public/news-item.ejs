@@ -1,0 +1,17 @@
+<%- include('../partials/top') %>
+<section class="page-hero">
+  <div class="container">
+    <div class="breadcrumb"><a href="/news">← <%= t('news.back') %></a></div>
+    <div class="flex" style="margin-bottom:10px"><span class="chip chip-gold"><%= t('news.' + item.kind) %></span><span class="small"><%= fmtDate(item.published_at) %></span></div>
+    <h1><%= tr.title %></h1>
+    <% if (tr.summary) { %><p><%= tr.summary %></p><% } %>
+  </div>
+</section>
+<section class="section">
+  <div class="container">
+    <% if (item.image_path) { %><div class="project-hero-media"><img src="/media/<%= item.image_path %>" alt=""></div><% } %>
+    <div class="prose"><%- bodyHtml %></div>
+    <% if (item.file_path) { %><p class="mt-3"><a class="btn btn-gold" href="/news/<%= item.slug %>/file">📄 <%= t('news.download') %></a></p><% } %>
+  </div>
+</section>
+<%- include('../partials/bottom') %>

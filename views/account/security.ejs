@@ -1,0 +1,73 @@
+<%- include('../partials/top') %>
+<% var identityLocked = ['pending', 'approved'].includes(user.kyc_status); %>
+<div class="container dash">
+  <%- include('../partials/account-nav') %>
+  <div>
+    <div class="dash-head"><h1><%= t('security.title') %></h1></div>
+    <% if (user.must_change_password) { %><div class="alert alert-warning" role="alert"><strong>🔒</strong> <%= t('security.must_change') %></div><% } %>
+
+    <section class="card panel">
+      <h2 style="font-size:1.2rem"><%= t('security.profile') %></h2>
+      <form class="form" method="post" action="/account/security/profile">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <div class="form-row form-row-2">
+          <div><label for="p-name"><%= t('auth.full_name') %></label><input id="p-name" name="full_name" type="text" maxlength="120" value="<%= user.full_name %>" <%= identityLocked ? 'disabled' : '' %>></div>
+          <div><label for="p-email"><%= t('auth.email') %></label><input id="p-email" type="email" value="<%= user.email %>" disabled><p class="hint"><%= t('security.email_locked') %></p></div>
+        </div>
+        <div class="form-row form-row-3">
+          <div><label for="p-country"><%= t('auth.country') %></label>
+            <select id="p-country" name="country" <%= identityLocked ? 'disabled' : '' %>>
+              <% countries.forEach(function (c) { %><option value="<%= c.code %>" <%= user.country === c.code ? 'selected' : '' %>><%= c.name %></option><% }) %>
+            </select></div>
+          <div><label for="p-phone"><%= t('auth.phone') %></label><input id="p-phone" name="phone" type="tel" required maxlength="20" value="<%= user.phone %>"></div>
+          <div><label for="p-lang"><%= t('security.lang_pref') %></label>
+            <select id="p-lang" name="lang"><% languages.forEach(function (l) { %><option value="<%= l.code %>" <%= user.lang === l.code ? 'selected' : '' %>><%= l.name %></option><% }) %></select></div>
+        </div>
+        <div><button class="btn btn-navy" type="submit"><%= t('security.save') %></button></div>
+      </form>
+    </section>
+
+    <section class="card panel" id="password">
+      <h2 style="font-size:1.2rem"><%= t('security.change_password') %></h2>
+      <form class="form" method="post" action="/account/security/password" style="max-width:520px">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <div><label for="s-cur"><%= t('security.current_password') %></label><input id="s-cur" name="current" type="password" required autocomplete="current-password"></div>
+        <div><label for="s-new"><%= t('auth.new_password') %></label><input id="s-new" name="password" type="password" required minlength="10" autocomplete="new-password"><p class="hint"><%= t('auth.password_hint') %></p></div>
+        <div><label for="s-new2"><%= t('auth.password_confirm') %></label><input id="s-new2" name="password_confirm" type="password" required minlength="10" autocomplete="new-password"></div>
+        <div><button class="btn btn-navy" type="submit"><%= t('security.save') %></button></div>
+      </form>
+    </section>
+
+    <section class="card panel" id="twofa">
+      <h2 style="font-size:1.2rem"><%= t('security.twofa') %></h2>
+      <% if (user.totp_enabled) { %>
+        <p><span class="chip chip-success">✓</span> <%= t('security.twofa_on') %></p>
+        <form class="form" method="post" action="/account/security/2fa/disable" style="max-width:520px">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <div class="form-row form-row-2">
+            <div><label for="d-cur"><%= t('security.current_password') %></label><input id="d-cur" name="current" type="password" required autocomplete="current-password"></div>
+            <div><label for="d-code"><%= t('auth.twofa_code') %></label><input id="d-code" name="code" type="text" inputmode="numeric" maxlength="7" required autocomplete="one-time-code"></div>
+          </div>
+          <div><button class="btn btn-danger btn-sm" type="submit"><%= t('security.twofa_disable') %></button></div>
+        </form>
+      <% } else if (setup) { %>
+        <p><%= t('security.twofa_scan') %></p>
+        <div class="flex" style="align-items:flex-start">
+          <div class="qr"><img src="<%= setup.qr %>" width="220" height="220" alt="QR code 2FA"></div>
+          <div>
+            <p class="small"><strong><%= t('security.twofa_key') %> :</strong><br><span class="mono" style="word-break:break-all"><%= setup.secret.match(/.{1,4}/g).join(' ') %></span></p>
+            <form class="form" method="post" action="/account/security/2fa/confirm">
+              <input type="hidden" name="_csrf" value="<%= csrf %>">
+              <div><label for="t-code"><%= t('auth.twofa_code') %></label><input id="t-code" class="code-input" name="code" type="text" inputmode="numeric" maxlength="7" required autocomplete="one-time-code"></div>
+              <button class="btn btn-gold" type="submit"><%= t('security.twofa_confirm') %></button>
+            </form>
+          </div>
+        </div>
+      <% } else { %>
+        <p><%= t('security.twofa_off') %></p>
+        <form method="post" action="/account/security/2fa/start"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-gold" type="submit"><%= t('security.twofa_start') %></button></form>
+      <% } %>
+    </section>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

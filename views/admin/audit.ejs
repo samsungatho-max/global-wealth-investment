@@ -1,0 +1,18 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div>
+    <div class="dash-head"><h1>Journal d'audit</h1></div>
+    <p class="alert alert-info small">Journal en ajout seul : la base de données refuse toute modification ou suppression de ces entrées (déclencheurs SQL).</p>
+    <form class="flex mb-2" method="get" action="/admin/audit">
+      <input type="search" name="q" value="<%= q %>" placeholder="Action, auteur, identifiant…" style="max-width:320px">
+      <button class="btn btn-navy btn-sm" type="submit">Rechercher</button>
+    </form>
+    <%- include('_audit-table', { rows: rows }) %>
+    <div class="flex mt-2">
+      <% if (page > 1) { %><a class="btn btn-ghost btn-sm" href="/admin/audit?page=<%= page - 1 %>&q=<%= encodeURIComponent(q) %>">← Plus récent</a><% } %>
+      <% if (rows.length === 100) { %><a class="btn btn-ghost btn-sm" href="/admin/audit?page=<%= page + 1 %>&q=<%= encodeURIComponent(q) %>">Plus ancien →</a><% } %>
+    </div>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

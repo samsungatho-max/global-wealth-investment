@@ -1,0 +1,12 @@
+<%- include('../partials/top') %>
+<%- include("../partials/page-hero", { heroPhoto: "immeuble-2", heroEyebrow: t("nav.news"), heroTitle: t("news.title") }) %>
+<section class="section">
+  <div class="container">
+    <% if (news.length) { %>
+      <div class="grid grid-3"><% news.forEach(function (n) { %><%- include('../partials/news-card', { n: n }) %><% }) %></div>
+    <% } else { %>
+      <p class="empty card card-muted"><%= t('news.none') %></p>
+    <% } %>
+  </div>
+</section>
+<%- include('../partials/bottom') %>
