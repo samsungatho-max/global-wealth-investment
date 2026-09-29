@@ -7,7 +7,11 @@ const { render } = require('./email-template');
 const { money } = require('./money');
 const settings = require('./settings');
 
-const baseUrl = () => (process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, '');
+/** Adresse publique : BASE_URL, sinon domaine de production fourni par Vercel, sinon local. */
+const baseUrl = () => (process.env.BASE_URL
+  || (process.env.VERCEL_PROJECT_PRODUCTION_URL && `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`)
+  || (process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`)
+  || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, '');
 
 /**
  * Crée une notification pour l'utilisateur et lui envoie un e-mail (journalisé).

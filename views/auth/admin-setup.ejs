@@ -1,0 +1,25 @@
+<%- include('../partials/top') %>
+<div class="container">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <span class="chip chip-navy">🔒 Installation</span>
+      <h1 class="mt-1">Créer le compte administrateur</h1>
+      <% if (!valid) { %>
+        <div class="alert alert-error">Ce lien d'installation est invalide. Ouvrez le lien exact indiqué dans le fichier <strong>data/admin-setup.txt</strong> sur l'ordinateur où le projet a été préparé.</div>
+      <% } else { %>
+        <p class="muted">Cette page ne sert qu'une seule fois : elle disparaît dès que le compte administrateur est créé. Choisissez vous-même votre mot de passe ; il n'est connu de personne d'autre.</p>
+        <% if (error) { %><div class="alert alert-error" role="alert"><%= error %></div><% } %>
+        <form class="form" method="post" action="/admin/setup" autocomplete="off">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <input type="hidden" name="token" value="<%= token %>">
+          <div><label for="s-name">Votre nom</label><input id="s-name" name="full_name" type="text" required maxlength="120" autocomplete="name" value="<%= values.full_name || '' %>"></div>
+          <div><label for="s-email">Votre adresse e-mail (identifiant de connexion)</label><input id="s-email" name="email" type="email" required maxlength="200" autocomplete="username" value="<%= values.email || '' %>"></div>
+          <div><label for="s-pass">Mot de passe</label><input id="s-pass" name="password" type="password" required minlength="10" autocomplete="new-password"><p class="hint">Au moins 10 caractères, avec des lettres et des chiffres.</p></div>
+          <div><label for="s-pass2">Confirmer le mot de passe</label><input id="s-pass2" name="password_confirm" type="password" required minlength="10" autocomplete="new-password"></div>
+          <button class="btn btn-gold btn-block" type="submit">Créer mon compte administrateur</button>
+        </form>
+      <% } %>
+    </div>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

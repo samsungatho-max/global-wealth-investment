@@ -20,6 +20,7 @@ const { randomToken } = require('./lib/security');
  */
 async function seedAdmin() {
   if (await one("SELECT id FROM users WHERE role = 'admin'")) return;
+  if (process.env.ADMIN_SEED === 'false') return; // création via le lien d'installation (/admin/setup)
   const email = (process.env.ADMIN_EMAIL || 'admin@example.test').trim().toLowerCase();
   let password = process.env.ADMIN_PASSWORD;
   let generated = false;

@@ -10,10 +10,11 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "check": "node scripts/smoke-test.js",
+    "check": "node scripts/smoke-test.js && node scripts/setup-test.js",
     "backup": "node scripts/backup.js",
     "admin:reset": "node scripts/admin-reset.js",
-    "check:pg": "node scripts/check-pg.js"
+    "check:pg": "node scripts/check-pg.js",
+    "admin:setup-link": "node scripts/admin-setup-link.js"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",

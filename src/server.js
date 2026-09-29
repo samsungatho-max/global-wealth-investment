@@ -9,7 +9,7 @@ const express = require('express');
 const session = require('express-session');
 const helmet = require('helmet');
 
-const { one, ensureSchema } = require('./db');
+const { one, run, ensureSchema } = require('./db');
 const i18n = require('./i18n');
 const settings = require('./lib/settings');
 const { money, LOCALES, CURRENCY_LABELS } = require('./lib/money');
@@ -18,16 +18,31 @@ const security = require('./lib/security');
 const photos = require('./lib/photos');
 const { seed } = require('./seed');
 
-const PROD = process.env.NODE_ENV === 'production';
-const SECRET_OK = !PROD || (process.env.SESSION_SECRET && process.env.SESSION_SECRET.length >= 32);
-if (!SECRET_OK) console.error('SESSION_SECRET (32 caractères minimum) est obligatoire en production.');
+// Sur Vercel (production et prévisualisations), le site est toujours servi en HTTPS.
+const PROD = process.env.NODE_ENV === 'production' || !!process.env.VERCEL;
+const SECRET_OK = !process.env.SESSION_SECRET || process.env.SESSION_SECRET.length >= 32;
+if (!SECRET_OK) console.error('SESSION_SECRET doit contenir au moins 32 caractères (ou être laissé vide : il est alors généré automatiquement).');
 
-/** Initialisation unique par instance : schéma, données de départ. */
+/**
+ * Clé secrète des sessions : SESSION_SECRET si défini ; sinon générée aléatoirement au premier démarrage
+ * et conservée dans la base (table meta), identique pour toutes les instances. Aucun secret à saisir.
+ */
+async function ensureSessionSecret() {
+  if (process.env.SESSION_SECRET) return;
+  const crypto = require('crypto');
+  await run(`INSERT INTO meta (key, value) VALUES ('session_secret', ?) ON CONFLICT (key) DO NOTHING`, crypto.randomBytes(48).toString('hex'));
+  const row = await one(`SELECT value FROM meta WHERE key = 'session_secret'`);
+  if (!PROD && !row) return;
+  process.env.SESSION_SECRET = row.value;
+}
+
+/** Initialisation unique par instance : schéma, clé des sessions, données de départ. */
 let initPromise = null;
 function init() {
   if (!initPromise) {
     initPromise = (async () => {
       await ensureSchema();
+      await ensureSessionSecret();
       await seed();
       await settings.refresh({ force: true });
     })().catch((err) => { initPromise = null; throw err; });
@@ -75,7 +90,7 @@ app.get('/healthz', (req, res) => res.json({ ok: true }));
 // Base prête (schéma + données de départ) et paramètres à jour avant tout traitement
 app.use(async (req, res, next) => {
   try {
-    if (!SECRET_OK) return res.status(503).type('text').send('Configuration incomplète : SESSION_SECRET manquant (32 caractères minimum).');
+    if (!SECRET_OK) return res.status(503).type('text').send('Configuration incomplète : SESSION_SECRET trop court (32 caractères minimum) — supprimez-le pour qu’il soit généré automatiquement.');
     if (process.env.VERCEL && !process.env.DATABASE_URL && !process.env.POSTGRES_URL) {
       return res.status(503).type('text').send('Configuration incomplète : aucune base de données. Ajoutez une base Neon (onglet Storage de Vercel) pour définir DATABASE_URL, puis redéployez.');
     }
@@ -88,16 +103,23 @@ app.use(async (req, res, next) => {
 
 app.use(express.urlencoded({ extended: false, limit: '300kb' }));
 
-app.use(session({
-  name: 'gwi.sid',
-  secret: process.env.SESSION_SECRET || 'dev-only-secret-change-me-in-production-please',
-  store: new security.PgStore(),
-  proxy: !!(process.env.TRUST_PROXY || process.env.VERCEL),
-  resave: false,
-  saveUninitialized: false,
-  rolling: true,
-  cookie: { httpOnly: true, sameSite: 'lax', secure: PROD, maxAge: 2 * 60 * 60 * 1000 }
-}));
+// Intergiciel de session créé après l'initialisation (la clé secrète peut venir de la base).
+let sessionMiddleware = null;
+app.use((req, res, next) => {
+  if (!sessionMiddleware) {
+    sessionMiddleware = session({
+      name: 'gwi.sid',
+      secret: process.env.SESSION_SECRET || 'dev-only-secret-change-me-in-production-please',
+      store: new security.PgStore(),
+      proxy: !!(process.env.TRUST_PROXY || process.env.VERCEL),
+      resave: false,
+      saveUninitialized: false,
+      rolling: true,
+      cookie: { httpOnly: true, sameSite: 'lax', secure: PROD, maxAge: 2 * 60 * 60 * 1000 }
+    });
+  }
+  sessionMiddleware(req, res, next);
+});
 
 app.use(security.loadUser);
 app.use(i18n.middleware);

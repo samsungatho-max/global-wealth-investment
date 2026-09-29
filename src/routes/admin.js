@@ -664,7 +664,7 @@ router.get('/emails', async (req, res, next) => {
       kinds: (await all('SELECT DISTINCT kind FROM email_log ORDER BY kind')).map((r) => r.kind),
       filters: { status, kind, q },
       dnsResult,
-      webhookUrl: `${(process.env.BASE_URL || '').replace(/\/$/, '') || 'https://votre-domaine'}/webhooks/email?token=…`
+      webhookUrl: `${require('../lib/notify').baseUrl()}/webhooks/email?token=…`
     });
   } catch (e) { next(e); }
 });

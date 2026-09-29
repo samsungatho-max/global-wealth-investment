@@ -3,7 +3,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
-const { one, run } = require('../db');
+const { one, run, tx } = require('../db');
 const { t } = require('../i18n');
 const { sha256, safeEqual } = require('../lib/security');
 const { sendMail, mask } = require('../lib/mailer');
@@ -45,8 +45,9 @@ async function isLocked(email) {
 /** Ouvre la session après authentification complète (mot de passe + éventuellement 2FA). */
 const regenerate = (req) => new Promise((resolve, reject) => req.session.regenerate((err) => (err ? reject(err) : resolve())));
 
-async function completeLogin(req, res, user, returnTo) {
+async function completeLogin(req, res, user, returnTo, flashMessage) {
   await regenerate(req);
+  if (flashMessage) req.session.flash = [{ type: 'success', msg: flashMessage }];
   req.session.userId = user.id;
   req.session.lang = user.lang;
   await run(`UPDATE users SET last_login_at = datetime('now') WHERE id = ?`, user.id);
@@ -140,6 +141,48 @@ router.post('/verify-email/resend', authLimiter, async (req, res, next) => {
     // En cas d'échec d'envoi, la page affiche elle-même l'erreur (statut réel du journal).
     res.redirect('/verify-email');
   } catch (e) { next(e); }
+});
+
+// ---------- Installation du premier administrateur (lien à usage unique) ----------
+const adminSetup = require('../lib/admin-setup');
+
+async function adminExists() {
+  return !!(await one(`SELECT id FROM users WHERE role = 'admin' LIMIT 1`));
+}
+
+router.get('/admin/setup', async (req, res, next) => {
+  if (await adminExists() || !adminSetup.expectedHash()) return next();
+  const token = String(req.query.token || '');
+  res.render('auth/admin-setup', { title: 'Installation de l’administrateur', token, valid: adminSetup.tokenValid(token), values: {}, error: null });
+});
+
+router.post('/admin/setup', authLimiter, async (req, res, next) => {
+  if (!adminSetup.expectedHash()) return next();
+  const token = String(req.body.token || '');
+  const v = {
+    full_name: String(req.body.full_name || '').trim().slice(0, 120),
+    email: String(req.body.email || '').trim().toLowerCase().slice(0, 200)
+  };
+  const fail = (error, status = 400) => res.status(status).render('auth/admin-setup', { title: 'Installation de l’administrateur', token, valid: adminSetup.tokenValid(token), values: v, error });
+  if (!adminSetup.tokenValid(token)) return fail('Lien d’installation invalide. Utilisez le lien exact fourni dans data/admin-setup.txt.', 403);
+  if (!v.full_name || !isEmail(v.email)) return fail('Indiquez votre nom et une adresse e-mail valide.');
+  if (!isStrongPassword(req.body.password)) return fail('Le mot de passe doit contenir au moins 10 caractères, dont des lettres et des chiffres.');
+  if (req.body.password !== req.body.password_confirm) return fail('Les deux mots de passe ne correspondent pas.');
+  const hash = await bcrypt.hash(req.body.password, 12);
+  // Verrou : un seul administrateur peut être créé par ce biais, même en cas de requêtes simultanées.
+  const id = await tx(async () => {
+    await one('SELECT pg_advisory_xact_lock(515151)');
+    if (await adminExists()) return null;
+    if (await one('SELECT id FROM users WHERE email = ?', v.email)) return 'taken';
+    return (await run(`INSERT INTO users (email, password_hash, full_name, country, phone, role, email_verified_at, kyc_status)
+      VALUES (?, ?, ?, 'FR', '+33000000000', 'admin', datetime('now'), 'approved')`, v.email, hash, v.full_name)).lastInsertRowid;
+  });
+  if (id === null) return next();
+  if (id === 'taken') return fail('Cette adresse est déjà utilisée par un compte investisseur.');
+  const user = await one('SELECT * FROM users WHERE id = ?', id);
+  req.user = user;
+  await audit(req, 'admin.setup', 'user', id, { email: v.email });
+  await completeLogin(req, res, user, '/admin', 'Compte administrateur créé. Étape suivante recommandée : activez la double authentification (Mon espace > Profil et sécurité).');
 });
 
 // ---------- Connexion ----------
