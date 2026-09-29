@@ -102,6 +102,8 @@ app.use((req, res, next) => {
   next();
 });
 
+// Webhooks des services d'envoi : authentifiés par jeton, hors protection CSRF (appels serveur à serveur).
+app.use('/webhooks', require('./routes/webhooks'));
 app.use(security.csrfGuard);
 app.use(security.enforcePasswordChange);
 

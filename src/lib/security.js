@@ -63,7 +63,7 @@ function requireAuth(req, res, next) {
     req.session.returnTo = req.originalUrl;
     return res.redirect('/login');
   }
-  if (!req.user.email_verified_at) return res.redirect('/verify-email/pending');
+  if (!req.user.email_verified_at) return res.redirect('/verify-email');
   next();
 }
 

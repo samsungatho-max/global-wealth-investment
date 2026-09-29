@@ -19,7 +19,7 @@ Au premier démarrage :
 - les **pages institutionnelles** sont créées (modifiables dans l'administration) ;
 - **4 fiches de démonstration** sont créées, affichées partout comme « projet fictif » et non investissables. Archivez-les avant l'ouverture au public (ou `SEED_DEMO=false`).
 
-Sans SMTP configuré, les e-mails (vérification, codes de réinitialisation, notifications) sont écrits dans `data/outbox/`.
+Sans SMTP configuré, **aucun e-mail n'est envoyé** (codes de confirmation compris) : voir la section « E-mails et code de confirmation ».
 
 | Commande | Rôle |
 |---|---|
@@ -41,6 +41,22 @@ Sans SMTP configuré, les e-mails (vérification, codes de réinitialisation, no
 ## Photos
 
 Les 18 photos d’illustration (immobilier, villas, réunions, agriculture, industrie, énergies renouvelables, logistique, graphiques financiers) proviennent d’Unsplash (licence Unsplash : usage commercial autorisé). Elles sont hébergées localement dans `public/img/photos/` en WebP à deux tailles (800 px et 1600 px), chargées en différé, et **signalées sur le site comme « photo d’illustration »** ; la page `/credits` crédite chaque photographe. Elles ne représentent ni les projets, ni des clients, ni l’équipe. Pour un projet réel, téléversez sa vraie photo depuis l’administration : elle remplace alors l’illustration du secteur. Registre : `src/lib/photos.js`.
+
+## E-mails et code de confirmation
+
+**Sans serveur SMTP configuré, aucun e-mail ne part** (c'était la cause des codes non reçus). Le site l'indique désormais clairement au client et dans **Admin > E-mails / Journal d'envoi**.
+
+- À l'inscription, un **code à 6 chiffres** est généré (valable 15 min, 5 essais), stocké uniquement sous forme de HMAC, et envoyé par e-mail (texte + HTML compatible Gmail, Outlook, Yahoo). Il n'est jamais affiché sur le site.
+- **« Renvoyer le code »** : 60 s minimum entre deux envois, 5 codes par heure au maximum ; le nouveau code est toujours différent et l'ancien est invalidé.
+- Chaque envoi est journalisé avec des étapes distinctes : **code généré → accepté par le serveur SMTP → remis au serveur destinataire (via webhook) → compte confirmé**. Les erreurs temporaires (4xx, réseau) sont retentées 3 fois ; les erreurs définitives (5xx) sont enregistrées avec la réponse exacte du serveur.
+- L'administration propose : test de connexion SMTP, **envoi d'un e-mail de test**, diagnostic DNS (MX, SPF, DKIM, DMARC) du domaine d'envoi, renvoi du code depuis la fiche d'un investisseur.
+
+### Mise en service (exemple avec Brevo)
+1. Créez un compte sur un service d'envoi transactionnel (Brevo, Postmark, Mailgun, SendGrid, Amazon SES…).
+2. Ajoutez **votre domaine** chez ce service et publiez chez votre registrar les enregistrements fournis : **SPF** (TXT `v=spf1 include:… ~all`), **DKIM** (TXT ou CNAME), puis **DMARC** (TXT `_dmarc` : `v=DMARC1; p=none; rua=mailto:dmarc@votre-domaine.com`).
+3. Renseignez `SMTP_*` et `MAIL_FROM` (adresse de ce domaine) dans l'environnement, puis redémarrez.
+4. Dans **Admin > E-mails** : « Tester la connexion SMTP », « Analyser » le domaine (tout doit être OK), puis « Envoyer un e-mail de test » vers une adresse **Gmail** et une adresse **Outlook** ; vérifiez la réception et le dossier spam.
+5. Recommandé : déclarez le webhook `https://votre-domaine/webhooks/email?token=<EMAIL_WEBHOOK_TOKEN>` pour suivre la remise réelle et les rebonds.
 
 ## Sécurité
 

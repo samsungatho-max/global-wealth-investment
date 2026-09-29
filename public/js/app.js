@@ -54,6 +54,18 @@
     });
   });
 
+  // Compte à rebours du bouton « Renvoyer le code »
+  document.querySelectorAll('[data-countdown]').forEach(function (btn) {
+    var left = parseInt(btn.getAttribute('data-countdown'), 10) || 0;
+    var label = btn.getAttribute('data-label');
+    if (!left) return;
+    var timer = setInterval(function () {
+      left -= 1;
+      if (left <= 0) { clearInterval(timer); btn.disabled = false; btn.textContent = label; return; }
+      btn.textContent = label + ' (' + left + ' s)';
+    }, 1000);
+  });
+
   // Confirmation des actions sensibles
   document.addEventListener('submit', function (e) {
     var msg = e.target.getAttribute('data-confirm');

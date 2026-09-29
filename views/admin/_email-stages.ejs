@@ -1,0 +1,16 @@
+<%# Chaîne en 4 étapes : Code/message généré → Envoyé (accepté par le serveur SMTP) → Accepté par le serveur destinataire → Compte confirmé %>
+<%
+  var failedStage = ['not_sent', 'failed'].includes(m.status);
+  var bounced = ['bounced', 'complained'].includes(m.status);
+  var s1 = 'ok';
+  var s2 = m.relay_accepted_at ? 'ok' : (failedStage ? 'ko' : 'wait');
+  var s3 = m.delivered_at ? 'ok' : bounced ? 'ko' : (m.relay_accepted_at ? 'unknown' : 'none');
+  var s4 = m.kind === 'verify_code' ? (m.email_verified_at ? 'ok' : 'wait') : null;
+  var label = { ok: '✔', ko: '✖', wait: '…', unknown: '?', none: '–' };
+%>
+<div class="stages">
+  <span class="stage st-<%= s1 %>" title="<%= m.kind === 'verify_code' ? 'Code généré' : 'Message préparé' %>"><%= label[s1] %> <%= m.kind === 'verify_code' ? 'Code généré' : 'Préparé' %></span>
+  <span class="stage st-<%= s2 %>" title="Accepté par le serveur SMTP / service d'envoi"><%= label[s2] %> Envoyé</span>
+  <span class="stage st-<%= s3 %>" title="<%= s3 === 'unknown' ? 'Remise non confirmée : nécessite le webhook du service d’envoi' : 'Accepté par le serveur destinataire' %>"><%= label[s3] %> Remis</span>
+  <% if (s4) { %><span class="stage st-<%= s4 %>" title="Compte confirmé par le client"><%= label[s4] %> Confirmé</span><% } %>
+</div>

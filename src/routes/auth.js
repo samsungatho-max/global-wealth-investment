@@ -5,9 +5,11 @@ const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const { one, run } = require('../db');
 const { t } = require('../i18n');
-const { randomToken, sha256, safeEqual } = require('../lib/security');
-const { sendMail } = require('../lib/mailer');
-const { wrapMail, baseUrl, notify } = require('../lib/notify');
+const { sha256, safeEqual } = require('../lib/security');
+const { sendMail, mask } = require('../lib/mailer');
+const { render: renderEmail } = require('../lib/email-template');
+const { notify } = require('../lib/notify');
+const verification = require('../lib/verification');
 const { audit } = require('../lib/audit');
 const totp = require('../lib/totp');
 const settings = require('../lib/settings');
@@ -39,17 +41,6 @@ function isLocked(email) {
   return r.n >= MAX_FAILS;
 }
 
-async function sendVerification(user) {
-  const token = randomToken(32);
-  run(`UPDATE users SET email_verify_token_hash = ?, email_verify_expires = datetime('now', '+24 hours') WHERE id = ?`,
-    sha256(token), user.id);
-  const link = `${baseUrl()}/verify-email/${token}`;
-  await sendMail({
-    to: user.email,
-    subject: `${settings.get('site_name')} — ${t(user.lang, 'mail.verify_subject')}`,
-    text: wrapMail(user, t(user.lang, 'mail.verify_body', { link }))
-  });
-}
 
 /** Ouvre la session après authentification complète (mot de passe + éventuellement 2FA). */
 function completeLogin(req, res, user, returnTo) {
@@ -95,40 +86,60 @@ router.post('/register', authLimiter, async (req, res, next) => {
     const info = run('INSERT INTO users (email, password_hash, full_name, country, phone, lang) VALUES (?, ?, ?, ?, ?, ?)',
       v.email, hash, v.full_name, v.country, v.phone, req.lang);
     const user = one('SELECT * FROM users WHERE id = ?', info.lastInsertRowid);
-    await sendVerification(user);
+    // Étape 1 : code généré ; étape 2 : e-mail soumis au serveur SMTP (statut réel enregistré).
+    await verification.issueCode(user);
     req.session.regenerate((err) => {
       if (err) return next(err);
       req.session.userId = user.id;
       req.session.lang = user.lang;
-      res.redirect('/verify-email/pending');
+      res.redirect('/verify-email');
     });
   } catch (e) { next(e); }
 });
 
-// ---------- Vérification de l'e-mail ----------
-router.get('/verify-email/pending', (req, res) => {
+// ---------- Confirmation de l'adresse e-mail par code ----------
+function renderVerify(req, res, extra = {}) {
+  const st = verification.state(req.user.id);
+  res.status(extra.status || 200).render('auth/verify', {
+    title: t(req.lang, 'auth.verify_title'),
+    st,
+    maskedEmail: mask(req.user.email),
+    ttl: verification.CODE_TTL_MIN,
+    error: extra.error || null
+  });
+}
+
+router.get(['/verify-email', '/verify-email/pending'], (req, res) => {
   if (!req.user) return res.redirect('/login');
   if (req.user.email_verified_at) return res.redirect('/account');
-  res.render('auth/verify', { title: t(req.lang, 'auth.verify_title') });
+  if (req.path !== '/verify-email') return res.redirect('/verify-email');
+  renderVerify(req, res);
+});
+
+router.post('/verify-email', authLimiter, (req, res) => {
+  if (!req.user) return res.redirect('/login');
+  if (req.user.email_verified_at) return res.redirect('/account');
+  const r = verification.verifyCode(req.user, req.body.code);
+  if (!r.ok) {
+    const key = { invalid: 'auth.verify_invalid_code', expired: 'auth.verify_expired', too_many: 'auth.verify_too_many' }[r.error];
+    return renderVerify(req, res, { status: 400, error: t(req.lang, key, { n: r.remaining }) });
+  }
+  audit(req, 'account.email_confirmed', 'user', req.user.id);
+  req.flash('success', t(req.lang, 'auth.verified'));
+  res.redirect('/account');
 });
 
 router.post('/verify-email/resend', authLimiter, async (req, res, next) => {
   try {
     if (!req.user) return res.redirect('/login');
-    if (!req.user.email_verified_at) await sendVerification(req.user);
-    req.flash('success', t(req.lang, 'auth.verify_resent'));
-    res.redirect('/verify-email/pending');
+    if (req.user.email_verified_at) return res.redirect('/account');
+    const r = await verification.issueCode(req.user);
+    if (!r.ok && r.error === 'cooldown') req.flash('error', t(req.lang, 'auth.verify_wait', { s: r.wait }));
+    else if (!r.ok && r.error === 'limit') req.flash('error', t(req.lang, 'auth.verify_limit'));
+    else if (r.ok && ['relay_accepted', 'delivered'].includes(r.mail.status)) req.flash('success', t(req.lang, 'auth.verify_resent'));
+    // En cas d'échec d'envoi, la page affiche elle-même l'erreur (statut réel du journal).
+    res.redirect('/verify-email');
   } catch (e) { next(e); }
-});
-
-router.get('/verify-email/:token', (req, res) => {
-  const user = one(`SELECT * FROM users WHERE email_verify_token_hash = ? AND email_verify_expires > datetime('now')`, sha256(req.params.token));
-  if (!user) {
-    return res.status(400).render('error', { title: t(req.lang, 'auth.verify_invalid'), status: 400, message: t(req.lang, 'auth.verify_invalid') });
-  }
-  run(`UPDATE users SET email_verified_at = datetime('now'), email_verify_token_hash = NULL, email_verify_expires = NULL WHERE id = ?`, user.id);
-  req.flash('success', t(req.lang, 'auth.verified'));
-  res.redirect(req.user && req.user.id === user.id ? '/account' : '/login');
 });
 
 // ---------- Connexion ----------
@@ -219,10 +230,15 @@ router.post('/forgot-password', authLimiter, async (req, res, next) => {
       const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
       run(`INSERT INTO password_resets (user_id, code_hash, expires_at) VALUES (?, ?, datetime('now', '+15 minutes'))`,
         user.id, sha256(`${user.id}:${code}`));
+      const mail = renderEmail({
+        lang: user.lang, name: user.full_name,
+        paragraphs: [t(user.lang, 'mail.reset_code_intro')], code,
+        after: [t(user.lang, 'mail.reset_code_after')]
+      });
       await sendMail({
         to: user.email,
-        subject: `${settings.get('site_name')} — ${t(user.lang, 'mail.reset_subject')}`,
-        text: wrapMail(user, t(user.lang, 'mail.reset_body', { code }))
+        subject: `${t(user.lang, 'mail.reset_subject')} — ${settings.get('site_name')}`,
+        text: mail.text, html: mail.html, kind: 'password_reset', userId: user.id
       });
     }
     req.session.resetEmail = email;

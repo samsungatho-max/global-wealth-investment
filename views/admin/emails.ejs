@@ -1,0 +1,100 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<%
+  var statusLabel = { queued: 'En file', not_sent: 'Non envoyé', relay_accepted: 'Accepté par SMTP', deferred: 'Retardé', delivered: 'Remis', failed: 'Échec', bounced: 'Rebond', complained: 'Signalé spam' };
+  var statusCls = { queued: 'chip-gold', not_sent: 'chip-danger', relay_accepted: 'chip-navy', deferred: 'chip-warning', delivered: 'chip-success', failed: 'chip-danger', bounced: 'chip-danger', complained: 'chip-danger' };
+%>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div>
+    <div class="dash-head"><h1>E-mails / Journal d'envoi</h1></div>
+
+    <% cfg.warnings.forEach(function (w) { %>
+      <div class="alert alert-<%= w.level === 'error' ? 'error' : w.level === 'warning' ? 'warning' : 'info' %>"><%= w.text %></div>
+    <% }) %>
+
+    <div class="grid grid-2 panel">
+      <section class="card">
+        <h2 style="font-size:1.1rem">Configuration d'envoi</h2>
+        <dl class="kv">
+          <dt>Mode</dt><dd><% if (cfg.enabled) { %><span class="chip chip-success">SMTP actif</span><% } else { %><span class="chip chip-danger">Aucun envoi réel</span><% } %></dd>
+          <dt>Serveur SMTP</dt><dd class="mono"><%= cfg.host || '—' %>:<%= cfg.port %> <%= cfg.secure ? '(TLS direct)' : '(STARTTLS)' %></dd>
+          <dt>Identifiant</dt><dd class="mono"><%= cfg.user || '—' %></dd>
+          <dt>Expéditeur (From)</dt><dd class="mono"><%= cfg.from %></dd>
+          <dt>Répondre à</dt><dd class="mono"><%= cfg.replyTo || '—' %></dd>
+          <dt>Signature DKIM (appli.)</dt><dd><%= cfg.dkim ? 'Oui (sélecteur ' + cfg.dkimSelector + ')' : 'Non — normalement assurée par le service d’envoi' %></dd>
+          <dt>Suivi de remise</dt><dd><%= cfg.webhook ? 'Webhook actif' : 'Webhook non configuré' %></dd>
+        </dl>
+        <p class="hint">Réglages dans les variables d'environnement (SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, MAIL_FROM, EMAIL_WEBHOOK_TOKEN). Les secrets ne sont jamais affichés.</p>
+        <form method="post" action="/admin/emails/verify-connection" class="mt-1"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-navy btn-sm" type="submit">Tester la connexion SMTP</button></form>
+      </section>
+
+      <section class="card">
+        <h2 style="font-size:1.1rem">Envoyer un e-mail de test</h2>
+        <p class="small muted">Testez avec au moins une adresse Gmail et une adresse Outlook/Hotmail, puis vérifiez la réception <strong>et</strong> le dossier spam.</p>
+        <form class="form" method="post" action="/admin/emails/test">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <div><label for="t-to">Destinataire</label><input id="t-to" name="to" type="email" required placeholder="exemple@gmail.com" value="<%= user.email %>"></div>
+          <div><button class="btn btn-gold btn-sm" type="submit">Envoyer l'e-mail de test</button></div>
+        </form>
+        <h3 class="mt-3" style="font-size:.95rem">Suivi de remise (webhook)</h3>
+        <p class="small muted mb-0">Déclarez dans votre service d'envoi (Brevo, SendGrid, Mailgun, Postmark) l'URL <span class="mono"><%= webhookUrl %></span> pour les événements « delivered », « bounce », « blocked », « spam ». Sans cela, l'étape « Remis » reste inconnue (?).</p>
+      </section>
+    </div>
+
+    <section class="card panel" id="dns">
+      <h2 style="font-size:1.1rem">Diagnostic du domaine d'envoi (SPF, DKIM, DMARC, MX)</h2>
+      <form class="flex" method="get" action="/admin/emails#dns">
+        <input name="dns" type="text" value="<%= dnsResult ? dnsResult.domain : cfg.fromDomain %>" placeholder="votre-domaine.com" style="max-width:260px">
+        <input name="selector" type="text" placeholder="sélecteur DKIM (optionnel)" style="max-width:220px">
+        <button class="btn btn-navy btn-sm" type="submit">Analyser</button>
+      </form>
+      <% if (dnsResult) { %>
+        <% if (dnsResult.error) { %><div class="alert alert-error mt-2"><%= dnsResult.error %></div><% } else { %>
+        <div class="table-wrap mt-2"><table>
+          <thead><tr><th>Contrôle</th><th>Résultat</th><th>Valeur publiée</th><th>Recommandation</th></tr></thead>
+          <tbody>
+          <% dnsResult.results.forEach(function (r) { %>
+            <tr><td><strong><%= r.name %></strong></td><td><span class="chip <%= r.ok ? 'chip-success' : 'chip-danger' %>"><%= r.ok ? 'OK' : 'À corriger' %></span></td>
+                <td class="mono small" style="max-width:320px;word-break:break-all"><%= r.value %></td><td class="small"><%= r.advice %></td></tr>
+          <% }) %>
+          </tbody>
+        </table></div>
+        <p class="hint">Gmail et Yahoo exigent SPF <em>et</em> DKIM alignés sur le domaine de l'expéditeur, ainsi qu'un DMARC publié ; Outlook applique des règles similaires.</p>
+        <% } %>
+      <% } %>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Journal d'envoi</h2>
+        <div class="flex small"><% counts.forEach(function (c) { %><span class="chip <%= statusCls[c.status] %>"><%= statusLabel[c.status] %> : <%= c.n %></span><% }) %><span class="muted">(7 derniers jours)</span></div>
+      </div>
+      <form class="flex mb-2" method="get" action="/admin/emails">
+        <select name="status" style="width:auto"><option value="">Tous statuts</option><% Object.keys(statusLabel).forEach(function (s) { %><option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= statusLabel[s] %></option><% }) %></select>
+        <select name="kind" style="width:auto"><option value="">Tous types</option><% kinds.forEach(function (k) { %><option value="<%= k %>" <%= filters.kind === k ? 'selected' : '' %>><%= k %></option><% }) %></select>
+        <input type="search" name="q" value="<%= filters.q %>" placeholder="Destinataire…" style="max-width:240px">
+        <button class="btn btn-navy btn-sm" type="submit">Filtrer</button>
+      </form>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Date</th><th>Type</th><th>Destinataire</th><th>Étapes</th><th>Statut</th><th>Réponse / erreur du service</th></tr></thead>
+          <tbody>
+          <% if (!rows.length) { %><tr><td colspan="7" class="empty">Aucun e-mail.</td></tr><% } %>
+          <% rows.forEach(function (m) { %>
+            <tr>
+              <td class="mono small"><a href="/admin/emails/<%= m.id %>"><%= m.id %></a></td>
+              <td class="small" style="white-space:nowrap"><%= fmtDate(m.created_at, true) %></td>
+              <td class="small"><%= m.kind %></td>
+              <td class="small"><%= m.to_email %><% if (m.user_id) { %><br><a href="/admin/users/<%= m.user_id %>"><%= m.full_name %></a><% } %></td>
+              <td><%- include('_email-stages', { m: m }) %></td>
+              <td><span class="chip <%= statusCls[m.status] %>"><%= statusLabel[m.status] %></span><% if (m.attempts > 1) { %><div class="small muted"><%= m.attempts %> tentatives</div><% } %></td>
+              <td class="mono small" style="max-width:320px;word-break:break-word"><%= m.error || m.smtp_response || '' %></td>
+            </tr>
+          <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <p class="hint mt-1">Légende : ✔ confirmé · … en attente · ? non vérifiable sans webhook · ✖ échec. Le code de confirmation n'est jamais stocké en clair ni affiché ici.</p>
+    </section>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

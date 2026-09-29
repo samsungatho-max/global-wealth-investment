@@ -28,7 +28,9 @@
           <form method="post" action="/admin/users/<%= u.id %>/status" data-confirm="Confirmer ?"><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="status" value="<%= u.status === 'active' ? 'suspended' : 'active' %>"><button class="btn <%= u.status === 'active' ? 'btn-danger' : 'btn-navy' %> btn-sm" type="submit"><%= u.status === 'active' ? 'Suspendre le compte' : 'Réactiver le compte' %></button></form>
           <form method="post" action="/admin/users/<%= u.id %>/role" data-confirm="Modifier le rôle de ce compte ?"><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="role" value="<%= u.role === 'admin' ? 'investor' : 'admin' %>"><button class="btn btn-ghost btn-sm" type="submit"><%= u.role === 'admin' ? 'Retirer le rôle admin' : 'Nommer administrateur' %></button></form>
           <% } %>
-          <% if (!u.email_verified_at) { %><form method="post" action="/admin/users/<%= u.id %>/verify-email"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-ghost btn-sm" type="submit">Marquer l'e-mail vérifié</button></form><% } %>
+          <% if (!u.email_verified_at) { %><form method="post" action="/admin/users/<%= u.id %>/resend-code"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-gold btn-sm" type="submit">Renvoyer le code de confirmation</button></form>
+          <a class="btn btn-ghost btn-sm" href="/admin/emails?q=<%= encodeURIComponent(u.email) %>">Journal d'envoi</a><% } %>
+          <% if (!u.email_verified_at) { %><form method="post" action="/admin/users/<%= u.id %>/verify-email" data-confirm="Confirmer manuellement l'adresse sans code ? À n'utiliser qu'après vérification par un autre moyen."><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-ghost btn-sm" type="submit">Marquer l'e-mail vérifié</button></form><% } %>
         </div>
       </div>
       <div class="card">

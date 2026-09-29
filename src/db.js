@@ -239,6 +239,46 @@ CREATE INDEX IF NOT EXISTS idx_login_email ON login_attempts(email, created_at);
 CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications(user_id, read_at);
 `);
 
+db.exec(`
+-- Journal de chaque e-mail : étapes distinctes, jamais « réussi » par défaut.
+CREATE TABLE IF NOT EXISTS email_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind TEXT NOT NULL,
+  to_email TEXT NOT NULL,
+  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  subject TEXT NOT NULL,
+  message_id TEXT,
+  transport TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'queued'
+    CHECK (status IN ('queued','not_sent','relay_accepted','deferred','delivered','failed','bounced','complained')),
+  smtp_response TEXT,
+  error TEXT,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  events TEXT NOT NULL DEFAULT '[]',
+  relay_accepted_at TEXT,
+  delivered_at TEXT,
+  failed_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_email_log_msg ON email_log(message_id);
+CREATE INDEX IF NOT EXISTS idx_email_log_created ON email_log(created_at);
+
+-- Codes de confirmation de compte : seul un condensat HMAC est stocké.
+CREATE TABLE IF NOT EXISTS email_verifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  code_hash TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  used_at TEXT,
+  invalidated_at TEXT,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  email_log_id INTEGER REFERENCES email_log(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_email_verif_user ON email_verifications(user_id, created_at);
+`);
+
 // Migrations légères (ajout de colonnes sur une base existante)
 const userCols = db.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
 if (!userCols.includes('must_change_password')) {

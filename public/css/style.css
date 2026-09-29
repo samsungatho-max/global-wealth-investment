@@ -387,3 +387,11 @@ details.box[open] > summary { margin-bottom: 12px; }
 .icon-btn:hover { background: rgba(201, 169, 110, .14); }
 
 .dash > * { min-width: 0; }
+
+/* ---------- Étapes d'envoi e-mail ---------- */
+.stages { display: flex; flex-wrap: wrap; gap: 4px; }
+.stage { font-size: .72rem; font-weight: 600; padding: 3px 8px; border-radius: 999px; white-space: nowrap; background: var(--gray-100); color: var(--gray-500); }
+.stage.st-ok { background: var(--success-bg); color: var(--success); }
+.stage.st-ko { background: var(--danger-bg); color: var(--danger); }
+.stage.st-wait { background: var(--warning-bg); color: var(--warning); }
+.stage.st-unknown { background: var(--info-bg); color: var(--navy-600); }

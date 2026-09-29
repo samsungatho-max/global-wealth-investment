@@ -1,0 +1,39 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div>
+    <div class="dash-head"><div><a class="small" href="/admin/emails">← Journal d'envoi</a><h1>E-mail #<%= m.id %> — <%= m.kind %></h1></div></div>
+    <section class="card panel">
+      <%- include('_email-stages', { m: m }) %>
+      <dl class="kv mt-2">
+        <dt>Destinataire</dt><dd><%= m.to_email %><% if (m.user_id) { %> — <a href="/admin/users/<%= m.user_id %>"><%= m.full_name %></a><% } %></dd>
+        <dt>Objet</dt><dd><%= m.subject %></dd>
+        <dt>Statut</dt><dd><strong><%= m.status %></strong></dd>
+        <dt>Mode d'envoi</dt><dd><%= m.transport === 'smtp' ? 'Serveur SMTP' : 'Aucun (non envoyé)' %></dd>
+        <dt>Message-ID</dt><dd class="mono small"><%= m.message_id %></dd>
+        <dt>Tentatives</dt><dd><%= m.attempts %></dd>
+        <dt>Créé le</dt><dd><%= fmtDate(m.created_at, true) %></dd>
+        <dt>Accepté par SMTP</dt><dd><%= fmtDate(m.relay_accepted_at, true) %></dd>
+        <dt>Remis au destinataire</dt><dd><%= m.delivered_at ? fmtDate(m.delivered_at, true) : (m.relay_accepted_at ? 'Non confirmé (webhook requis)' : '—') %></dd>
+        <dt>Échec</dt><dd><%= fmtDate(m.failed_at, true) %></dd>
+        <dt>Réponse du serveur</dt><dd class="mono small"><%= m.smtp_response || '—' %></dd>
+        <dt>Erreur</dt><dd class="mono small" style="color:var(--danger)"><%= m.error || '—' %></dd>
+        <% if (verif) { %>
+          <dt>Code de confirmation</dt><dd>Généré le <%= fmtDate(verif.created_at, true) %>, expire le <%= fmtDate(verif.expires_at, true) %> — <%= verif.used_at ? 'utilisé le ' + fmtDate(verif.used_at, true) : verif.invalidated_at ? 'remplacé par un nouveau code' : 'actif' %> · <%= verif.attempts %> essai(s) erroné(s). <span class="muted">(Valeur non stockée en clair.)</span></dd>
+          <dt>Compte</dt><dd><%= m.email_verified_at ? 'Confirmé le ' + fmtDate(m.email_verified_at, true) : 'Non confirmé' %></dd>
+        <% } %>
+      </dl>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><h2>Chronologie</h2></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Horodatage</th><th>Événement</th><th>Tentative</th><th>Détail</th></tr></thead>
+        <tbody>
+          <% if (!events.length) { %><tr><td colspan="4" class="empty">Aucun événement.</td></tr><% } %>
+          <% events.forEach(function (e) { %><tr><td class="small mono"><%= e.at %></td><td><%= e.type %></td><td><%= e.attempt || '' %></td><td class="small mono" style="word-break:break-word"><%= e.detail || '' %></td></tr><% }) %>
+        </tbody>
+      </table></div>
+    </section>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

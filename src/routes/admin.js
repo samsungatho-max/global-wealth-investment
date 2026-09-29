@@ -14,8 +14,11 @@ const { parseI18n, rawI18n, i18nFromBody, slugify, LANGS } = require('../lib/con
 const ledger = require('../lib/ledger');
 const settings = require('../lib/settings');
 const { refreshRates } = require('../lib/rates');
-const { sendMail } = require('../lib/mailer');
-const { wrapMail } = require('../lib/notify');
+const mailer = require('../lib/mailer');
+const { sendMail } = mailer;
+const { render: renderEmail } = require('../lib/email-template');
+const { checkDomain } = require('../lib/dns-check');
+const verification = require('../lib/verification');
 const { makeReference } = require('./account');
 const { SECTORS } = require('./public');
 const { countryName } = require('../lib/countries');
@@ -249,6 +252,19 @@ router.post('/users/:id/verify-email', (req, res, next) => {
   res.redirect(`/admin/users/${u.id}`);
 });
 
+router.post('/users/:id/resend-code', async (req, res, next) => {
+  try {
+    const u = one('SELECT * FROM users WHERE id = ?', req.params.id);
+    if (!u) return next();
+    const r = await verification.issueCode(u);
+    audit(req, 'user.verification_code_resend', 'user', u.id, { result: r.ok ? r.mail.status : r.error });
+    if (!r.ok) req.flash('error', r.error === 'cooldown' ? `Patientez ${r.wait} s avant un nouvel envoi.` : r.error === 'limit' ? 'Plafond de 5 codes par heure atteint.' : 'Adresse déjà confirmée.');
+    else if (['relay_accepted', 'delivered'].includes(r.mail.status)) req.flash('success', `Nouveau code envoyé : accepté par le serveur SMTP (journal #${r.mail.id}).`);
+    else req.flash('error', `Code généré mais e-mail NON envoyé (${r.mail.status}) : ${r.mail.error || ''}`);
+    res.redirect(`/admin/users/${u.id}`);
+  } catch (e) { next(e); }
+});
+
 router.post('/users/:id/documents', docUpload.single('file'), verifyCsrf, (req, res, next) => {
   const u = one('SELECT id FROM users WHERE id = ?', req.params.id);
   if (!u) return next();
@@ -462,8 +478,10 @@ router.post('/messages/:id/reply', async (req, res, next) => {
     const u = m.user_id ? one('SELECT * FROM users WHERE id = ?', m.user_id) : null;
     if (u) notify(u.id, 'message_replied', { subject: m.subject }, '/contact');
     const recipient = u || { full_name: m.name, lang: 'fr' };
-    await sendMail({ to: m.email, subject: `Re: ${m.subject}`, text: wrapMail(recipient, `${reply}\n\n---\n> ${m.body.replace(/\n/g, '\n> ')}`) });
-    req.flash('success', 'Réponse envoyée.');
+    const mail = renderEmail({ lang: recipient.lang, name: recipient.full_name, paragraphs: reply.split(/\n{2,}/), after: [`« ${m.body.slice(0, 1500)} »`] });
+    const log = await sendMail({ to: m.email, subject: `Re: ${m.subject}`, text: mail.text, html: mail.html, kind: 'support_reply', userId: m.user_id });
+    if (['relay_accepted', 'delivered'].includes(log.status)) req.flash('success', 'Réponse enregistrée et e-mail accepté par le serveur SMTP.');
+    else req.flash('error', `Réponse enregistrée, mais l'e-mail n'est pas parti (${log.status}) : ${log.error || ''} — voir E-mails / Journal d'envoi.`);
     res.redirect(`/admin/messages/${m.id}`);
   } catch (e) { next(e); }
 });
@@ -622,6 +640,73 @@ router.post('/settings/rates', async (req, res, next) => {
       req.flash('success', 'Taux saisis manuellement (la mise à jour automatique est suspendue jusqu\'à la prochaine actualisation manuelle).');
     }
     res.redirect('/admin/settings#rates');
+  } catch (e) { next(e); }
+});
+
+// ---------- E-mails / Journal d'envoi ----------
+const EMAIL_STATUSES = ['queued', 'not_sent', 'relay_accepted', 'deferred', 'delivered', 'failed', 'bounced', 'complained'];
+
+router.get('/emails', async (req, res, next) => {
+  try {
+    const status = EMAIL_STATUSES.includes(req.query.status) ? req.query.status : null;
+    const kind = String(req.query.kind || '').slice(0, 40);
+    const q = String(req.query.q || '').trim().slice(0, 200);
+    let sql = `SELECT l.*, u.email_verified_at, u.full_name FROM email_log l LEFT JOIN users u ON u.id = l.user_id WHERE 1=1`;
+    const p = [];
+    if (status) { sql += ' AND l.status = ?'; p.push(status); }
+    if (kind) { sql += ' AND l.kind = ?'; p.push(kind); }
+    if (q) { sql += ' AND l.to_email LIKE ?'; p.push(`%${q}%`); }
+    sql += ' ORDER BY l.id DESC LIMIT 200';
+    const cfg = mailer.config();
+    const dnsDomain = req.query.dns !== undefined ? String(req.query.dns || cfg.fromDomain) : null;
+    const dnsResult = dnsDomain ? await checkDomain(dnsDomain, [String(req.query.selector || ''), cfg.dkimSelector]) : null;
+    res.render('admin/emails', {
+      title: 'E-mails / Journal d\'envoi',
+      cfg,
+      rows: all(sql, ...p),
+      counts: all(`SELECT status, COUNT(*) AS n FROM email_log WHERE created_at > datetime('now','-7 days') GROUP BY status`),
+      kinds: all('SELECT DISTINCT kind FROM email_log ORDER BY kind').map((r) => r.kind),
+      filters: { status, kind, q },
+      dnsResult,
+      webhookUrl: `${(process.env.BASE_URL || '').replace(/\/$/, '') || 'https://votre-domaine'}/webhooks/email?token=…`
+    });
+  } catch (e) { next(e); }
+});
+
+router.get('/emails/:id', (req, res, next) => {
+  const m = one('SELECT l.*, u.email_verified_at, u.full_name FROM email_log l LEFT JOIN users u ON u.id = l.user_id WHERE l.id = ?', req.params.id);
+  if (!m) return next();
+  const verif = m.kind === 'verify_code' ? one('SELECT * FROM email_verifications WHERE email_log_id = ?', m.id) : null;
+  res.render('admin/email', { title: `E-mail #${m.id}`, m, events: JSON.parse(m.events || '[]'), verif });
+});
+
+router.post('/emails/verify-connection', async (req, res, next) => {
+  try {
+    const r = await mailer.verifyConnection();
+    audit(req, 'email.smtp_check', 'settings', 'smtp', { ok: r.ok, error: r.error });
+    req.flash(r.ok ? 'success' : 'error', r.ok ? 'Connexion et authentification SMTP réussies.' : `Échec de la connexion SMTP : ${r.error}`);
+    res.redirect('/admin/emails');
+  } catch (e) { next(e); }
+});
+
+router.post('/emails/test', async (req, res, next) => {
+  try {
+    const to = String(req.body.to || '').trim().toLowerCase();
+    if (!/^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/.test(to)) { req.flash('error', 'Adresse e-mail invalide.'); return res.redirect('/admin/emails'); }
+    const cfg = mailer.config();
+    const mail = renderEmail({
+      lang: 'fr', name: req.user.full_name,
+      paragraphs: [
+        'Ceci est un e-mail de test envoyé depuis l’espace d’administration.',
+        `Expéditeur : ${cfg.from} — serveur : ${cfg.host || 'aucun'}:${cfg.port} — DKIM (application) : ${cfg.dkim ? 'oui' : 'non'}.`,
+        'S’il est arrivé en « Spam » ou « Courrier indésirable », vérifiez SPF, DKIM et DMARC dans le diagnostic du domaine.'
+      ]
+    });
+    const log = await sendMail({ to, subject: `Test d’envoi — ${new Date().toLocaleString('fr-FR')}`, text: mail.text, html: mail.html, kind: 'test' });
+    audit(req, 'email.test', 'email', log.id, { to, status: log.status });
+    if (['relay_accepted', 'delivered'].includes(log.status)) req.flash('success', `E-mail de test accepté par le serveur SMTP (${log.smtp_response}). Vérifiez maintenant la boîte de réception ET le dossier spam de ${to}.`);
+    else req.flash('error', `Échec de l’e-mail de test (${log.status}) : ${log.error}`);
+    res.redirect(`/admin/emails/${log.id}`);
   } catch (e) { next(e); }
 });
 

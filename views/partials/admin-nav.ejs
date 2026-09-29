@@ -3,7 +3,7 @@
   <% [
     ['/admin', 'Tableau de bord'], ['/admin/projects', 'Projets'], ['/admin/interests', 'Intérêts manifestés'],
     ['/admin/users', 'Investisseurs'], ['/admin/kyc', 'Vérifications KYC'], ['/admin/transactions', 'Dépôts & retraits'],
-    ['/admin/messages', 'Messages clients'], ['/admin/news', 'Actualités & rapports'], ['/admin/pages', 'Pages institutionnelles'],
+    ['/admin/messages', 'Messages clients'], ['/admin/emails', 'E-mails / Journal d\'envoi'], ['/admin/news', 'Actualités & rapports'], ['/admin/pages', 'Pages institutionnelles'],
     ['/admin/settings', 'Paramètres'], ['/admin/audit', 'Journal d\'audit'], ['/admin/logins', 'Connexions']
   ].forEach(function (item) {
     var current = item[0] === '/admin' ? path === '/admin' || path === '/admin/' : path.indexOf(item[0]) === 0; %>
