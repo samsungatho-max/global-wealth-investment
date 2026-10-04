@@ -1,12 +1,56 @@
 <%- include('../partials/top') %>
-<%- include("../partials/page-hero", { heroPhoto: "immeuble-2", heroEyebrow: t("nav.news"), heroTitle: t("news.title") }) %>
+<%- include('../partials/page-hero', { heroPhoto: 'graphiques', heroEyebrow: t('nav.news'), heroTitle: t('news.title'), heroText: t('news.intro') }) %>
+
 <section class="section">
   <div class="container">
-    <% if (news.length) { %>
-      <div class="grid grid-3"><% news.forEach(function (n) { %><%- include('../partials/news-card', { n: n }) %><% }) %></div>
-    <% } else { %>
-      <p class="empty card card-muted"><%= t('news.none') %></p>
+
+    <form class="news-filters" method="get" action="/news">
+      <div><label for="f-region"><%= t('news.filter_region') %></label>
+        <select id="f-region" name="region"><option value=""><%= t('news.all_opt') %></option><% options.region.forEach(function (o) { %><option value="<%= o %>" <%= f.region === o ? 'selected' : '' %>><%= t('news.region.' + o) %></option><% }) %></select></div>
+      <div><label for="f-sector"><%= t('news.filter_sector') %></label>
+        <select id="f-sector" name="sector"><option value=""><%= t('news.all_opt') %></option><% options.sector.forEach(function (o) { %><option value="<%= o %>" <%= f.sector === o ? 'selected' : '' %>><%= t('news.sector.' + o) %></option><% }) %></select></div>
+      <div><label for="f-type"><%= t('news.filter_type') %></label>
+        <select id="f-type" name="type"><option value=""><%= t('news.all_opt') %></option><% options.type.forEach(function (o) { %><option value="<%= o %>" <%= f.type === o ? 'selected' : '' %>><%= t('news.type.' + o) %></option><% }) %></select></div>
+      <div><label for="f-kind"><%= t('news.filter_kind') %></label>
+        <select id="f-kind" name="kind"><option value=""><%= t('news.all_opt') %></option><option value="news" <%= f.kind === 'news' ? 'selected' : '' %>><%= t('news.news') %></option><option value="report" <%= f.kind === 'report' ? 'selected' : '' %>><%= t('news.report') %></option></select></div>
+      <div class="news-filters-actions">
+        <button class="btn btn-navy btn-sm" type="submit"><%= t('news.apply') %></button>
+        <% if (filtered) { %><a class="btn btn-ghost btn-sm" href="/news"><%= t('news.reset') %></a><% } %>
+      </div>
+    </form>
+
+    <% if (featured.length) { %>
+      <div class="panel-head mt-3"><h2 class="mb-0"><%= t('news.featured') %></h2></div>
+      <div class="news-featured">
+        <%- include('../partials/news-card', { n: featured[0], big: true }) %>
+        <div class="news-featured-side">
+          <% featured.slice(1).forEach(function (n) { %><%- include('../partials/news-card', { n: n, big: false }) %><% }) %>
+        </div>
+      </div>
     <% } %>
+
+    <% if (takeaways.length) { %>
+      <aside class="takeaways" aria-labelledby="tk-title">
+        <div class="takeaways-head">
+          <span class="takeaways-icon"><%- include('../partials/icon', { name: 'check', size: 22 }) %></span>
+          <div><h2 id="tk-title"><%= t('news.takeaways_title') %></h2><p><%= t('news.takeaways_note') %></p></div>
+        </div>
+        <ul>
+          <% takeaways.forEach(function (k) { %><li><span><strong class="tk-region"><%= t('news.region.' + k.region) %> —</strong> <%= k.text %></span> <a href="/news/<%= k.slug %>" aria-label="<%= k.title %>"><%= t('news.read') %> →</a></li><% }) %>
+        </ul>
+      </aside>
+    <% } %>
+
+    <% if (items.length) { %>
+      <div class="panel-head mt-4"><h2 class="mb-0"><%= t('news.all_pubs') %></h2></div>
+      <div class="grid grid-3 mt-2">
+        <% items.forEach(function (n) { %><%- include('../partials/news-card', { n: n, big: false }) %><% }) %>
+      </div>
+    <% } else if (!featured.length) { %>
+      <p class="empty card card-muted mt-3"><%= filtered ? t('news.none_filtered') : t('news.none') %></p>
+    <% } %>
+
+    <p class="risk-banner mt-4"><%= t('news.disclaimer') %></p>
   </div>
 </section>
 <%- include('../partials/bottom') %>

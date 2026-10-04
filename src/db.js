@@ -15,7 +15,7 @@ const { AsyncLocalStorage } = require('async_hooks');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
-const SCHEMA_VERSION = '3';
+const SCHEMA_VERSION = '4';
 
 const als = new AsyncLocalStorage();
 let driver = null; // { kind, query(text, params), exec(sql), transaction(fn), close() }
@@ -401,6 +401,43 @@ CREATE TABLE IF NOT EXISTS rate_limits (
   hits INTEGER NOT NULL,
   reset_at BIGINT NOT NULL
 );
+
+-- Actualités et rapports : catégories, sources, planification
+ALTER TABLE news ADD COLUMN IF NOT EXISTS region TEXT NOT NULL DEFAULT 'world';
+ALTER TABLE news ADD COLUMN IF NOT EXISTS sector TEXT NOT NULL DEFAULT 'macro';
+ALTER TABLE news ADD COLUMN IF NOT EXISTS inv_type TEXT NOT NULL DEFAULT 'markets';
+ALTER TABLE news ADD COLUMN IF NOT EXISTS sources TEXT NOT NULL DEFAULT '';
+ALTER TABLE news ADD COLUMN IF NOT EXISTS report_url TEXT;
+ALTER TABLE news ADD COLUMN IF NOT EXISTS photo_key TEXT;
+ALTER TABLE news ADD COLUMN IF NOT EXISTS featured INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE news ADD COLUMN IF NOT EXISTS publish_at TEXT;
+ALTER TABLE news ADD COLUMN IF NOT EXISTS reviewed_by BIGINT;
+ALTER TABLE news ADD COLUMN IF NOT EXISTS updated_at TEXT;
+
+-- Veille : sources officielles suivies et publications détectées (jamais publiées automatiquement)
+CREATE TABLE IF NOT EXISTS news_sources (
+  id BIGSERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  feed_url TEXT NOT NULL UNIQUE,
+  site_url TEXT,
+  active INTEGER NOT NULL DEFAULT 1,
+  last_checked_at TEXT,
+  last_status TEXT,
+  created_at TEXT NOT NULL DEFAULT datetime('now')
+);
+CREATE TABLE IF NOT EXISTS news_suggestions (
+  id BIGSERIAL PRIMARY KEY,
+  source_id BIGINT REFERENCES news_sources(id) ON DELETE CASCADE,
+  source_name TEXT NOT NULL,
+  title TEXT NOT NULL,
+  url TEXT NOT NULL UNIQUE,
+  summary TEXT,
+  published_at TEXT,
+  status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','used','dismissed')),
+  created_at TEXT NOT NULL DEFAULT datetime('now')
+);
+CREATE INDEX IF NOT EXISTS idx_news_sugg_status ON news_suggestions(status, created_at);
+CREATE INDEX IF NOT EXISTS idx_news_pub ON news(published, published_at);
 
 CREATE INDEX IF NOT EXISTS idx_tx_user ON transactions(user_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_inv_user ON investments(user_id);

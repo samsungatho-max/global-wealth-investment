@@ -84,6 +84,18 @@ Les 18 photos d’illustration (immobilier, villas, réunions, agriculture, indu
 4. Dans **Admin > E-mails** : « Tester la connexion SMTP », « Analyser » le domaine (tout doit être OK), puis « Envoyer un e-mail de test » vers une adresse **Gmail** et une adresse **Outlook** ; vérifiez la réception et le dossier spam.
 5. Recommandé : déclarez le webhook `https://votre-domaine/webhooks/email?token=<EMAIL_WEBHOOK_TOKEN>` pour suivre la remise réelle et les rebonds.
 
+## Actualités et rapports
+
+Rubrique `/news` : synthèses originales de publications officielles (FMI, Banque mondiale, CNUCED, OMC, AIE, FAO, BAD, BAsD, BCE…), classées par région, secteur et type d'investissement, avec chiffres clés et période de référence, graphique, « À retenir pour les investisseurs », limites et risques, et lien vers la source d'origine.
+
+**Règles éditoriales (appliquées par le site)**
+- Une publication ne peut pas être mise en ligne sans source consultable (`Nom | https://… | date`), sans résumé, ni sans la case « j'ai vérifié chaque chiffre dans la source ».
+- Aucune publication automatique : la **veille** (`Admin > Veille des sources`) lit chaque jour les flux RSS officiels et dépose les nouveautés dans une file à examiner. Un administrateur ouvre la source, rédige la synthèse, puis publie (immédiatement ou à une date planifiée).
+- S'il n'y a rien de nouveau et de fiable, les publications existantes restent en ligne ; rien n'est inventé pour « remplir ».
+- Les rapports d'origine sont proposés par lien vers le site de leur éditeur (pas de recopie) ; un PDF ne doit être téléversé que si vous en détenez les droits.
+
+Les 9 publications initiales sont dans `src/content/news-seed.js` (chiffres vérifiés à la source le 5 octobre 2026). La veille planifiée est déclarée dans `vercel.json` (`/cron/news-watch`, une fois par jour).
+
 ## Sécurité
 
 - Mots de passe bcrypt (coût 12), sessions en base (cookie `HttpOnly`, `SameSite=Lax`, `Secure` en production), régénération de session à la connexion, révocation des sessions au changement de mot de passe.

@@ -8,7 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
-const { one, run, DATA_DIR } = require('./db');
+const { one, all, run, DATA_DIR } = require('./db');
 const { randomToken } = require('./lib/security');
 
 /**
@@ -165,10 +165,34 @@ async function seedDemoProjects() {
   console.log('[seed] 4 fiches de démonstration créées (marquées comme fictives — à archiver avant la mise en production).');
 }
 
+/**
+ * Actualités et rapports initiaux (synthèses de publications officielles vérifiées).
+ * Chaque publication n'est insérée qu'une fois : si l'administrateur la supprime, elle ne revient pas.
+ */
+async function seedNews() {
+  if (process.env.SEED_NEWS === 'false') return;
+  const { ARTICLES, build } = require('./content/news-seed');
+  const done = new Set((await all(`SELECT key FROM meta WHERE key LIKE 'news_seed:%'`)).map((r) => r.key));
+  let n = 0;
+  for (const a of ARTICLES) {
+    const key = `news_seed:${a.slug}`;
+    if (done.has(key)) continue;
+    const r = build(a);
+    await run(`INSERT INTO news (slug, kind, i18n, region, sector, inv_type, sources, report_url, photo_key, featured, published, published_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?) ON CONFLICT (slug) DO NOTHING`,
+      r.slug, r.kind, r.i18n, r.region, r.sector, r.inv_type, r.sources, r.report_url, r.photo_key, r.featured, r.published_at, r.published_at);
+    await run(`INSERT INTO meta (key, value) VALUES (?, datetime('now')) ON CONFLICT (key) DO NOTHING`, key);
+    n++;
+  }
+  if (n) console.log(`[seed] ${n} actualité(s) / rapport(s) vérifié(s) ajouté(s).`);
+}
+
 async function seed() {
   await seedAdmin();
   await seedPages();
   await seedDemoProjects();
+  await seedNews();
+  await require('./lib/news').seedSources();
 }
 
 module.exports = { seed };

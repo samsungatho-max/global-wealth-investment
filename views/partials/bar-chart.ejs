@@ -1,0 +1,19 @@
+<%# Graphique en barres horizontales. Paramètres : items [{label, value}], chartTitle, unit, sourceName %>
+<%
+  var cMax = Math.max.apply(null, items.map(function (i) { return Math.abs(i.value); })) || 1;
+  var cDec = items.some(function (i) { return i.value % 1 !== 0; }) ? 1 : 0;
+  var cHasNeg = items.some(function (i) { return i.value < 0; });
+%>
+<figure class="chart" role="group" aria-label="<%= chartTitle %>">
+  <% if (chartTitle) { %><figcaption class="chart-title"><%= chartTitle %></figcaption><% } %>
+  <div class="chart-rows">
+    <% items.forEach(function (i) { var w = Math.max(1.5, Math.abs(i.value) / cMax * 100); %>
+      <div class="chart-row">
+        <div class="chart-label"><%= i.label %></div>
+        <div class="chart-track<%= cHasNeg ? ' has-neg' : '' %>"><span class="chart-bar<%= i.value < 0 ? ' neg' : '' %>" style="width:<%= w.toFixed(1) %>%"></span></div>
+        <div class="chart-value"><%= new Intl.NumberFormat({ fr: 'fr-FR', en: 'en-GB', es: 'es-ES', de: 'de-DE' }[lang], { minimumFractionDigits: cDec, maximumFractionDigits: cDec }).format(i.value) %><%= unit ? (unit === '%' && lang === 'en' ? '%' : ' ' + unit) : '' %></div>
+      </div>
+    <% }) %>
+  </div>
+  <% if (typeof sourceName !== 'undefined' && sourceName) { %><p class="chart-source"><%= t('news.chart_source', { name: sourceName }) %></p><% } %>
+</figure>

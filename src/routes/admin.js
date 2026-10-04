@@ -18,6 +18,7 @@ const { sendMail } = mailer;
 const { render: renderEmail } = require('../lib/email-template');
 const { checkDomain } = require('../lib/dns-check');
 const verification = require('../lib/verification');
+const newsLib = require('../lib/news');
 const { makeReference } = require('./account');
 const { SECTORS } = require('./public');
 const { countryName } = require('../lib/countries');
@@ -27,7 +28,7 @@ router.use(requireAdmin);
 router.use(async (req, res, next) => { res.locals.section = 'admin'; res.locals.countryName = (c) => countryName(c, 'fr'); next(); });
 
 const PROJECT_FIELDS = ['title', 'summary', 'description', 'conditions', 'fees'];
-const NEWS_FIELDS = ['title', 'summary', 'body'];
+const NEWS_FIELDS = ['title', 'summary', 'body', 'figures', 'chart_title', 'chart_unit', 'chart', 'takeaways', 'risks'];
 const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) && !Number.isNaN(Date.parse(s));
 const today = () => new Date().toISOString().slice(0, 10);
 const back = (req, fallback) => { const r = req.get('referer'); return r && r.includes(req.get('host')) ? r : fallback; };
@@ -490,49 +491,149 @@ router.post('/messages/:id/close', async (req, res) => {
 
 // ---------- Actualités et rapports ----------
 const newsUpload = makeUploader({ image: 'image', file: 'doc' });
+const PHOTO_KEYS = Object.keys(require('../lib/photos').PHOTOS);
+
+const newsFormData = () => ({ langs: LANGS, regions: newsLib.REGIONS, sectors: newsLib.SECTORS, invTypes: newsLib.INV_TYPES, photoKeys: PHOTO_KEYS });
 
 router.get('/news', async (req, res) => {
-  const rows = (await all('SELECT * FROM news ORDER BY created_at DESC')).map((n) => ({ ...n, tr: parseI18n(n.i18n, 'fr') }));
-  res.render('admin/news', { title: 'Actualités et rapports', rows });
+  const rows = (await all(`SELECT n.*, (${newsLib.VISIBLE}) AS visible FROM news n ORDER BY COALESCE(publish_at, published_at, created_at) DESC, id DESC`))
+    .map((n) => ({ ...n, tr: parseI18n(n.i18n, 'fr'), sourceList: newsLib.parseSources(n.sources) }));
+  const pending = (await one(`SELECT COUNT(*) AS n FROM news_suggestions WHERE status = 'new'`)).n;
+  res.render('admin/news', { title: 'Actualités et rapports', rows, pending });
 });
 
-router.get('/news/new', async (req, res) => res.render('admin/news-form', { title: 'Nouvelle publication', n: { i18n: {}, kind: 'news' }, langs: LANGS }));
+router.get('/news/new', async (req, res) => {
+  const n = { i18n: {}, kind: 'news', region: 'world', sector: 'macro', inv_type: 'markets', sources: '' };
+  let suggestion = null;
+  if (req.query.suggestion) {
+    suggestion = await one('SELECT * FROM news_suggestions WHERE id = ?', req.query.suggestion);
+    if (suggestion) n.sources = `${suggestion.source_name} | ${suggestion.url} | ${(suggestion.published_at || '').slice(0, 10)}`;
+  }
+  res.render('admin/news-form', { title: 'Nouvelle publication', n, suggestion, ...newsFormData() });
+});
 
 router.get('/news/:id/edit', async (req, res, next) => {
-  const n = await one('SELECT * FROM news WHERE id = ?', req.params.id);
+  const n = await one(`SELECT n.*, (${newsLib.VISIBLE}) AS visible FROM news n WHERE id = ?`, req.params.id);
   if (!n) return next();
-  res.render('admin/news-form', { title: 'Modifier la publication', n: { ...n, i18n: rawI18n(n.i18n) }, langs: LANGS });
+  res.render('admin/news-form', { title: 'Modifier la publication', n: { ...n, i18n: rawI18n(n.i18n) }, suggestion: null, ...newsFormData() });
 });
 
 router.post(['/news', '/news/:id'], newsUpload.fields([{ name: 'image', maxCount: 1 }, { name: 'file', maxCount: 1 }]), verifyCsrf, async (req, res, next) => {
   const existing = req.params.id ? await one('SELECT * FROM news WHERE id = ?', req.params.id) : null;
   if (req.params.id && !existing) return next();
-  const i18n = i18nFromBody(req.body, NEWS_FIELDS);
-  const kind = req.body.kind === 'report' ? 'report' : 'news';
-  const published = req.body.published === 'on' ? 1 : 0;
+  const b = req.body;
+  const i18n = i18nFromBody(b, NEWS_FIELDS);
   const image = req.files && req.files.image && req.files.image[0];
   const file = req.files && req.files.file && req.files.file[0];
   if (!i18n.fr.title) { req.flash('error', 'Le titre (FR) est obligatoire.'); return res.redirect(back(req, '/admin/news')); }
+
+  const d = {
+    kind: b.kind === 'report' ? 'report' : 'news',
+    region: newsLib.REGIONS.includes(b.region) ? b.region : 'world',
+    sector: newsLib.SECTORS.includes(b.sector) ? b.sector : 'macro',
+    inv_type: newsLib.INV_TYPES.includes(b.inv_type) ? b.inv_type : 'markets',
+    photo_key: PHOTO_KEYS.includes(b.photo_key) ? b.photo_key : null,
+    featured: b.featured === 'on' ? 1 : 0,
+    sources: String(b.sources || '').trim().slice(0, 4000),
+    report_url: /^https?:\/\/[^\s"'<>]+$/i.test(String(b.report_url || '').trim()) ? String(b.report_url).trim().slice(0, 500) : null,
+    // Date de mise en ligne planifiée (UTC). Vide = immédiate.
+    publish_at: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(String(b.publish_at || '')) ? b.publish_at.replace('T', ' ') + ':00' : null
+  };
+  let published = b.published === 'on' ? 1 : 0;
+  // Contrôle des sources : aucune mise en ligne sans source consultable, résumé et vérification explicite.
+  let blocked = null;
+  if (published && !newsLib.parseSources(d.sources).length) blocked = 'au moins une source « Nom | https://… | date » est obligatoire';
+  else if (published && !i18n.fr.summary) blocked = 'le résumé (FR) est obligatoire';
+  else if (published && b.verified !== 'on') blocked = 'cochez la case de vérification des sources';
+  if (blocked) published = 0;
+
+  let id;
   if (existing) {
+    id = existing.id;
     if (image) removePublicFile(existing.image_path);
-    await run(`UPDATE news SET kind = ?, i18n = ?, image_path = ?, file_path = ?, file_name = ?, published = ?,
+    if (b.remove_image === 'on' && !image) removePublicFile(existing.image_path);
+    await run(`UPDATE news SET kind = ?, i18n = ?, region = ?, sector = ?, inv_type = ?, photo_key = ?, featured = ?, sources = ?, report_url = ?, publish_at = ?,
+         image_path = ?, file_path = ?, file_name = ?, published = ?, reviewed_by = CASE WHEN ? = 1 THEN ? ELSE reviewed_by END, updated_at = datetime('now'),
          published_at = CASE WHEN ? = 1 AND published_at IS NULL THEN datetime('now') ELSE published_at END WHERE id = ?`,
-      kind, JSON.stringify(i18n), image ? image.filename : existing.image_path,
+      d.kind, JSON.stringify(i18n), d.region, d.sector, d.inv_type, d.photo_key, d.featured, d.sources, d.report_url, d.publish_at,
+      image ? image.filename : (b.remove_image === 'on' ? null : existing.image_path),
       file ? file.filename : existing.file_path, file ? file.originalname.slice(0, 200) : existing.file_name,
-      published, published, existing.id);
-    await audit(req, 'news.update', 'news', existing.id, { published });
-    req.flash('success', 'Publication enregistrée.');
-    return res.redirect(`/admin/news/${existing.id}/edit`);
+      published, published, req.user.id, published, id);
+    await audit(req, 'news.update', 'news', id, { published, publish_at: d.publish_at });
+  } else {
+    let slug = slugify(i18n.fr.title);
+    if (await one('SELECT id FROM news WHERE slug = ?', slug)) slug += '-' + Date.now().toString(36);
+    id = (await run(`INSERT INTO news (slug, kind, i18n, region, sector, inv_type, photo_key, featured, sources, report_url, publish_at, image_path, file_path, file_name,
+        published, published_at, reviewed_by, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = 1 THEN datetime('now') END, ?, datetime('now'))`,
+      slug, d.kind, JSON.stringify(i18n), d.region, d.sector, d.inv_type, d.photo_key, d.featured, d.sources, d.report_url, d.publish_at,
+      image ? image.filename : null, file ? file.filename : null, file ? file.originalname.slice(0, 200) : null,
+      published, published, published ? req.user.id : null)).lastInsertRowid;
+    if (b.suggestion_id) await run(`UPDATE news_suggestions SET status = 'used' WHERE id = ?`, b.suggestion_id);
+    await audit(req, 'news.create', 'news', id, { published, publish_at: d.publish_at });
   }
-  let slug = slugify(i18n.fr.title);
-  if (await one('SELECT id FROM news WHERE slug = ?', slug)) slug += '-' + Date.now().toString(36);
-  const info = await run(`INSERT INTO news (slug, kind, i18n, image_path, file_path, file_name, published, published_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = 1 THEN datetime('now') END)`,
-    slug, kind, JSON.stringify(i18n), image ? image.filename : null, file ? file.filename : null,
-    file ? file.originalname.slice(0, 200) : null, published, published);
-  await audit(req, 'news.create', 'news', info.lastInsertRowid, { published });
-  req.flash('success', 'Publication créée.');
-  res.redirect(`/admin/news/${info.lastInsertRowid}/edit`);
+  if (blocked) req.flash('error', `Enregistré comme brouillon, non publié : ${blocked}.`);
+  else req.flash('success', published ? (d.publish_at ? `Publication planifiée pour le ${d.publish_at} (UTC).` : 'Publication en ligne.') : 'Brouillon enregistré.');
+  res.redirect(`/admin/news/${id}/edit`);
+});
+
+router.post('/news/:id/delete', async (req, res, next) => {
+  const n = await one('SELECT * FROM news WHERE id = ?', req.params.id);
+  if (!n) return next();
+  await run('DELETE FROM news WHERE id = ?', n.id);
+  await removePublicFile(n.image_path);
+  await removeFile(n.file_path).catch(() => {});
+  await audit(req, 'news.delete', 'news', n.id, { slug: n.slug });
+  req.flash('success', 'Publication supprimée.');
+  res.redirect('/admin/news');
+});
+
+// ---------- Veille : sources officielles et publications détectées ----------
+router.get('/news-watch', async (req, res) => {
+  res.render('admin/news-watch', {
+    title: 'Veille des sources',
+    sources: await all('SELECT * FROM news_sources ORDER BY active DESC, name'),
+    suggestions: await all(`SELECT * FROM news_suggestions WHERE status = 'new' ORDER BY COALESCE(published_at, created_at) DESC LIMIT 150`),
+    last: await one(`SELECT value FROM meta WHERE key = 'news_watch_last'`)
+  });
+});
+
+router.post('/news-watch/run', async (req, res) => {
+  const report = await newsLib.runWatch();
+  const added = report.reduce((s, r) => s + r.added, 0);
+  const errors = report.filter((r) => r.status.startsWith('erreur')).length;
+  await audit(req, 'news.watch.run', 'news', null, { added, errors });
+  req.flash(errors === report.length && report.length ? 'error' : 'success', `Veille terminée : ${added} nouvelle(s) publication(s) détectée(s) sur ${report.length} source(s)${errors ? `, ${errors} en erreur` : ''}.`);
+  res.redirect('/admin/news-watch');
+});
+
+router.post('/news-watch/sources', async (req, res) => {
+  const name = String(req.body.name || '').trim().slice(0, 150);
+  const feed = String(req.body.feed_url || '').trim().slice(0, 500);
+  const site = String(req.body.site_url || '').trim().slice(0, 500);
+  if (!name || !/^https:\/\/[^\s"'<>]+$/i.test(feed)) { req.flash('error', 'Nom et adresse de flux en https:// obligatoires.'); return res.redirect('/admin/news-watch'); }
+  await run('INSERT INTO news_sources (name, feed_url, site_url) VALUES (?, ?, ?) ON CONFLICT (feed_url) DO NOTHING', name, feed, /^https?:\/\//i.test(site) ? site : null);
+  await audit(req, 'news.source.add', 'news_source', null, { name, feed });
+  req.flash('success', 'Source ajoutée. Lancez la veille pour la tester.');
+  res.redirect('/admin/news-watch');
+});
+
+router.post('/news-watch/sources/:id/toggle', async (req, res) => {
+  await run('UPDATE news_sources SET active = 1 - active WHERE id = ?', req.params.id);
+  await audit(req, 'news.source.toggle', 'news_source', req.params.id);
+  res.redirect('/admin/news-watch');
+});
+
+router.post('/news-watch/sources/:id/delete', async (req, res) => {
+  await run('DELETE FROM news_sources WHERE id = ?', req.params.id);
+  await audit(req, 'news.source.delete', 'news_source', req.params.id);
+  req.flash('success', 'Source supprimée.');
+  res.redirect('/admin/news-watch');
+});
+
+router.post('/news-watch/suggestions/:id/dismiss', async (req, res) => {
+  await run(`UPDATE news_suggestions SET status = 'dismissed' WHERE id = ?`, req.params.id);
+  res.redirect('/admin/news-watch#suggestions');
 });
 
 // ---------- Pages institutionnelles ----------

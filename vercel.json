@@ -3,7 +3,9 @@
   "framework": null,
   "buildCommand": "node -e \"console.log('Aucune compilation nécessaire')\"",
   "outputDirectory": "public",
-  "regions": ["fra1"],
+  "regions": [
+    "fra1"
+  ],
   "functions": {
     "api/index.js": {
       "maxDuration": 30,
@@ -11,6 +13,15 @@
     }
   },
   "rewrites": [
-    { "source": "/(.*)", "destination": "/api/index" }
+    {
+      "source": "/(.*)",
+      "destination": "/api/index"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/cron/news-watch",
+      "schedule": "0 5 * * *"
+    }
   ]
 }

@@ -1,10 +1,18 @@
-<article class="card news-card">
-  <a class="news-media" href="/news/<%= n.slug %>" tabindex="-1" aria-hidden="true" style="display:block">
-    <% if (n.image_path) { %><img src="/media/<%= n.image_path %>" alt="" loading="lazy"><% } else { var np = photo(n.kind === 'report' ? 'graphiques' : 'immeuble-2'); %><img src="<%= np.small %>" alt="" loading="lazy" decoding="async" width="800" height="600"><% } %>
+<%# Carte d'actualité / rapport. Paramètres : n (publication décorée), big (optionnel) %>
+<% var np = n.image_path ? null : photo(n.photo); var src0 = n.sourceList && n.sourceList[0]; %>
+<article class="card news-card<%= typeof big !== 'undefined' && big ? ' news-card-big' : '' %>">
+  <a class="news-media" href="/news/<%= n.slug %>" tabindex="-1" aria-hidden="true">
+    <% if (n.image_path) { %><img src="/media/<%= n.image_path %>" alt="" loading="lazy" decoding="async"><% } else { %><img src="<%= np.small %>" <%- typeof big !== 'undefined' && big ? 'srcset="' + np.small + ' 800w, ' + np.large + ' 1600w" sizes="(min-width: 1000px) 60vw, 100vw"' : '' %> alt="" loading="lazy" decoding="async" width="800" height="600"><span class="ph-label"><%= t('ux.photo_label') %></span><% } %>
+    <span class="news-kind <%= n.kind %>"><%= t('news.' + n.kind) %></span>
   </a>
   <div class="news-body">
-    <div class="flex small muted"><span class="chip chip-gold"><%= t('news.' + n.kind) %></span><span><%= fmtDate(n.published_at) %></span></div>
-    <h3 class="mt-1"><a href="/news/<%= n.slug %>" style="text-decoration:none;color:inherit"><%= n.tr.title %></a></h3>
-    <p class="small muted mb-0"><%= n.tr.summary %></p>
+    <div class="news-meta">
+      <span class="chip chip-gold"><%= t('news.region.' + n.region) %></span>
+      <span class="chip"><%= t('news.sector.' + n.sector) %></span>
+      <time datetime="<%= String(n.date).slice(0, 10) %>"><%= fmtDate(n.date) %></time>
+    </div>
+    <h3><a href="/news/<%= n.slug %>"><%= n.tr.title %></a></h3>
+    <p class="news-summary"><%= n.tr.summary %></p>
+    <% if (src0) { %><p class="news-source"><%= t('news.source') %> : <%= src0.name.split(' — ')[0] %></p><% } %>
   </div>
 </article>

@@ -1,17 +1,58 @@
 <%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<% var state = !n.id ? null : (!n.published ? 'Brouillon' : (n.visible ? 'En ligne' : 'Planifié')); %>
 <div class="container dash">
   <%- include('../partials/admin-nav') %>
   <div>
-    <div class="dash-head"><div><a class="small" href="/admin/news">← Actualités</a><h1><%= title %></h1></div></div>
+    <div class="dash-head"><div><a class="small" href="/admin/news">← Actualités et rapports</a><h1><%= title %></h1></div>
+      <% if (state) { %><span class="chip <%= state === 'En ligne' ? 'chip-success' : state === 'Planifié' ? 'chip-warning' : '' %>"><%= state %></span><% } %></div>
+
+    <% if (suggestion) { %>
+      <div class="alert alert-info"><strong>Publication détectée par la veille :</strong> <%= suggestion.title %><br>
+        <a href="<%= suggestion.url %>" target="_blank" rel="noopener noreferrer">Ouvrir la source ↗</a> — lisez-la entièrement, puis rédigez une synthèse originale (ne copiez pas le texte).</div>
+    <% } %>
+
     <form class="card form" method="post" action="<%= n.id ? '/admin/news/' + n.id : '/admin/news' %>" enctype="multipart/form-data">
       <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <% if (suggestion) { %><input type="hidden" name="suggestion_id" value="<%= suggestion.id %>"><% } %>
+
+      <h2 style="font-size:1.15rem">Classement</h2>
       <div class="form-row form-row-3">
-        <div><label for="n-kind">Type</label><select id="n-kind" name="kind"><option value="news" <%= n.kind === 'news' ? 'selected' : '' %>>Actualité</option><option value="report" <%= n.kind === 'report' ? 'selected' : '' %>>Rapport financier</option></select></div>
-        <div><label for="n-image">Image (optionnelle)</label><input id="n-image" name="image" type="file" accept=".jpg,.jpeg,.png,.webp"><% if (n.image_path) { %><img class="mt-1" src="/media/<%= n.image_path %>" alt="" style="width:120px;border-radius:6px"><% } %></div>
-        <div><label for="n-file">Document PDF (optionnel)</label><input id="n-file" name="file" type="file" accept=".pdf"><% if (n.file_name) { %><p class="hint">Actuel : <%= n.file_name %></p><% } %></div>
+        <div><label for="n-kind">Format</label><select id="n-kind" name="kind"><option value="news" <%= n.kind === 'news' ? 'selected' : '' %>>Actualité</option><option value="report" <%= n.kind === 'report' ? 'selected' : '' %>>Rapport</option></select></div>
+        <div><label for="n-region">Région / pays</label><select id="n-region" name="region"><% regions.forEach(function (r) { %><option value="<%= r %>" <%= n.region === r ? 'selected' : '' %>><%= t('news.region.' + r) %></option><% }) %></select></div>
+        <div><label for="n-sector">Secteur</label><select id="n-sector" name="sector"><% sectors.forEach(function (r) { %><option value="<%= r %>" <%= n.sector === r ? 'selected' : '' %>><%= t('news.sector.' + r) %></option><% }) %></select></div>
       </div>
-      <%- include('../partials/lang-fields', { values: n.i18n || {}, fields: [['title', 'Titre', 'text'], ['summary', 'Résumé', 'textarea', 2], ['body', 'Contenu', 'textarea', 12]] }) %>
-      <label class="check"><input type="checkbox" name="published" <%= n.published ? 'checked' : '' %>> Publier sur le site</label>
+      <div class="form-row form-row-3">
+        <div><label for="n-type">Type d'investissement</label><select id="n-type" name="inv_type"><% invTypes.forEach(function (r) { %><option value="<%= r %>" <%= n.inv_type === r ? 'selected' : '' %>><%= t('news.type.' + r) %></option><% }) %></select></div>
+        <div><label for="n-photo">Photo d'illustration</label><select id="n-photo" name="photo_key"><option value="">Automatique (selon le secteur)</option><% photoKeys.forEach(function (k) { %><option value="<%= k %>" <%= n.photo_key === k ? 'selected' : '' %>><%= k %></option><% }) %></select></div>
+        <div><label for="n-image">…ou image téléversée (4 Mo max)</label><input id="n-image" name="image" type="file" accept=".jpg,.jpeg,.png,.webp"><% if (n.image_path) { %><label class="check mt-1"><input type="checkbox" name="remove_image"> Retirer l'image actuelle</label><% } %></div>
+      </div>
+
+      <h2 style="font-size:1.15rem" class="mt-2">Sources (contrôle obligatoire)</h2>
+      <div><label for="n-sources">Une source par ligne : <span class="mono">Nom de l'organisme — titre | https://adresse | AAAA-MM-JJ</span></label>
+        <textarea id="n-sources" name="sources" rows="3" placeholder="FAO — Indice des prix alimentaires | https://www.fao.org/… | 2026-10-02"><%= n.sources || '' %></textarea>
+        <p class="hint">La première source est affichée comme source principale. Sans source valide, la publication reste en brouillon.</p></div>
+      <div class="form-row form-row-2">
+        <div><label for="n-report">Lien vers le rapport original (site de l'éditeur, facultatif)</label><input id="n-report" name="report_url" type="text" value="<%= n.report_url || '' %>" placeholder="https://…"></div>
+        <div><label for="n-file">PDF téléchargeable (uniquement si vous en détenez les droits)</label><input id="n-file" name="file" type="file" accept=".pdf"><% if (n.file_name) { %><p class="hint">Actuel : <%= n.file_name %></p><% } %></div>
+      </div>
+
+      <h2 style="font-size:1.15rem" class="mt-2">Contenu</h2>
+      <%- include('../partials/lang-fields', { values: n.i18n || {}, fields: [
+        ['title', 'Titre', 'text'], ['summary', 'Résumé (2 phrases)', 'textarea', 2], ['body', 'Synthèse originale', 'textarea', 12],
+        ['figures', 'Chiffres clés — une ligne : indicateur | valeur | période de référence', 'textarea', 5],
+        ['chart_title', 'Graphique : titre', 'text'], ['chart_unit', 'Graphique : unité (%, points, Md USD…)', 'text'],
+        ['chart', 'Graphique : données — une ligne : libellé | nombre', 'textarea', 5],
+        ['takeaways', 'À retenir pour les investisseurs — une idée par ligne (informations, pas de conseil)', 'textarea', 3],
+        ['risks', 'Perspectives, limites et risques', 'textarea', 3]
+      ] }) %>
+
+      <h2 style="font-size:1.15rem" class="mt-2">Mise en ligne</h2>
+      <div class="form-row form-row-2">
+        <div><label for="n-at">Planifier la mise en ligne (heure UTC, facultatif)</label><input id="n-at" name="publish_at" type="datetime-local" value="<%= n.publish_at ? n.publish_at.slice(0, 16).replace(' ', 'T') : '' %>"><p class="hint">Vide = en ligne immédiatement après publication.</p></div>
+        <div><label>&nbsp;</label><label class="check"><input type="checkbox" name="featured" <%= n.featured ? 'checked' : '' %>> Mettre « À la une »</label></div>
+      </div>
+      <label class="check"><input type="checkbox" name="verified"> J'ai ouvert chaque source, vérifié chaque chiffre et sa période, et le texte est une synthèse originale (aucun copier-coller).</label>
+      <label class="check"><input type="checkbox" name="published" <%= n.published ? 'checked' : '' %>> Publier (sinon : brouillon)</label>
       <div><button class="btn btn-gold" type="submit">Enregistrer</button></div>
     </form>
   </div>

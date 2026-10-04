@@ -1,0 +1,69 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div>
+    <div class="dash-head"><div><a class="small" href="/admin/news">← Actualités et rapports</a><h1>Veille des sources</h1></div>
+      <form method="post" action="/admin/news-watch/run"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-gold btn-sm" type="submit">Rechercher maintenant</button></form>
+    </div>
+    <p class="alert alert-info small">La veille interroge automatiquement, une fois par jour, les flux officiels ci-dessous. <strong>Rien n'est publié automatiquement</strong> : chaque publication détectée arrive ici, vous ouvrez la source, vous rédigez une synthèse, puis vous publiez. Dernière recherche : <strong><%= last ? fmtDate(last.value, true) : 'jamais' %></strong>.</p>
+
+    <section class="panel" id="suggestions">
+      <div class="panel-head"><h2>Publications détectées à examiner (<%= suggestions.length %>)</h2></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Source</th><th>Publication</th><th></th></tr></thead>
+          <tbody>
+          <% if (!suggestions.length) { %><tr><td colspan="4" class="empty">Aucune nouvelle publication. Les publications existantes restent en ligne.</td></tr><% } %>
+          <% suggestions.forEach(function (s) { %>
+            <tr>
+              <td class="small" style="white-space:nowrap"><%= fmtDate(s.published_at || s.created_at) %></td>
+              <td class="small"><%= s.source_name.split(' — ')[0] %></td>
+              <td><div class="sugg-title"><%= s.title %></div><% if (s.summary) { %><div class="small muted"><%= s.summary.slice(0, 220) %><%= s.summary.length > 220 ? '…' : '' %></div><% } %>
+                <a class="small" href="<%= s.url %>" target="_blank" rel="noopener noreferrer">Ouvrir la source ↗</a></td>
+              <td><div class="actions">
+                <a class="btn btn-navy btn-sm" href="/admin/news/new?suggestion=<%= s.id %>">Rédiger</a>
+                <form method="post" action="/admin/news-watch/suggestions/<%= s.id %>/dismiss"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-ghost btn-sm" type="submit">Écarter</button></form>
+              </div></td>
+            </tr>
+          <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Sources suivies</h2></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Source</th><th>Flux</th><th>Dernier contrôle</th><th>État</th><th></th></tr></thead>
+          <tbody>
+          <% sources.forEach(function (s) { %>
+            <tr>
+              <td><strong><%= s.name %></strong><% if (s.site_url) { %><br><a class="small" href="<%= s.site_url %>" target="_blank" rel="noopener noreferrer"><%= s.site_url %> ↗</a><% } %></td>
+              <td class="mono small" style="max-width:260px;word-break:break-all"><%= s.feed_url %></td>
+              <td class="small"><%= s.last_checked_at ? fmtDate(s.last_checked_at, true) : '—' %><div class="muted"><%= s.last_status || '' %></div></td>
+              <td><span class="chip <%= s.active ? 'chip-success' : '' %>"><%= s.active ? 'Active' : 'En pause' %></span></td>
+              <td><div class="actions">
+                <form method="post" action="/admin/news-watch/sources/<%= s.id %>/toggle"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-ghost btn-sm" type="submit"><%= s.active ? 'Mettre en pause' : 'Réactiver' %></button></form>
+                <form method="post" action="/admin/news-watch/sources/<%= s.id %>/delete" data-confirm="Supprimer cette source ?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-danger btn-sm" type="submit">Supprimer</button></form>
+              </div></td>
+            </tr>
+          <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <form class="card form mt-2" method="post" action="/admin/news-watch/sources">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <h3 style="font-size:1rem">Ajouter une source officielle (flux RSS ou Atom)</h3>
+        <div class="form-row form-row-3">
+          <div><label>Nom de l'organisme</label><input name="name" type="text" required maxlength="150" placeholder="Banque mondiale — communiqués"></div>
+          <div><label>Adresse du flux (https)</label><input name="feed_url" type="text" required placeholder="https://…/rss.xml"></div>
+          <div><label>Site (facultatif)</label><input name="site_url" type="text" placeholder="https://…"></div>
+        </div>
+        <p class="hint">N'ajoutez que des institutions reconnues : organisations internationales, banques centrales, instituts statistiques officiels.</p>
+        <div><button class="btn btn-navy btn-sm" type="submit">Ajouter</button></div>
+      </form>
+    </section>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

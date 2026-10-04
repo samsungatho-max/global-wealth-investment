@@ -55,7 +55,7 @@ function lastCodeFor(email) {
   return m ? m[1] : null;
 }
 
-let app, one, run, totp;
+let app, one, all, run, totp;
 
 let base;
 const results = [];
@@ -93,7 +93,7 @@ async function main() {
   process.env.SMTP_PORT = String(smtp.server.address().port);
   process.env.SMTP_SECURE = 'false';
   app = require('../src/server');
-  ({ one, run } = require('../src/db'));
+  ({ one, all, run } = require('../src/db'));
   totp = require('../src/lib/totp');
 
   const server = app.listen(0);
@@ -287,6 +287,101 @@ async function main() {
   await adm.post(`/admin/users/${rejId}/resend-code`);
   assert.match((await adm.get(`/admin/users/${rejId}`)).text, /e-mail NON envoyé \(failed\)/);
   step('Admin : journal d’envoi avec erreurs du serveur, test SMTP, e-mail de test, renvoi du code');
+
+  // ---------- Actualités et rapports ----------
+  const newsLib = require('../src/lib/news');
+  const seeded = await all('SELECT * FROM news');
+  assert.strictEqual(seeded.length, 9);
+  for (const row of seeded) {
+    const srcs = newsLib.parseSources(row.sources);
+    assert.ok(srcs.length >= 1 && srcs.every((s) => /^https:\/\//.test(s.url) && /^\d{4}-\d{2}-\d{2}$/.test(s.date)), `source datée pour ${row.slug}`);
+    for (const l of ['fr', 'en', 'es', 'de']) {
+      const tr = JSON.parse(row.i18n)[l];
+      assert.ok(tr.title && tr.summary && tr.body && tr.risks && tr.takeaways, `${row.slug} complet en ${l}`);
+      assert.ok(newsLib.parseFigures(tr.figures).length >= 3, `chiffres clés ${row.slug} ${l}`);
+      assert.ok(newsLib.parseFigures(tr.figures).every((f) => f.period), `période de référence ${row.slug} ${l}`);
+    }
+  }
+  let np = await pub.get('/news?lang=fr');
+  assert.strictEqual(np.status, 200);
+  assert.match(np.text, /À la une/);
+  assert.match(np.text, /À retenir pour les investisseurs/);
+  assert.match(np.text, /l’indice FAO repart à la hausse/);
+  np = await pub.get('/news?region=africa');
+  assert.match(np.text, /Afrique 2026/);
+  assert.doesNotMatch(np.text, /indice FAO repart/);
+  np = await pub.get('/news?sector=energy&kind=report');
+  assert.match(np.text, /Aucune publication ne correspond/);
+  let art = await pub.get('/news/fao-indice-prix-alimentaires-septembre-2026');
+  assert.strictEqual(art.status, 200);
+  assert.match(art.text, /href="https:\/\/www\.fao\.org\/worldfoodsituation\/foodpricesindex\/en\/" target="_blank" rel="noopener noreferrer"/);
+  assert.match(art.text, /136,0 points/);
+  assert.match(art.text, /Période de référence/);
+  assert.match(art.text, /class="chart"/);
+  assert.match(art.text, /Perspectives, limites et risques/);
+  assert.match(art.text, /Synthèse originale rédigée à partir des sources citées/);
+  assert.match((await pub.get('/news/fao-indice-prix-alimentaires-septembre-2026?lang=en')).text, /136\.0 points/);
+  assert.match((await pub.get('/?lang=fr')).text, /Actualités et rapports d’investissement internationaux/);
+  step('Rubrique actualités : 9 publications sourcées et datées, 4 langues, filtres, chiffres clés, graphique');
+
+  // Contrôle éditorial : pas de publication sans source ni vérification ; planification ; suppression
+  const draft = { kind: 'news', region: 'europe', sector: 'real_estate', inv_type: 'markets', title_fr: 'Article de test éditorial', summary_fr: 'Résumé de test.', body_fr: 'Corps.', published: 'on', verified: 'on' };
+  await adm.get('/admin/news/new');
+  r = await adm.post('/admin/news', draft, { multipart: true });
+  let testNews = await one(`SELECT * FROM news WHERE slug = 'article-de-test-editorial'`);
+  assert.strictEqual(testNews.published, 0, 'refus de publier sans source');
+  assert.match((await adm.get(r.location)).text, /non publié : au moins une source/);
+  await adm.post(`/admin/news/${testNews.id}`, { ...draft, sources: 'Eurostat — test | https://ec.europa.eu/eurostat | 2026-10-01', verified: '' }, { multipart: true });
+  assert.strictEqual((await one('SELECT published FROM news WHERE id = ?', testNews.id)).published, 0, 'refus sans case de vérification');
+  await adm.get(`/admin/news/${testNews.id}/edit`);
+  await adm.post(`/admin/news/${testNews.id}`, { ...draft, sources: 'Eurostat — test | https://ec.europa.eu/eurostat | 2026-10-01', publish_at: '2099-01-01T08:00' }, { multipart: true });
+  testNews = await one('SELECT * FROM news WHERE id = ?', testNews.id);
+  assert.strictEqual(testNews.published, 1);
+  assert.strictEqual((await pub.get('/news/article-de-test-editorial')).status, 404, 'publication planifiée invisible avant la date');
+  assert.match((await adm.get('/admin/news')).text, /Planifié/);
+  await adm.post(`/admin/news/${testNews.id}`, { ...draft, sources: 'Eurostat — test | https://ec.europa.eu/eurostat | 2026-10-01', publish_at: '' }, { multipart: true });
+  assert.strictEqual((await pub.get('/news/article-de-test-editorial')).status, 200);
+  await adm.get('/admin/news');
+  await adm.post(`/admin/news/${testNews.id}/delete`);
+  assert.strictEqual((await pub.get('/news/article-de-test-editorial')).status, 404);
+  const faoId = (await one(`SELECT id FROM news WHERE slug LIKE 'omc-barometre%'`)).id;
+  await adm.post(`/admin/news/${faoId}/delete`);
+  await require('../src/seed').seed();
+  assert.strictEqual((await one('SELECT COUNT(*) AS n FROM news')).n, 8, 'une publication supprimée ne revient pas');
+  step('Admin actualités : source et vérification obligatoires, planification, suppression définitive');
+
+  // Veille : faux flux RSS local → suggestions, jamais de publication automatique
+  const http = require('http');
+  const rssNow = new Date().toUTCString();
+  const rssXml = `<?xml version="1.0"?><rss version="2.0"><channel><title>Test</title>
+    <item><title><![CDATA[Nouveau rapport officiel &amp; perspectives]]></title><link>https://example.org/rapport-1</link><description>&lt;p&gt;Résumé du rapport.&lt;/p&gt;</description><pubDate>${rssNow}</pubDate></item>
+    <item><title>Communiqué 2</title><link>https://example.org/communique-2</link><pubDate>${rssNow}</pubDate></item>
+    <item><title>Très ancien</title><link>https://example.org/ancien</link><pubDate>Mon, 01 Jan 2018 00:00:00 GMT</pubDate></item></channel></rss>`;
+  const rss = http.createServer((q, s) => { s.setHeader('content-type', 'application/rss+xml'); s.end(rssXml); });
+  await new Promise((ok) => rss.listen(0, '127.0.0.1', ok));
+  await run('UPDATE news_sources SET active = 0');
+  await run('INSERT INTO news_sources (name, feed_url) VALUES (?, ?)', 'Source de test', `http://127.0.0.1:${rss.address().port}/feed.xml`);
+  const beforeNews = (await one('SELECT COUNT(*) AS n FROM news')).n;
+  await adm.get('/admin/news-watch');
+  await adm.post('/admin/news-watch/run');
+  let sugg = await all(`SELECT * FROM news_suggestions WHERE status = 'new' ORDER BY id`);
+  assert.strictEqual(sugg.length, 2, 'deux publications récentes détectées, l’ancienne ignorée');
+  assert.strictEqual(sugg[0].title, 'Nouveau rapport officiel & perspectives');
+  assert.strictEqual(sugg[0].summary, 'Résumé du rapport.');
+  assert.strictEqual((await one('SELECT COUNT(*) AS n FROM news')).n, beforeNews, 'aucune publication automatique');
+  await adm.get('/admin/news-watch');
+  await adm.post('/admin/news-watch/run');
+  assert.strictEqual((await one('SELECT COUNT(*) AS n FROM news_suggestions')).n, 2, 'pas de doublon');
+  const wp = await adm.get('/admin/news-watch');
+  assert.match(wp.text, /Nouveau rapport officiel &amp; perspectives/);
+  assert.match((await adm.get(`/admin/news/new?suggestion=${sugg[0].id}`)).text, /Source de test \| https:\/\/example\.org\/rapport-1/);
+  await adm.get('/admin/news-watch');
+  await adm.post(`/admin/news-watch/suggestions/${sugg[1].id}/dismiss`);
+  assert.strictEqual((await one('SELECT status FROM news_suggestions WHERE id = ?', sugg[1].id)).status, 'dismissed');
+  const cron = await (await fetch(base + '/cron/news-watch')).json();
+  assert.strictEqual(cron.skipped, true, 'tâche planifiée limitée à une exécution toutes les 6 h');
+  rss.close();
+  step('Veille automatique : flux lus, suggestions à vérifier, aucun doublon, rien publié sans validation');
 
   const kyc = await one(`SELECT id FROM kyc_submissions WHERE status = 'pending'`);
   await adm.get('/admin/kyc');

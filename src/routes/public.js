@@ -7,6 +7,7 @@ const { raisedForProject } = require('../lib/ledger');
 const { parseAmount } = require('../lib/money');
 const { sendStoredFile } = require('../lib/security');
 const settings = require('../lib/settings');
+const newsLib = require('../lib/news');
 
 const router = express.Router();
 const SECTORS = ['real_estate', 'agriculture', 'energy', 'trade'];
@@ -32,8 +33,8 @@ const isEmail = (s) => /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/.test(String(s 
 router.get('/', async (req, res) => {
   const projects = await Promise.all((await all(`SELECT * FROM projects WHERE status = 'open' ORDER BY is_demo ASC, created_at DESC LIMIT 3`))
     .map((p) => decorateProject(p, req.lang)));
-  const news = (await all('SELECT * FROM news WHERE published = 1 ORDER BY published_at DESC LIMIT 3'))
-    .map((n) => ({ ...n, tr: parseI18n(n.i18n, req.lang) }));
+  const news = (await all(`SELECT * FROM news WHERE ${newsLib.VISIBLE} ORDER BY featured DESC, ${newsLib.ORDER} LIMIT 3`))
+    .map((n) => newsLib.decorate(n, req.lang));
   res.render('public/home', { projects, news, sectors: SECTORS, sim: settings.get('simulator') });
 });
 
@@ -101,20 +102,58 @@ router.get('/simulator', (req, res) => {
 });
 
 router.get('/news', async (req, res) => {
-  const news = (await all('SELECT * FROM news WHERE published = 1 ORDER BY published_at DESC'))
-    .map((n) => ({ ...n, tr: parseI18n(n.i18n, req.lang) }));
-  res.render('public/news', { title: res.locals.t('news.title'), news });
+  const f = {
+    region: newsLib.REGIONS.includes(req.query.region) ? req.query.region : null,
+    sector: newsLib.SECTORS.includes(req.query.sector) ? req.query.sector : null,
+    type: newsLib.INV_TYPES.includes(req.query.type) ? req.query.type : null,
+    kind: ['news', 'report'].includes(req.query.kind) ? req.query.kind : null
+  };
+  let sql = `SELECT * FROM news WHERE ${newsLib.VISIBLE}`;
+  const params = [];
+  if (f.region) { sql += ' AND region = ?'; params.push(f.region); }
+  if (f.sector) { sql += ' AND sector = ?'; params.push(f.sector); }
+  if (f.type) { sql += ' AND inv_type = ?'; params.push(f.type); }
+  if (f.kind) { sql += ' AND kind = ?'; params.push(f.kind); }
+  sql += ` ORDER BY ${newsLib.ORDER} LIMIT 60`;
+  const items = (await all(sql, ...params)).map((n) => newsLib.decorate(n, req.lang));
+  const filtered = !!(f.region || f.sector || f.type || f.kind);
+  // Sélection : publications mises en avant (seulement sans filtre)
+  const featured = filtered ? [] : items.filter((n) => n.featured).slice(0, 3);
+  const featuredIds = new Set(featured.map((n) => n.id));
+  // Catégories réellement présentes (pour ne proposer que des filtres utiles)
+  const present = await all(`SELECT DISTINCT region, sector, inv_type FROM news WHERE ${newsLib.VISIBLE}`);
+  res.render('public/news', {
+    title: res.locals.t('news.title'),
+    featured,
+    items: items.filter((n) => !featuredIds.has(n.id)),
+    takeaways: filtered ? [] : items.filter((n) => n.takeaways.length).slice(0, 5).map((n) => ({ text: n.takeaways[0], slug: n.slug, title: n.tr.title, region: n.region })),
+    f, filtered,
+    options: {
+      region: newsLib.REGIONS.filter((r) => present.some((p) => p.region === r)),
+      sector: newsLib.SECTORS.filter((s) => present.some((p) => p.sector === s)),
+      type: newsLib.INV_TYPES.filter((s) => present.some((p) => p.inv_type === s))
+    }
+  });
 });
 
 router.get('/news/:slug', async (req, res, next) => {
-  const n = await one('SELECT * FROM news WHERE slug = ? AND published = 1', req.params.slug);
-  if (!n) return next();
-  const tr = parseI18n(n.i18n, req.lang);
-  res.render('public/news-item', { title: tr.title, item: n, tr, bodyHtml: markdown(tr.body) });
+  const row = await one(`SELECT * FROM news WHERE slug = ? AND ${newsLib.VISIBLE}`, req.params.slug);
+  if (!row) return next();
+  const n = newsLib.decorate(row, req.lang);
+  const related = (await all(`SELECT * FROM news WHERE ${newsLib.VISIBLE} AND id <> ? AND (region = ? OR sector = ?) ORDER BY ${newsLib.ORDER} LIMIT 3`, row.id, row.region, row.sector))
+    .map((r) => newsLib.decorate(r, req.lang));
+  res.render('public/news-item', { title: n.tr.title, n, bodyHtml: markdown(n.tr.body), related });
+});
+
+// Veille planifiée (appelée chaque jour par Vercel Cron). Sans secret : l'opération est sans danger
+// (elle ne fait qu'alimenter la file de suggestions à vérifier) et limitée à une exécution toutes les 6 h.
+router.get('/cron/news-watch', async (req, res) => {
+  const r = await newsLib.runWatchThrottled(6);
+  res.json({ ok: true, skipped: r.skipped, sources: r.report ? r.report.length : 0, added: r.report ? r.report.reduce((s, x) => s + x.added, 0) : 0 });
 });
 
 router.get('/news/:slug/file', async (req, res, next) => {
-  const n = await one('SELECT * FROM news WHERE slug = ? AND published = 1', req.params.slug);
+  const n = await one(`SELECT * FROM news WHERE slug = ? AND ${newsLib.VISIBLE}`, req.params.slug);
   if (!n || !n.file_path) return next();
   await sendStoredFile(res, n.file_path, n.file_name || 'rapport.pdf');
 });
