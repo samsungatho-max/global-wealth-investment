@@ -130,6 +130,64 @@
   </div>
 </section>
 
+<!-- ============ RÉSEAU DE PARTENAIRES ============ -->
+<section class="section section-navy partners" id="partenaires">
+  <div class="container">
+    <div class="split">
+      <div>
+        <div class="eyebrow reveal"><%= t('partners.eyebrow') %></div>
+        <h2 class="reveal"><%= t('partners.title') %></h2>
+        <p class="partners-lead reveal"><%= t('partners.p1') %></p>
+        <p class="reveal"><%= t('partners.p2') %></p>
+        <p class="reveal"><%= t('partners.p3') %></p>
+        <p class="reveal"><%= t('partners.p4') %></p>
+        <a class="btn btn-gold reveal" href="/opportunities"><%= t('partners.cta') %> <%- include('../partials/icon', { name: 'arrow', size: 16 }) %></a>
+      </div>
+      <div class="split-media reveal">
+        <%- include('../partials/photo', { p: photo('poignee-main'), label: t('ux.photo_label'), cls: 'ph-tall', sizes: '(min-width: 1000px) 45vw, 100vw' }) %>
+      </div>
+    </div>
+
+    <h3 class="partners-sub reveal"><%= t('partners.markets_title') %></h3>
+    <div class="market-grid">
+      <% [['immeuble','building',1],['agriculture','leaf',2],['port','ship',3],['usine','sun',4],['reunion','users',5]].forEach(function (m, i) { var mp = photo(m[0]); %>
+        <article class="market-card reveal" style="--d:<%= i * 70 %>ms">
+          <div class="market-media">
+            <img src="<%= mp.small %>" alt="<%= mp.alt %>" loading="lazy" decoding="async" width="800" height="600">
+            <span class="market-icon"><%- include('../partials/icon', { name: m[1], size: 20 }) %></span>
+          </div>
+          <div class="market-body">
+            <h4><%= t('partners.m' + m[2] + '_t') %></h4>
+            <p><%= t('partners.m' + m[2] + '_d') %></p>
+          </div>
+        </article>
+      <% }) %>
+    </div>
+    <p class="mosaic-note"><%= t('ux.photo_label') %> · <a href="/credits"><%= t('ux.credits') %></a></p>
+  </div>
+</section>
+
+<!-- ============ NOTRE ENGAGEMENT ============ -->
+<section class="section" id="engagement">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow eyebrow-dark eyebrow-center reveal"><%= t('partners.commit_eyebrow') %></div>
+      <h2 class="reveal"><%= t('partners.commit_title') %></h2>
+    </div>
+    <div class="pledge-grid">
+      <% [['eye',1],['search',2],['shield',3],['file',4],['pie',5]].forEach(function (c, i) { %>
+        <div class="pledge reveal" style="--d:<%= i * 70 %>ms">
+          <span class="pledge-num">0<%= c[1] %></span>
+          <span class="pledge-icon"><%- include('../partials/icon', { name: c[0], size: 22 }) %></span>
+          <h3><%= t('partners.c' + c[1] + '_t') %></h3>
+          <p><%= t('partners.c' + c[1] + '_d') %></p>
+        </div>
+      <% }) %>
+    </div>
+    <p class="risk-banner mt-3 reveal"><%- include('../partials/icon', { name: 'alert', size: 16 }) %> <%= t('partners.note') %></p>
+  </div>
+</section>
+
 <!-- ============ TRANSPARENCE ============ -->
 <section class="section section-gray">
   <div class="container split split-reverse">
