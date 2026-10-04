@@ -566,11 +566,6 @@ module.exports = {
   },
   partners: {
     eyebrow: "Unser Netzwerk internationaler Investitionspartner",
-    title: "Ihr Kapital im Dienst internationaler Chancen.",
-    p1: "Wir bauen ein Netzwerk von Investitionspartnern auf, die Projekte mit Potenzial in verschiedenen Wirtschaftssektoren und mehreren Regionen der Welt identifizieren, prüfen und begleiten.",
-    p2: "Unser Ansatz besteht darin, verfügbares Kapital mit Partnern und Projektträgern zusammenzubringen, deren Vorhaben Aussichten auf Rentabilität und nachhaltige Entwicklung bieten.",
-    p3: "Besonderen Wert legen wir auf Transparenz, Projektanalyse, die Zuverlässigkeit der Partner und die Risikobewertung. Jede Anlagechance muss vorab geprüft werden, um ihre wirtschaftliche Tragfähigkeit und ihre langfristigen Perspektiven besser einschätzen zu können.",
-    p4: "Unser Anspruch ist es, dauerhafte Beziehungen zwischen Anlegern und Unternehmern aufzubauen – auf der Grundlage von Vertrauen, Verantwortung und gemeinsamer Wertschöpfung.",
     markets_title: "Präsenz in mehreren Sektoren und Märkten",
     m1_t: "Immobilien und Infrastruktur",
     m1_d: "Wohnungen, Gewerbegebäude und Anlagen.",
@@ -595,6 +590,21 @@ module.exports = {
     c5_t: "Verantwortungsvolles Risikomanagement",
     c5_d: "Risikobewertung und Diversifikation, ohne Ergebnisversprechen.",
     note: "Es wird keine Rendite garantiert: Jede Anlage ist mit dem Risiko eines Kapitalverlusts verbunden. Als geprüft werden nur Partner, Projekte und Ergebnisse dargestellt, für die Nachweise vorliegen.",
-    cta: "Geprüfte Projekte ansehen"
+    title: "Projekten mit hoher Wertschöpfung Schwung verleihen – überall auf der Welt",
+    p1: "Sie suchen einen soliden Finanzpartner, um Ihr Projekt zu verwirklichen oder zu beschleunigen? Wir stellen unser Kapital und unsere Expertise in den Dienst von Visionären und gewissenhaften Unternehmern, die die Wirtschaft von morgen gestalten.",
+    eng_t: "Unser Engagement: in globale Exzellenz investieren",
+    eng_p: "Wir sind überzeugt, dass die besten Chancen keine Grenzen kennen. Deshalb stellen wir unsere Mittel direkt Projektträgern mit hohem Potenzial zur Verfügung – unabhängig von ihrem Standort. Ob sich Ihr Unternehmen in einer Phase der strategischen Entwicklung oder der internationalen Expansion befindet: Wir geben Ihnen die finanziellen Mittel, die Sie für jeden entscheidenden Schritt benötigen.",
+    why_t: "Warum vertrauen uns Projektträger?",
+    w1_t: "Internationale Präsenz & Wirkung",
+    w1_d: "Eine weltweite Handlungsfähigkeit, um rentable Chancen auf allen Kontinenten zu begleiten.",
+    w2_t: "Direktes, maßgeschneidertes Kapital",
+    w2_d: "Eine sorgfältige Verwaltung der bereitgestellten Mittel, um Finanzierungsbedingungen zu gewährleisten, die der wirtschaftlichen Realität Ihrer Branche entsprechen.",
+    w3_t: "Transparenter, strukturierter Prozess",
+    w3_d: "Von der Prüfung Ihres Businessplans bis zur Auszahlung des Kapitals beruht jede Entscheidung auf klaren, ethischen und professionellen Bewertungskriterien.",
+    w4_t: "Langfristige Partnerschaft",
+    w4_d: "Mehr als ein reiner Finanzbeitrag: Wir verstehen uns als vertrauenswürdiger Partner, der auf Wertschöpfung und geteilte Rentabilität ausgerichtet ist.",
+    cta_t: "Sie haben ein tragfähiges, rentables Projekt?",
+    cta_p: "Lassen Sie Ihre Unterlagen von unseren Expertenteams prüfen und erhalten Sie Zugang zu dem Kapital, das Sie für den nächsten Wachstumsschritt benötigen.",
+    cta: "Meine Unterlagen prüfen lassen"
   }
 };

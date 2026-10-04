@@ -566,11 +566,6 @@ module.exports = {
   },
   partners: {
     eyebrow: "Our network of international investment partners",
-    title: "Your capital, at the service of international opportunities.",
-    p1: "We are building a network of investment partners who identify, assess and support projects with potential across different economic sectors and several regions of the world.",
-    p2: "Our approach is to connect available capital with partners and project sponsors whose initiatives offer prospects of profitability and sustainable development.",
-    p3: "We pay particular attention to transparency, project analysis, partner reliability and risk assessment. Every opportunity must undergo a prior study to better appraise its economic viability and long-term prospects.",
-    p4: "Our ambition is to build lasting relationships between investors and entrepreneurs, based on trust, responsibility and shared value creation.",
     markets_title: "A presence across several sectors and markets",
     m1_t: "Real estate & infrastructure",
     m1_d: "Housing, commercial buildings and facilities.",
@@ -595,6 +590,21 @@ module.exports = {
     c5_t: "Responsible risk management",
     c5_d: "Risk assessment and diversification, with no promise of results.",
     note: "No return is guaranteed: all investments carry a risk of capital loss. Only partners, projects and results supported by documentary evidence are presented as verified.",
-    cta: "See the projects under review"
+    title: "Giving momentum to high value-added projects, anywhere in the world",
+    p1: "Looking for a solid financial partner to bring your project to life or accelerate it? We put our capital and expertise at the service of visionaries and rigorous entrepreneurs who are shaping tomorrow’s economy.",
+    eng_t: "Our commitment: investing in global excellence",
+    eng_p: "We believe the best opportunities know no borders. That is why we allocate our funds directly to high-potential project sponsors, wherever they are based. Whether your company is in a phase of strategic development or international expansion, we provide the financial resources you need to reach each key milestone.",
+    why_t: "Why do project sponsors trust us?",
+    w1_t: "International presence & impact",
+    w1_d: "A global capacity to act, supporting profitable opportunities on every continent.",
+    w2_t: "Direct, tailor-made capital",
+    w2_d: "Rigorous management of the funds allocated, to ensure financing terms suited to the economic reality of your sector.",
+    w3_t: "Transparent, structured process",
+    w3_d: "From the review of your business plan to the release of capital, every decision is based on clear, ethical and professional assessment criteria.",
+    w4_t: "Long-term partnership",
+    w4_d: "More than a simple financial contribution: we position ourselves as a trusted partner focused on value creation and shared profitability.",
+    cta_t: "Do you have a viable, profitable project?",
+    cta_p: "Have your file reviewed by our teams of experts and access the capital you need to scale up.",
+    cta: "Have my file reviewed"
   }
 };

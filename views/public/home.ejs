@@ -138,14 +138,31 @@
         <div class="eyebrow reveal"><%= t('partners.eyebrow') %></div>
         <h2 class="reveal"><%= t('partners.title') %></h2>
         <p class="partners-lead reveal"><%= t('partners.p1') %></p>
-        <p class="reveal"><%= t('partners.p2') %></p>
-        <p class="reveal"><%= t('partners.p3') %></p>
-        <p class="reveal"><%= t('partners.p4') %></p>
-        <a class="btn btn-gold reveal" href="/opportunities"><%= t('partners.cta') %> <%- include('../partials/icon', { name: 'arrow', size: 16 }) %></a>
+        <h3 class="partners-h reveal"><%= t('partners.eng_t') %></h3>
+        <p class="reveal"><%= t('partners.eng_p') %></p>
       </div>
       <div class="split-media reveal">
         <%- include('../partials/photo', { p: photo('poignee-main'), label: t('ux.photo_label'), cls: 'ph-tall', sizes: '(min-width: 1000px) 45vw, 100vw' }) %>
       </div>
+    </div>
+
+    <h3 class="partners-sub reveal"><%= t('partners.why_t') %></h3>
+    <div class="why-grid">
+      <% [['globe',1],['pie',2],['search',3],['users',4]].forEach(function (w, i) { %>
+        <div class="why-card reveal" style="--d:<%= i * 70 %>ms">
+          <span class="why-icon"><%- include('../partials/icon', { name: w[0], size: 22 }) %></span>
+          <h4><%= t('partners.w' + w[1] + '_t') %></h4>
+          <p><%= t('partners.w' + w[1] + '_d') %></p>
+        </div>
+      <% }) %>
+    </div>
+
+    <div class="partners-cta reveal">
+      <div>
+        <h3><%= t('partners.cta_t') %></h3>
+        <p><%= t('partners.cta_p') %></p>
+      </div>
+      <a class="btn btn-gold" href="/contact"><%= t('partners.cta') %> <%- include('../partials/icon', { name: 'arrow', size: 16 }) %></a>
     </div>
 
     <h3 class="partners-sub reveal"><%= t('partners.markets_title') %></h3>

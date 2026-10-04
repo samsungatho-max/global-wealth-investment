@@ -566,11 +566,6 @@ module.exports = {
   },
   partners: {
     eyebrow: "Nuestra red de socios de inversión internacionales",
-    title: "Su capital, al servicio de oportunidades internacionales.",
-    p1: "Desarrollamos una red de socios de inversión que identifican, estudian y acompañan proyectos con potencial en distintos sectores económicos y en varias regiones del mundo.",
-    p2: "Nuestro enfoque consiste en poner en relación los capitales disponibles con socios y promotores de proyectos cuyas iniciativas presentan perspectivas de rentabilidad y de desarrollo sostenible.",
-    p3: "Concedemos una importancia especial a la transparencia, al análisis de los proyectos, a la fiabilidad de los socios y a la evaluación de los riesgos. Cada oportunidad debe ser objeto de un estudio previo para apreciar mejor su viabilidad económica y sus perspectivas a largo plazo.",
-    p4: "Nuestra ambición es construir relaciones duraderas entre inversores y emprendedores, basadas en la confianza, la responsabilidad y la creación de valor compartido.",
     markets_title: "Presencia en varios sectores y mercados",
     m1_t: "Inmobiliario e infraestructuras",
     m1_d: "Viviendas, edificios comerciales y equipamientos.",
@@ -595,6 +590,21 @@ module.exports = {
     c5_t: "Gestión responsable de los riesgos",
     c5_d: "Evaluación de riesgos y diversificación, sin promesa de resultados.",
     note: "Ninguna rentabilidad está garantizada: toda inversión conlleva un riesgo de pérdida de capital. Solo se presentan como verificados los socios, proyectos y resultados respaldados por justificantes.",
-    cta: "Ver los proyectos estudiados"
+    title: "Dar impulso a los proyectos de alto valor añadido, en todo el mundo",
+    p1: "¿Busca un socio financiero sólido para concretar o acelerar su proyecto? Ponemos nuestro capital y nuestra experiencia al servicio de visionarios y emprendedores rigurosos que dan forma a la economía del mañana.",
+    eng_t: "Nuestro compromiso: invertir en la excelencia globalizada",
+    eng_p: "Creemos que las mejores oportunidades no conocen fronteras. Por eso asignamos directamente nuestros fondos a promotores de proyectos de alto potencial, sea cual sea su ubicación geográfica. Tanto si su empresa se encuentra en fase de desarrollo estratégico como de expansión internacional, le aportamos los recursos financieros necesarios para superar cada etapa clave.",
+    why_t: "¿Por qué confían en nosotros los promotores de proyectos?",
+    w1_t: "Presencia e impacto internacionales",
+    w1_d: "Una capacidad de intervención global para acompañar oportunidades rentables en todos los continentes.",
+    w2_t: "Capital directo y a medida",
+    w2_d: "Una gestión rigurosa de los fondos asignados para garantizar condiciones de financiación adaptadas a la realidad económica de su sector.",
+    w3_t: "Proceso transparente y estructurado",
+    w3_d: "Desde el estudio de su plan de negocio hasta el desembolso del capital, cada decisión se basa en criterios de evaluación claros, éticos y profesionales.",
+    w4_t: "Colaboración a largo plazo",
+    w4_d: "Más que una simple aportación financiera, nos posicionamos como un socio de confianza orientado a la creación de valor y a la rentabilidad compartida.",
+    cta_t: "¿Tiene un proyecto viable y rentable?",
+    cta_p: "Haga analizar su expediente por nuestros equipos de expertos y acceda al capital necesario para cambiar de escala.",
+    cta: "Solicitar el análisis de mi expediente"
   }
 };

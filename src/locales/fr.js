@@ -566,11 +566,6 @@ module.exports = {
   },
   partners: {
     eyebrow: "Notre réseau de partenaires d’investissement internationaux",
-    title: "Votre capital, au service d’opportunités internationales.",
-    p1: "Nous développons un réseau de partenaires d’investissement qui identifient, étudient et accompagnent des projets à potentiel dans différents secteurs économiques et dans plusieurs régions du monde.",
-    p2: "Notre approche consiste à mettre en relation les capitaux disponibles avec des partenaires et des porteurs de projets dont les initiatives présentent des perspectives de rentabilité et de développement durable.",
-    p3: "Nous accordons une importance particulière à la transparence, à l’analyse des projets, à la fiabilité des partenaires et à l’évaluation des risques. Chaque opportunité doit faire l’objet d’une étude préalable afin de mieux apprécier sa viabilité économique et ses perspectives à long terme.",
-    p4: "Notre ambition est de construire des relations durables entre investisseurs et entrepreneurs, fondées sur la confiance, la responsabilité et la création de valeur partagée.",
     markets_title: "Une présence dans plusieurs secteurs et marchés",
     m1_t: "Immobilier et infrastructures",
     m1_d: "Logements, bâtiments commerciaux et équipements.",
@@ -595,6 +590,21 @@ module.exports = {
     c5_t: "Gestion responsable des risques",
     c5_d: "Évaluation des risques et diversification, sans promesse de résultat.",
     note: "Aucun rendement n’est garanti : tout investissement comporte un risque de perte en capital. Seuls les partenaires, projets et résultats appuyés par des justificatifs sont présentés comme vérifiés.",
-    cta: "Voir les projets étudiés"
+    title: "Donner de l’élan aux projets à forte valeur ajoutée, partout dans le monde",
+    p1: "À la recherche d’un partenaire financier solide pour concrétiser ou accélérer votre projet ? Nous mettons notre capital et notre expertise au service de visionnaires et d’entrepreneurs rigoureux qui façonnent l’économie de demain.",
+    eng_t: "Notre engagement : investir dans l’excellence globalisée",
+    eng_p: "Nous croyons que les meilleures opportunités ne connaissent pas de frontières. C’est pourquoi nous allouons directement nos fonds à des porteurs de projets à haut potentiel, quel que soit leur ancrage géographique. Que votre entreprise soit en phase de développement stratégique ou d’expansion internationale, nous vous apportons les ressources financières nécessaires pour franchir chaque étape clé.",
+    why_t: "Pourquoi les porteurs de projets nous font confiance ?",
+    w1_t: "Présence & impact internationaux",
+    w1_d: "Une capacité d’intervention globale pour accompagner des opportunités rentables sur tous les continents.",
+    w2_t: "Capital direct & sur mesure",
+    w2_d: "Une gestion rigoureuse des fonds attribués pour garantir des conditions de financement adaptées à la réalité économique de votre secteur.",
+    w3_t: "Processus transparent & structuré",
+    w3_d: "De l’étude de votre business plan au déblocage des capitaux, chaque décision repose sur des critères d’évaluation clairs, éthiques et professionnels.",
+    w4_t: "Partenariat long terme",
+    w4_d: "Plus qu’un simple apport financier, nous nous positionnons comme un partenaire de confiance axé sur la création de valeur et la rentabilité partagée.",
+    cta_t: "Vous portez un projet viable et rentable ?",
+    cta_p: "Faites analyser votre dossier par nos équipes d’experts et accédez aux capitaux nécessaires pour changer d’échelle.",
+    cta: "Faire analyser mon dossier"
   }
 };
