@@ -1,4 +1,4 @@
-/* Global Wealth Investment — scripts client (aucun script inline : CSP stricte) */
+/* SYNERGIX COMPANY PARTNERS — scripts client (aucun script inline : CSP stricte) */
 (function () {
   'use strict';
 

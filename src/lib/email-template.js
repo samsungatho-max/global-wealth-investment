@@ -42,8 +42,8 @@ function render({ lang = 'fr', name, paragraphs = [], code, cta, after = [] }) {
 <tr><td align="center" style="padding:24px 12px;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:#ffffff;border-radius:10px;">
     <tr><td style="background:#0a1628;padding:22px 28px;border-radius:10px 10px 0 0;">
-      <span style="font-family:Arial,Helvetica,sans-serif;font-size:17px;font-weight:bold;letter-spacing:1px;color:#ffffff;text-transform:uppercase;">Global Wealth</span>
-      <span style="font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:3px;color:#d7bd8a;text-transform:uppercase;">&nbsp;Investment</span>
+      <span style="font-family:Arial,Helvetica,sans-serif;font-size:17px;font-weight:bold;letter-spacing:2px;color:#ffffff;text-transform:uppercase;">SYNERGIX</span>
+      <span style="font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:3px;color:#d7bd8a;text-transform:uppercase;">&nbsp;Company Partners</span>
     </td></tr>
     <tr><td style="padding:30px 28px 10px;">
       ${p(greeting)}

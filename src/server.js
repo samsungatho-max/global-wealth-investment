@@ -108,7 +108,7 @@ let sessionMiddleware = null;
 app.use((req, res, next) => {
   if (!sessionMiddleware) {
     sessionMiddleware = session({
-      name: 'gwi.sid',
+      name: 'sx.sid',
       secret: process.env.SESSION_SECRET || 'dev-only-secret-change-me-in-production-please',
       store: new security.PgStore(),
       proxy: !!(process.env.TRUST_PROXY || process.env.VERCEL),
@@ -133,6 +133,7 @@ app.use(async (req, res, next) => {
   const lang = req.lang;
 
   res.locals.site = settings.get('site_name');
+  res.locals.baseUrl = require('./lib/notify').baseUrl();
   res.locals.company = settings.get('company');
   res.locals.rates = settings.get('rates');
   res.locals.currency = currency;
@@ -198,7 +199,7 @@ app.use((err, req, res, next) => {
 const PORT = Number(process.env.PORT || 3000);
 if (require.main === module) {
   init()
-    .then(() => app.listen(PORT, () => console.log(`Global Wealth Investment — http://localhost:${PORT}`)))
+    .then(() => app.listen(PORT, () => console.log(`SYNERGIX COMPANY PARTNERS — http://localhost:${PORT}`)))
     .catch((err) => { console.error('Initialisation impossible :', err); process.exit(1); });
 }
 

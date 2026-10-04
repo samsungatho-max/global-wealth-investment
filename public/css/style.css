@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Global Wealth Investment — feuille de style principale
+   SYNERGIX COMPANY PARTNERS — feuille de style principale
    Bleu nuit, or champagne, blanc, gris clair. Mobile-first.
    ========================================================================== */
 :root {
@@ -89,8 +89,8 @@ p { margin: 0 0 1em; }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--white); margin-right: auto; }
 .brand:hover { color: var(--white); }
 .brand-mark { width: 38px; height: 38px; flex: none; }
-.brand-name { white-space: nowrap; font-family: var(--font-head); font-weight: 700; font-size: 1.02rem; letter-spacing: .04em; line-height: 1.1; text-transform: uppercase; }
-.brand-name small { display: block; font-size: .62rem; font-weight: 500; letter-spacing: .28em; color: var(--gold-400); }
+.brand-name { white-space: nowrap; font-family: var(--font-head); font-weight: 700; font-size: 1.16rem; letter-spacing: .12em; line-height: 1.1; text-transform: uppercase; }
+.brand-name small { display: block; margin-top: 2px; font-size: .56rem; font-weight: 600; letter-spacing: .2em; color: var(--gold-400); }
 .main-nav { display: none; }
 .main-nav a { white-space: nowrap; color: rgba(255, 255, 255, .82); text-decoration: none; font-size: .92rem; font-weight: 500; padding: 8px 2px; border-bottom: 2px solid transparent; }
 .main-nav a:hover, .main-nav a[aria-current="page"] { color: var(--white); border-bottom-color: var(--gold-500); }
@@ -375,8 +375,8 @@ details.box[open] > summary { margin-bottom: 12px; }
   .header-inner { gap: 8px; height: 64px; }
   .brand { gap: 8px; }
   .brand-mark { width: 30px; height: 30px; }
-  .brand-name { font-size: .8rem; letter-spacing: .02em; }
-  .brand-name small { font-size: .52rem; letter-spacing: .2em; }
+  .brand-name { font-size: .92rem; letter-spacing: .1em; }
+  .brand-name small { font-size: .46rem; letter-spacing: .16em; }
   .header-tools { gap: 5px; }
   .dropdown > summary { padding: 6px 7px; font-size: .75rem; }
   .menu-toggle { width: 38px; height: 34px; }

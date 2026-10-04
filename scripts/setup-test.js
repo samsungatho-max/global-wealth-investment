@@ -6,7 +6,7 @@ const path = require('path');
 const crypto = require('crypto');
 const assert = require('assert');
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gwi-setup-'));
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'synergix-setup-'));
 const token = crypto.randomBytes(32).toString('hex');
 process.env.DATA_DIR = tmp;
 process.env.ADMIN_SEED = 'false';
@@ -27,7 +27,7 @@ delete process.env.SESSION_SECRET;
       headers: { cookie, ...(body ? { 'content-type': 'application/x-www-form-urlencoded' } : {}) },
       body: body ? new URLSearchParams({ _csrf: csrf, ...body }).toString() : undefined
     });
-    for (const c of res.headers.getSetCookie()) if (c.startsWith('gwi.sid=')) cookie = c.split(';')[0];
+    for (const c of res.headers.getSetCookie()) if (c.startsWith('sx.sid=')) cookie = c.split(';')[0];
     const text = await res.text();
     const m = text.match(/name="_csrf" value="([^"]+)"/); if (m) csrf = m[1];
     return { status: res.status, location: res.headers.get('location'), text };

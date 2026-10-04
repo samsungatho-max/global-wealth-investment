@@ -3,7 +3,7 @@
 const { one, all, run } = require('../db');
 
 const DEFAULTS = {
-  site_name: 'Global Wealth Investment',
+  site_name: 'SYNERGIX COMPANY PARTNERS',
   company: {
     legal_name: '[Raison sociale à compléter]',
     legal_form: '[Forme juridique à compléter]',

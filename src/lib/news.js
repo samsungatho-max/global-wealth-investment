@@ -105,7 +105,7 @@ async function runWatch({ maxAgeDays = 45 } = {}) {
   for (const s of sources) {
     let added = 0, status = 'ok';
     try {
-      const res = await fetch(s.feed_url, { signal: AbortSignal.timeout(12000), headers: { 'User-Agent': 'Mozilla/5.0 (compatible; GWI-NewsWatch/1.0)', Accept: 'application/rss+xml, application/atom+xml, text/xml, */*' } });
+      const res = await fetch(s.feed_url, { signal: AbortSignal.timeout(12000), headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SynergixNewsWatch/1.0)', Accept: 'application/rss+xml, application/atom+xml, text/xml, */*' } });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const items = parseFeed(await res.text()).slice(0, 25);
       if (!items.length) status = 'aucune entrée lisible';

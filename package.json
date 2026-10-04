@@ -1,8 +1,8 @@
 {
-  "name": "global-wealth-investment",
+  "name": "synergix-company-partners",
   "version": "1.0.0",
   "private": true,
-  "description": "Plateforme internationale d'investissement — Global Wealth Investment",
+  "description": "Plateforme internationale d'investissement — SYNERGIX COMPANY PARTNERS",
   "type": "commonjs",
   "engines": {
     "node": "22.x"

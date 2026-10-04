@@ -1,4 +1,4 @@
-# Global Wealth Investment — Plateforme internationale d'investissement
+# SYNERGIX COMPANY PARTNERS — Plateforme internationale d'investissement
 
 > « Chaque investissement mérite une vision. Chaque ambition mérite une croissance durable. »
 
