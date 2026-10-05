@@ -22,11 +22,12 @@ const CONDITIONS = {
   de: 'Beispielprojekt: Auf diesem Projektblatt ist keine Zeichnung möglich. Bei einem realen Projekt ist die Beteiligung Anlegern mit bestätigter Identität vorbehalten, nach Lektüre der Projektunterlagen. Das Kapital bleibt für die geplante Laufzeit gebunden und kann ganz oder teilweise verloren gehen.'
 };
 
+const dec = (n) => String(n).replace('.', ',');
 const FEES = {
-  fr: (e, m) => `Exemple indicatif : frais d’entrée de ${e} % et frais de gestion de ${m} % par an. Les frais réels figurent dans les documents de chaque projet.`,
+  fr: (e, m) => `Exemple indicatif : frais d’entrée de ${dec(e)} % et frais de gestion de ${dec(m)} % par an. Les frais réels figurent dans les documents de chaque projet.`,
   en: (e, m) => `Indicative example: entry fee of ${e}% and management fee of ${m}% per year. Actual fees are set out in each project’s documents.`,
-  es: (e, m) => `Ejemplo orientativo: comisión de entrada del ${e} % y comisión de gestión del ${m} % anual. Las comisiones reales figuran en los documentos de cada proyecto.`,
-  de: (e, m) => `Unverbindliches Beispiel: Ausgabeaufschlag von ${e} % und Verwaltungsgebühr von ${m} % pro Jahr. Die tatsächlichen Gebühren stehen in den Unterlagen des jeweiligen Projekts.`
+  es: (e, m) => `Ejemplo orientativo: comisión de entrada del ${dec(e)} % y comisión de gestión del ${dec(m)} % anual. Las comisiones reales figuran en los documentos de cada proyecto.`,
+  de: (e, m) => `Unverbindliches Beispiel: Ausgabeaufschlag von ${dec(e)} % und Verwaltungsgebühr von ${dec(m)} % pro Jahr. Die tatsächlichen Gebühren stehen in den Unterlagen des jeweiligen Projekts.`
 };
 
 /** t[lang] = [titre, résumé, description] */

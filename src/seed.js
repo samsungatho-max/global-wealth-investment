@@ -255,6 +255,25 @@ async function migrateCurrency() {
   await run(`INSERT INTO meta (key, value) VALUES (?, datetime('now')) ON CONFLICT (key) DO NOTHING`, key);
 }
 
+/**
+ * Corrections ponctuelles des fiches exemple (une seule fois) :
+ *  - virgule décimale dans les frais (FR / ES / DE) des fiches déjà créées ;
+ *  - les 4 fiches fictives d'origine restent signalées « Projet exemple » tant qu'elles n'ont pas été
+ *    remplacées par un projet réel (montant inchangé, aucun investissement enregistré).
+ */
+async function fixExampleProjects() {
+  const key = 'project_fix:2026-10-exemples';
+  if (await one('SELECT key FROM meta WHERE key = ?', key)) return;
+  for (const n of ['1.2', '0.8', '2.5', '1.5']) {
+    await run(`UPDATE projects SET i18n = replace(i18n, ?, ?) WHERE slug LIKE 'exemple-%'`, `${n} %`, `${n.replace('.', ',')} %`);
+  }
+  for (const p of DEMO_PROJECTS) {
+    await run(`UPDATE projects SET is_demo = 1 WHERE slug = ? AND is_demo = 0 AND target_cents = ?
+               AND NOT EXISTS (SELECT 1 FROM investments WHERE investments.project_id = projects.id)`, p.slug, p.target * 100);
+  }
+  await run(`INSERT INTO meta (key, value) VALUES (?, datetime('now')) ON CONFLICT (key) DO NOTHING`, key);
+}
+
 async function seed() {
   await renameBrand();
   await migrateCurrency();
@@ -262,6 +281,7 @@ async function seed() {
   await seedPages();
   await seedDemoProjects();
   await seedExampleProjects();
+  await fixExampleProjects();
   await seedNews();
   await require('./lib/news').seedSources();
 }
