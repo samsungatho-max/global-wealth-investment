@@ -139,9 +139,39 @@ async function main() {
   step('Photos WebP servies, signalées comme illustrations et créditées');
 
   const home = await pub.get('/opportunities');
-  assert.match(home.text, /projet fictif/);
+  assert.match(home.text, /Projet exemple — simulation/);
   assert.doesNotMatch(home.text, /garanti[e]? de \d/i);
   step('Fiches de démonstration clairement marquées comme fictives');
+
+  // ---------- Opportunités internationales : catégories, filtres, devise USD ----------
+  const cards = (html) => (html.match(/<article class="card project-card">/g) || []).length;
+  assert.strictEqual(cards(home.text), 16, '16 fiches exemple');
+  assert.strictEqual((home.text.match(/chip-demo/g) || []).length, 16, 'chaque fiche exemple porte le bandeau « Projet exemple »');
+  assert.match(home.text, /Opportunités internationales/);
+  assert.match(home.text, /Découvrez des projets sélectionnés dans différents secteurs et marchés à travers le monde\./);
+  assert.match(home.text, /45\s000\s000\s\$/, 'montants affichés en dollars par défaut');
+  assert.doesNotMatch(home.text, /ds€/);
+  for (const s of ['real_estate', 'commercial', 'agriculture', 'industry', 'energy', 'trade', 'infrastructure', 'tourism', 'technology', 'development']) {
+    assert.ok(cards((await pub.get(`/opportunities?sector=${s}`)).text) >= 1, `catégorie ${s} illustrée`);
+  }
+  assert.strictEqual(cards((await pub.get('/opportunities?country=Canada')).text), 1);
+  assert.strictEqual(cards((await pub.get('/opportunities?amount=a4')).text), 4, 'plus de 20 M$');
+  assert.strictEqual(cards((await pub.get('/opportunities?risk=5')).text), 1);
+  assert.strictEqual(cards((await pub.get('/opportunities?sector=commercial&risk=2&amount=a3')).text), 1);
+  const none = await pub.get('/opportunities?sector=tourism&risk=1');
+  assert.strictEqual(cards(none.text), 0);
+  assert.match(none.text, /Aucun projet ne correspond à ces critères/);
+  assert.strictEqual(cards((await pub.get('/opportunities?sector=x&amount=zz&risk=9&country=Nulle')).text), 16, 'filtres invalides ignorés');
+  const sheet = await pub.get('/opportunities/exemple-complexe-hotelier');
+  assert.match(sheet.text, /Projet exemple — simulation/);
+  assert.match(sheet.text, /15\s000\s000,00\s\$/);
+  assert.match(sheet.text, /hotel-1600\.webp/);
+  assert.doesNotMatch(sheet.text, /id="interest"/, 'aucune souscription sur une fiche exemple');
+  const homePage = await pub.get('/');
+  assert.strictEqual(cards(homePage.text), 6);
+  assert.match(homePage.text, /Opportunités internationales/);
+  assert.match((await pub.get('/opportunities?lang=en&currency=USD')).text, /\$45,000,000</);
+  step('Opportunités internationales : 10 catégories, filtres pays / secteur / montant / risque, dollars par défaut');
 
   // CSRF
   const noCsrf = await fetch(base + '/contact', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded', cookie: pub.cookie }, body: 'subject=x&body=y', redirect: 'manual' });
@@ -409,9 +439,9 @@ async function main() {
   step('Validation KYC par l\'administrateur');
 
   await adm.get('/admin/settings');
-  r = await adm.post('/admin/settings/general', { site_name: 'GLOBACOR Partners INC', lang_fr: 'on', lang_en: 'on', lang_es: 'on', lang_de: 'on', cur_USD: 'on', cur_GBP: 'on', cur_XOF: 'on', funds_enabled: 'on' });
+  r = await adm.post('/admin/settings/general', { site_name: 'GLOBACOR Partners INC', lang_fr: 'on', lang_en: 'on', lang_es: 'on', lang_de: 'on', cur_EUR: 'on', cur_GBP: 'on', cur_XOF: 'on', funds_enabled: 'on' });
   assert.strictEqual(await one(`SELECT value FROM settings WHERE key = 'funds_enabled'`), undefined, 'activation impossible sans confirmation réglementaire');
-  await adm.post('/admin/settings/general', { site_name: 'GLOBACOR Partners INC', lang_fr: 'on', lang_en: 'on', lang_es: 'on', lang_de: 'on', cur_USD: 'on', cur_GBP: 'on', cur_XOF: 'on', funds_enabled: 'on', funds_ack: 'on' });
+  await adm.post('/admin/settings/general', { site_name: 'GLOBACOR Partners INC', lang_fr: 'on', lang_en: 'on', lang_es: 'on', lang_de: 'on', cur_EUR: 'on', cur_GBP: 'on', cur_XOF: 'on', funds_enabled: 'on', funds_ack: 'on' });
   step('Réception de fonds activable uniquement avec confirmation réglementaire');
 
   // ---------- Dépôt ----------
@@ -454,7 +484,7 @@ async function main() {
 
   await adm.post(`/admin/investments/${invRow.id}/valuations`, { value: '3150', date: '2026-06-30', note: 'Rapport semestriel' });
   const dash = (await inv.get('/account')).text;
-  assert.match(dash, /3\s?150,00\s?€/);
+  assert.match(dash, /3\s?150,00\s?\$/);
   assert.match(dash, /\+5,00\s?%/);
   step('Valorisation datée visible dans le tableau de bord investisseur');
 

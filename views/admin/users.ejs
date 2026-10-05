@@ -19,7 +19,7 @@
             <td class="small"><%= u.email %><% if (!u.email_verified_at) { %> <span class="chip chip-warning">non vérifié</span><% } %></td>
             <td class="small"><%= countryName(u.country) %></td>
             <td><span class="chip <%= { approved: 'chip-success', pending: 'chip-warning', rejected: 'chip-danger' }[u.kyc_status] || '' %>"><%= t('kyc.' + u.kyc_status) %></span></td>
-            <td class="num"><%= eur(u.cash) %></td>
+            <td class="num"><%= usd(u.cash) %></td>
             <td class="small"><%= fmtDate(u.created_at) %></td>
             <td><span class="chip <%= u.status === 'active' ? 'chip-success' : 'chip-danger' %>"><%= u.status === 'active' ? 'Actif' : 'Suspendu' %></span></td>
           </tr>

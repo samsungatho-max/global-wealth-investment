@@ -13,7 +13,7 @@
         <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><%= error %></div><% } %>
         <form class="form" method="post" action="/account/deposit" style="max-width:420px">
           <input type="hidden" name="_csrf" value="<%= csrf %>">
-          <div><label for="d-amount"><%= t('deposit.amount') %></label><input id="d-amount" name="amount" type="text" inputmode="decimal" required pattern="[0-9 ]+([.,][0-9]{1,2})?"><p class="hint"><%= t('deposit.min', { amount: eur(minCents) }) %></p></div>
+          <div><label for="d-amount"><%= t('deposit.amount') %></label><input id="d-amount" name="amount" type="text" inputmode="decimal" required pattern="[0-9 ]+([.,][0-9]{1,2})?"><p class="hint"><%= t('deposit.min', { amount: usd(minCents) }) %></p></div>
           <button class="btn btn-gold" type="submit"><%= t('deposit.submit') %></button>
         </form>
       </div>

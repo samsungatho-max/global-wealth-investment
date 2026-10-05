@@ -5,7 +5,7 @@
     <div class="dash-head"><h1><%= t('deposit.instructions') %></h1><%- include('../partials/tx-status', { status: row.status }) %></div>
     <div class="card">
       <dl class="kv">
-        <dt><%= t('tx.amount') %></dt><dd><strong><%= eur(row.amount_cents) %></strong><% if (currency !== 'EUR') { %> <span class="muted">(≈ <%= money(row.amount_cents) %>)</span><% } %></dd>
+        <dt><%= t('tx.amount') %></dt><dd><strong><%= usd(row.amount_cents) %></strong><% if (currency !== 'USD') { %> <span class="muted">(≈ <%= money(row.amount_cents) %>)</span><% } %></dd>
         <dt><%= t('tx.date') %></dt><dd><%= fmtDate(row.created_at, true) %></dd>
       </dl>
       <p class="mt-3 mb-0"><strong><%= t('deposit.ref_label') %> :</strong></p>

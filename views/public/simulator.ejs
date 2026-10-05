@@ -1,8 +1,8 @@
 <%- include('../partials/top') %>
 <%
-  var rateMap = { EUR: 1 };
+  var rateMap = { USD: 1 };
   currencies.forEach(function (c) { if (rates.values && rates.values[c.code]) rateMap[c.code] = rates.values[c.code]; });
-  var simCurrency = rateMap[currency] ? currency : 'EUR';
+  var simCurrency = rateMap[currency] ? currency : 'USD';
   var startCapital = simCurrency === 'XOF' ? Math.round(sim.capital * rateMap.XOF) : Math.round(sim.capital * rateMap[simCurrency] * 100) / 100;
   var locales = { fr: 'fr-FR', en: 'en-GB', es: 'es-ES', de: 'de-DE' };
 %>

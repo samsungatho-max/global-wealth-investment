@@ -74,12 +74,11 @@
       <p class="reveal"><%= t('home.sectors_sub') %></p>
     </div>
     <div class="sector-grid">
-      <% var sIcons = { real_estate: 'building', agriculture: 'leaf', energy: 'sun', trade: 'ship' }; %>
-      <% sectors.forEach(function (s, i) { var sp = sectorPhoto(s); %>
-      <a class="sector-tile reveal" style="--d:<%= i * 90 %>ms" href="/opportunities?sector=<%= s %>">
-        <img src="<%= sp.small %>" srcset="<%= sp.small %> 800w, <%= sp.large %> 1600w" sizes="(min-width: 1000px) 25vw, (min-width: 640px) 50vw, 100vw" alt="<%= sp.alt %>" loading="lazy" decoding="async" width="800" height="600">
+            <% sectors.forEach(function (s, i) { var sp = sectorPhoto(s); %>
+      <a class="sector-tile reveal" style="--d:<%= (i % 5) * 80 %>ms" href="/opportunities?sector=<%= s %>">
+        <img src="<%= sp.small %>" srcset="<%= sp.small %> 800w, <%= sp.large %> 1600w" sizes="(min-width: 1100px) 20vw, (min-width: 640px) 50vw, 100vw" alt="<%= sp.alt %>" loading="lazy" decoding="async" width="800" height="600">
         <div class="sector-tile-body">
-          <span class="sector-tile-icon"><%- include('../partials/icon', { name: sIcons[s], size: 22 }) %></span>
+          <span class="sector-tile-icon"><%- include('../partials/icon', { name: sectorIcon(s), size: 22 }) %></span>
           <h3><%= t('sector.' + s) %></h3>
           <p><%= t('sector.' + s + '_d') %></p>
           <span class="sector-tile-link"><%= t('ux.see_projects') %> <%- include('../partials/icon', { name: 'arrow', size: 16 }) %></span>
@@ -115,15 +114,17 @@
   <div class="container">
     <div class="panel-head">
       <div>
-        <div class="eyebrow eyebrow-dark reveal"><%= t('ux.opp_eyebrow') %></div>
-        <h2 class="mb-0 reveal"><%= t('ux.opp_title') %></h2>
+        <div class="eyebrow eyebrow-dark reveal"><%= t('nav.opportunities') %></div>
+        <h2 class="reveal"><%= t('opp.title') %></h2>
+        <p class="opp-lead mb-0 reveal"><%= t('opp.lead') %></p>
       </div>
       <a class="btn btn-ghost" href="/opportunities"><%= t('home.featured_all') %> <%- include('../partials/icon', { name: 'arrow', size: 16 }) %></a>
     </div>
     <% if (projects.length) { %>
       <div class="grid grid-3 mt-3">
-        <% projects.forEach(function (p, i) { %><div class="reveal" style="--d:<%= i * 90 %>ms"><%- include('../partials/project-card', { p: p }) %></div><% }) %>
+        <% projects.forEach(function (p, i) { %><div class="reveal" style="--d:<%= (i % 3) * 90 %>ms"><%- include('../partials/project-card', { p: p }) %></div><% }) %>
       </div>
+      <% if (projects.some(function (p) { return p.is_demo; })) { %><p class="opp-demo-note small muted mt-3"><%- include('../partials/icon', { name: 'alert', size: 14 }) %><span><%= t('opp.demo_notice') %></span></p><% } %>
     <% } else { %>
       <p class="empty card card-muted mt-3"><%= t('project.none') %></p>
     <% } %>
@@ -238,10 +239,10 @@
       <% var simFinal = Math.round(sim.capital * Math.pow(1 + sim.rate / 100, sim.years) * 100); var simCap = Math.round(sim.capital * 100); %>
       <div class="sim-teaser-card">
         <div class="small muted-light"><%= t('sim.subtitle') %></div>
-        <div class="sim-teaser-row"><span><%= t('sim.capital') %></span><strong><%= eur(simCap) %></strong></div>
+        <div class="sim-teaser-row"><span><%= t('sim.capital') %></span><strong><%= usd(simCap) %></strong></div>
         <div class="sim-teaser-row"><span><%= t('sim.rate') %></span><strong><%= sim.rate %> %</strong></div>
         <div class="sim-teaser-row"><span><%= t('sim.years') %></span><strong><%= sim.years %> <%= t('sim.years_unit') %></strong></div>
-        <div class="sim-teaser-total"><span><%= t('sim.final') %></span><strong><%= eur(simFinal) %></strong></div>
+        <div class="sim-teaser-total"><span><%= t('sim.final') %></span><strong><%= usd(simFinal) %></strong></div>
         <p class="small muted-light mb-0"><%= t('sim.disclaimer') %></p>
       </div>
     </div>

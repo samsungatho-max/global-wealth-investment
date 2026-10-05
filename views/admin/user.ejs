@@ -36,10 +36,10 @@
       <div class="card">
         <h2 style="font-size:1.1rem">Situation (calculée depuis la base)</h2>
         <dl class="kv">
-          <dt>Solde en compte</dt><dd><strong><%= eur(s.cash) %></strong></dd>
-          <dt>Disponible</dt><dd><%= eur(s.available) %><% if (s.reserved) { %> <span class="muted small">(<%= eur(s.reserved) %> réservés)</span><% } %></dd>
-          <dt>Capital investi (actif)</dt><dd><%= eur(s.invested) %></dd>
-          <dt>Valeur estimée</dt><dd><%= eur(s.value) %></dd>
+          <dt>Solde en compte</dt><dd><strong><%= usd(s.cash) %></strong></dd>
+          <dt>Disponible</dt><dd><%= usd(s.available) %><% if (s.reserved) { %> <span class="muted small">(<%= usd(s.reserved) %> réservés)</span><% } %></dd>
+          <dt>Capital investi (actif)</dt><dd><%= usd(s.invested) %></dd>
+          <dt>Valeur estimée</dt><dd><%= usd(s.value) %></dd>
         </dl>
         <h3 class="mt-2" style="font-size:.95rem">Vérifications KYC</h3>
         <% if (!kycs.length) { %><p class="muted small">Aucune soumission.</p><% } %>
@@ -61,9 +61,9 @@
           <% s.items.forEach(function (i) { %>
             <tr>
               <td><strong><%= i.title %></strong><div class="small muted">#<%= i.id %></div></td>
-              <td class="num"><%= eur(i.amount_cents) %></td>
+              <td class="num"><%= usd(i.amount_cents) %></td>
               <td class="small"><%= fmtDate(i.start_date) %> → <%= fmtDate(i.end_date) %></td>
-              <td class="num"><%= eur(i.current_value) %><div class="small muted"><%= i.valued ? fmtDate(i.last_value_date) : 'non valorisé' %> · <%= pct(i.perf) %></div></td>
+              <td class="num"><%= usd(i.current_value) %><div class="small muted"><%= i.valued ? fmtDate(i.last_value_date) : 'non valorisé' %> · <%= pct(i.perf) %></div></td>
               <td><span class="chip <%= i.status === 'active' ? 'chip-success' : '' %>"><%= t('account.inv_' + i.status) %></span></td>
               <td style="min-width:260px">
                 <% if (i.status === 'active') { %>
@@ -71,7 +71,7 @@
                   <form class="form" method="post" action="/admin/investments/<%= i.id %>/valuations">
                     <input type="hidden" name="_csrf" value="<%= csrf %>">
                     <div class="form-row form-row-2">
-                      <div><label>Valeur (€)</label><input name="value" type="text" inputmode="decimal" required></div>
+                      <div><label>Valeur ($)</label><input name="value" type="text" inputmode="decimal" required></div>
                       <div><label>Date</label><input name="date" type="date" required max="<%= today %>" value="<%= today %>"></div>
                     </div>
                     <div><label>Source / justification *</label><input name="note" type="text" required maxlength="500" placeholder="Rapport de gestion T3, expertise…"></div>
@@ -82,7 +82,7 @@
                   <form class="form" method="post" action="/admin/investments/<%= i.id %>/mature" data-confirm="Clôturer cet investissement et créditer le montant final ?">
                     <input type="hidden" name="_csrf" value="<%= csrf %>">
                     <div class="form-row form-row-2">
-                      <div><label>Montant final versé (€)</label><input name="payout" type="text" inputmode="decimal" required></div>
+                      <div><label>Montant final versé ($)</label><input name="payout" type="text" inputmode="decimal" required></div>
                       <div><label>Date</label><input name="date" type="date" required max="<%= today %>" value="<%= today %>"></div>
                     </div>
                     <div><label>Justification *</label><input name="note" type="text" required maxlength="500"></div>
@@ -110,7 +110,7 @@
             <input type="hidden" name="_csrf" value="<%= csrf %>">
             <div class="form-row form-row-2">
               <div><label>Projet</label><select name="project_id" required><% openProjects.forEach(function (p) { %><option value="<%= p.id %>"><%= p.title %></option><% }) %></select></div>
-              <div><label>Montant (€) — disponible : <%= eur(s.available) %></label><input name="amount" type="text" inputmode="decimal" required></div>
+              <div><label>Montant ($) — disponible : <%= usd(s.available) %></label><input name="amount" type="text" inputmode="decimal" required></div>
             </div>
             <div class="form-row form-row-2">
               <div><label>Date de début</label><input name="start_date" type="date" required value="<%= today %>"></div>
@@ -128,7 +128,7 @@
         <thead><tr><th>Date</th><th>Projet</th><th class="num">Valeur</th><th class="num">Variation</th><th>Justification</th></tr></thead>
         <tbody>
           <% if (!history.length) { %><tr><td colspan="5" class="empty">Aucune valorisation.</td></tr><% } %>
-          <% history.forEach(function (v) { %><tr><td><%= fmtDate(v.valuation_date) %></td><td><%= v.title %></td><td class="num"><%= eur(v.value_cents) %></td><td class="num <%= v.perf >= 0 ? 'pos' : 'neg' %>"><%= pct(v.perf) %></td><td class="small"><%= v.note %></td></tr><% }) %>
+          <% history.forEach(function (v) { %><tr><td><%= fmtDate(v.valuation_date) %></td><td><%= v.title %></td><td class="num"><%= usd(v.value_cents) %></td><td class="num <%= v.perf >= 0 ? 'pos' : 'neg' %>"><%= pct(v.perf) %></td><td class="small"><%= v.note %></td></tr><% }) %>
         </tbody>
       </table></div>
     </section>

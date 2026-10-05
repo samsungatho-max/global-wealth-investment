@@ -10,10 +10,10 @@
         <% if (!rows.length) { %><tr><td colspan="7" class="empty">Aucun projet.</td></tr><% } %>
         <% rows.forEach(function (p) { %>
           <tr>
-            <td><strong><%= p.tr.title %></strong><% if (p.is_demo) { %> <span class="chip chip-demo">Démo fictive</span><% } %><div class="small muted mono">/<%= p.slug %></div></td>
+            <td><strong><%= p.tr.title %></strong><% if (p.is_demo) { %> <span class="chip chip-demo">Projet exemple</span><% } %><div class="small muted mono">/<%= p.slug %></div></td>
             <td class="small"><%= t('sector.' + p.sector) %><br><%= p.country %></td>
-            <td class="num"><%= eur(p.target_cents) %></td>
-            <td class="num"><%= eur(p.raised) %></td>
+            <td class="num"><%= usd(p.target_cents) %></td>
+            <td class="num"><%= usd(p.raised) %></td>
             <td><%= p.risk_level %>/5</td>
             <td><span class="chip <%= { open: 'chip-success', suspended: 'chip-warning', archived: '', draft: 'chip-gold', closed: 'chip-navy' }[p.status] %>"><%= t('project.status_' + p.status) %></span></td>
             <td>

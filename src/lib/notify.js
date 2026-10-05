@@ -21,7 +21,7 @@ async function notify(userId, key, vars = {}, link = '/account') {
   const user = await one('SELECT id, email, full_name, lang FROM users WHERE id = ?', userId);
   if (!user) return;
   const v = { note: '', ...vars };
-  if (v.amount_cents != null) v.amount = money(v.amount_cents, 'EUR', user.lang);
+  if (v.amount_cents != null) v.amount = money(v.amount_cents, 'USD', user.lang);
   const message = t(user.lang, `notif.${key}`, v).trim();
   await run('INSERT INTO notifications (user_id, message, link) VALUES (?, ?, ?)', user.id, message, link);
   const { text, html } = render({

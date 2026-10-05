@@ -131,7 +131,7 @@ scripts/             smoke-test.js, check-pg.js (tests), backup.js, admin-reset.
 data/                Base PostgreSQL embarquée de développement (non versionnée)
 ```
 
-Tous les montants sont stockés en centimes d'euro (entiers) ; les autres devises sont uniquement des conversions d'affichage.
+Tous les montants sont stockés en cents de dollar américain (USD, entiers) ; l'USD est la devise principale et les autres devises (EUR, GBP, FCFA) sont uniquement des conversions d'affichage.
 
 ---
 

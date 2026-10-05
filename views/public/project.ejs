@@ -1,6 +1,6 @@
 <%- include('../partials/top') %>
 
-<% var sp = sectorPhoto(project.sector); %>
+<% var sp = projectPhoto(project); %>
 <section class="page-hero has-photo project-hero">
   <% if (project.image_path) { %>
     <img class="page-hero-bg" src="/media/<%= project.image_path %>" alt="" fetchpriority="high">
@@ -12,7 +12,7 @@
     <div class="breadcrumb"><a href="/opportunities">← <%= t('project.back') %></a></div>
     <div class="flex" style="margin-bottom:12px">
       <span class="chip chip-gold"><%= t('sector.' + project.sector) %></span>
-      <span class="chip chip-navy">📍 <%= project.country %></span>
+      <span class="chip chip-navy">📍 <%= countryName(project.country) %></span>
       <span class="chip chip-navy"><%= t('project.status_' + project.status) %></span>
       <% if (project.is_demo) { %><span class="chip chip-demo"><%= t('project.demo_badge') %></span><% } %>
     </div>
@@ -75,12 +75,13 @@
         <dl class="kv mt-2">
           <dt><%= t('project.duration') %></dt><dd><%= t('project.months', { n: project.duration_months }) %></dd>
           <dt><%= t('project.min_ticket') %></dt><dd><%= project.min_ticket_cents ? money(project.min_ticket_cents) : '—' %></dd>
-          <dt><%= t('project.country') %></dt><dd><%= project.country %></dd>
+          <dt><%= t('project.country') %></dt><dd><%= countryName(project.country) %></dd>
+          <dt><%= t('project.sector') %></dt><dd><%= t('sector.' + project.sector) %></dd>
           <dt><%= t('risk.label') %></dt><dd><%= project.risk_level %>/5 — <%= t('risk.' + project.risk_level) %></dd>
         </dl>
         <p class="alert alert-warning small mt-2 mb-0"><%= t('project.no_guarantee') %></p>
 
-        <% if (project.status === 'open') { %>
+        <% if (project.status === 'open' && !project.is_demo) { %>
         <hr style="border:0;border-top:1px solid var(--gray-200);margin:22px 0">
         <h3 id="interest"><%= t('project.interest_title') %></h3>
         <% if (sent) { %>

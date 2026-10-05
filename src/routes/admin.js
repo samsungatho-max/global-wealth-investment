@@ -67,7 +67,7 @@ router.get('/projects', async (req, res) => {
 });
 
 router.get('/projects/new', async (req, res) => {
-  res.render('admin/project-form', { title: 'Nouveau projet', p: { i18n: {}, risk_level: 3, duration_months: 12, status: 'draft' }, docs: [], sectors: SECTORS, langs: LANGS });
+  res.render('admin/project-form', { title: 'Nouveau projet', p: { i18n: {}, risk_level: 3, duration_months: 12, status: 'draft' }, docs: [], sectors: SECTORS, langs: LANGS, photoKeys: PHOTO_KEYS });
 });
 
 function projectFromBody(body) {
@@ -79,6 +79,7 @@ function projectFromBody(body) {
     duration: Math.max(1, Math.min(600, parseInt(body.duration_months, 10) || 0)),
     risk: Math.max(1, Math.min(5, parseInt(body.risk_level, 10) || 3)),
     i18n: i18nFromBody(body, PROJECT_FIELDS),
+    photo_key: Object.prototype.hasOwnProperty.call(require('../lib/photos').PHOTOS, body.photo_key) ? body.photo_key : null,
     is_demo: body.is_demo === 'on' ? 1 : 0
   };
 }
@@ -92,9 +93,9 @@ router.post('/projects', projectUpload.single('image'), verifyCsrf, async (req, 
   }
   let slug = slugify(d.i18n.fr.title);
   if (await one('SELECT id FROM projects WHERE slug = ?', slug)) slug += '-' + Date.now().toString(36);
-  const info = await run(`INSERT INTO projects (slug, sector, country, i18n, target_cents, min_ticket_cents, duration_months, risk_level, image_path, status, is_demo)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?)`,
-    slug, d.sector, d.country, JSON.stringify(d.i18n), d.target, d.ticket, d.duration, d.risk, req.file ? req.file.filename : null, d.is_demo);
+  const info = await run(`INSERT INTO projects (slug, sector, country, i18n, target_cents, min_ticket_cents, duration_months, risk_level, image_path, photo_key, status, is_demo)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?)`,
+    slug, d.sector, d.country, JSON.stringify(d.i18n), d.target, d.ticket, d.duration, d.risk, req.file ? req.file.filename : null, d.photo_key, d.is_demo);
   await audit(req, 'project.create', 'project', info.lastInsertRowid, { slug });
   req.flash('success', 'Projet créé (brouillon). Publiez-le lorsqu\'il est prêt.');
   res.redirect(`/admin/projects/${info.lastInsertRowid}/edit`);
@@ -108,7 +109,7 @@ router.get('/projects/:id/edit', async (req, res, next) => {
     p: { ...p, i18n: rawI18n(p.i18n) },
     raised: await ledger.raisedForProject(p.id),
     docs: await all('SELECT * FROM project_documents WHERE project_id = ? ORDER BY created_at DESC', p.id),
-    sectors: SECTORS, langs: LANGS
+    sectors: SECTORS, langs: LANGS, photoKeys: PHOTO_KEYS
   });
 });
 
@@ -125,8 +126,8 @@ router.post('/projects/:id', projectUpload.single('image'), verifyCsrf, async (r
   if (req.file) { removePublicFile(p.image_path); image = req.file.filename; }
   if (req.body.remove_image === 'on' && !req.file) { removePublicFile(p.image_path); image = null; }
   await run(`UPDATE projects SET sector = ?, country = ?, i18n = ?, target_cents = ?, min_ticket_cents = ?, duration_months = ?, risk_level = ?,
-       image_path = ?, is_demo = ?, updated_at = datetime('now') WHERE id = ?`,
-    d.sector, d.country, JSON.stringify(d.i18n), d.target, d.ticket, d.duration, d.risk, image, d.is_demo, p.id);
+       image_path = ?, photo_key = ?, is_demo = ?, updated_at = datetime('now') WHERE id = ?`,
+    d.sector, d.country, JSON.stringify(d.i18n), d.target, d.ticket, d.duration, d.risk, image, d.photo_key, d.is_demo, p.id);
   await audit(req, 'project.update', 'project', p.id, { target_cents: d.target, risk: d.risk });
   req.flash('success', 'Projet enregistré.');
   res.redirect(`/admin/projects/${p.id}/edit`);
@@ -668,7 +669,7 @@ router.post('/settings/general', async (req, res) => {
   const company = {};
   for (const k of Object.keys(settings.DEFAULTS.company)) company[k] = String(req.body[`company_${k}`] || '').trim().slice(0, 2000);
   const languages = LANGS.filter((l) => req.body[`lang_${l}`] === 'on');
-  const currencies = ['EUR', 'USD', 'GBP', 'XOF'].filter((c) => c === 'EUR' || req.body[`cur_${c}`] === 'on');
+  const currencies = ['USD', 'EUR', 'GBP', 'XOF'].filter((c) => c === 'USD' || req.body[`cur_${c}`] === 'on');
   const fundsEnabled = req.body.funds_enabled === 'on';
   if (fundsEnabled && req.body.funds_ack !== 'on') {
     req.flash('error', 'Pour activer la réception de fonds, confirmez que les autorisations réglementaires sont obtenues.');
@@ -730,9 +731,9 @@ router.post('/settings/rates', async (req, res, next) => {
       req.flash(r.date ? 'success' : 'error', r.date ? `Taux mis à jour (${r.date}).` : 'Échec de la mise à jour automatique.');
     } else {
       const f = (v) => { const n = parseFloat(String(v || '').replace(',', '.')); return n > 0 ? n : null; };
-      const values = { EUR: 1, USD: f(req.body.USD), GBP: f(req.body.GBP), XOF: f(req.body.XOF) || 655.957 };
+      const values = { USD: 1, EUR: f(req.body.EUR), GBP: f(req.body.GBP), XOF: f(req.body.XOF) };
       const date = isDate(req.body.date) ? req.body.date : today();
-      await settings.set('rates', { ...settings.get('rates'), manual: true, date, values, source: String(req.body.source || 'Saisie manuelle').slice(0, 200) });
+      await settings.set('rates', { ...settings.get('rates'), manual: true, base: 'USD', date, values, source: String(req.body.source || 'Saisie manuelle').slice(0, 200) });
       await audit(req, 'settings.rates.manual', 'settings', 'rates', { values, date });
       req.flash('success', 'Taux saisis manuellement (la mise à jour automatique est suspendue jusqu\'à la prochaine actualisation manuelle).');
     }

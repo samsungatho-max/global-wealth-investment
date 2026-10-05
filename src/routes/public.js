@@ -10,7 +10,7 @@ const settings = require('../lib/settings');
 const newsLib = require('../lib/news');
 
 const router = express.Router();
-const SECTORS = ['real_estate', 'agriculture', 'energy', 'trade'];
+const { SECTORS, AMOUNT_RANGES } = require('../lib/sectors');
 const PUBLIC_STATUSES = ['open', 'closed'];
 
 const formLimiter = rateLimit({
@@ -31,7 +31,7 @@ async function decorateProject(p, lang) {
 const isEmail = (s) => /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/.test(String(s || ''));
 
 router.get('/', async (req, res) => {
-  const projects = await Promise.all((await all(`SELECT * FROM projects WHERE status = 'open' ORDER BY is_demo ASC, created_at DESC LIMIT 3`))
+  const projects = await Promise.all((await all(`SELECT * FROM projects WHERE status = 'open' ORDER BY is_demo ASC, created_at DESC, id DESC LIMIT 6`))
     .map((p) => decorateProject(p, req.lang)));
   const news = (await all(`SELECT * FROM news WHERE ${newsLib.VISIBLE} ORDER BY featured DESC, ${newsLib.ORDER} LIMIT 3`))
     .map((n) => newsLib.decorate(n, req.lang));
@@ -39,14 +39,30 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/opportunities', async (req, res) => {
-  const sector = SECTORS.includes(req.query.sector) ? req.query.sector : null;
-  const rows = sector
-    ? await all(`SELECT * FROM projects WHERE status IN ('open','closed') AND sector = ? ORDER BY status = 'open' DESC, is_demo ASC, created_at DESC`, sector)
-    : await all(`SELECT * FROM projects WHERE status IN ('open','closed') ORDER BY status = 'open' DESC, is_demo ASC, created_at DESC`);
+  const base = `status IN ('open','closed')`;
+  const countries = (await all(`SELECT DISTINCT country FROM projects WHERE ${base} ORDER BY country`)).map((r) => r.country);
+  const f = {
+    sector: SECTORS.includes(req.query.sector) ? req.query.sector : '',
+    country: countries.includes(req.query.country) ? req.query.country : '',
+    amount: AMOUNT_RANGES.some((r) => r[0] === req.query.amount) ? req.query.amount : '',
+    risk: /^[1-5]$/.test(req.query.risk || '') ? Number(req.query.risk) : ''
+  };
+  const where = [base], params = [];
+  if (f.sector) { where.push('sector = ?'); params.push(f.sector); }
+  if (f.country) { where.push('country = ?'); params.push(f.country); }
+  if (f.risk) { where.push('risk_level = ?'); params.push(f.risk); }
+  if (f.amount) {
+    const [, min, max] = AMOUNT_RANGES.find((r) => r[0] === f.amount);
+    where.push('target_cents >= ?'); params.push(min);
+    if (max) { where.push('target_cents < ?'); params.push(max); }
+  }
+  const rows = await all(`SELECT * FROM projects WHERE ${where.join(' AND ')} ORDER BY status = 'open' DESC, is_demo ASC, created_at DESC, id DESC`, ...params);
+  const total = (await one(`SELECT COUNT(*) AS n FROM projects WHERE ${base}`)).n;
   res.render('public/opportunities', {
-    title: res.locals.t('project.title'),
+    title: res.locals.t('opp.title'),
     projects: await Promise.all(rows.map((p) => decorateProject(p, req.lang))),
-    sectors: SECTORS, sector
+    sectors: SECTORS, countries, amounts: AMOUNT_RANGES.map((r) => r[0]), f, total,
+    filtered: Boolean(f.sector || f.country || f.amount || f.risk), sector: f.sector
   });
 });
 

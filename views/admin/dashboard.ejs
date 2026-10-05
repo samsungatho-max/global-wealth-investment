@@ -21,7 +21,7 @@
       <a class="kpi" href="/admin/messages" style="text-decoration:none"><div class="kpi-label">Nouveaux messages</div><div class="kpi-value"><%= stats.messages %></div></a>
       <a class="kpi" href="/admin/interests" style="text-decoration:none"><div class="kpi-label">Nouveaux intérêts</div><div class="kpi-value"><%= stats.interests %></div></a>
       <a class="kpi" href="/admin/users" style="text-decoration:none"><div class="kpi-label">Investisseurs inscrits</div><div class="kpi-value"><%= stats.investors %></div></a>
-      <div class="kpi dark"><div class="kpi-label">Capital investi (actif)</div><div class="kpi-value"><%= eur(stats.invested) %></div><div class="kpi-note">Dépôts confirmés cumulés : <%= eur(stats.deposited) %></div></div>
+      <div class="kpi dark"><div class="kpi-label">Capital investi (actif)</div><div class="kpi-value"><%= usd(stats.invested) %></div><div class="kpi-note">Dépôts confirmés cumulés : <%= usd(stats.deposited) %></div></div>
       <a class="kpi" href="/admin/logins?failed=1" style="text-decoration:none"><div class="kpi-label">Échecs de connexion (24 h)</div><div class="kpi-value"><%= stats.failedLogins %></div></a>
     </div>
 

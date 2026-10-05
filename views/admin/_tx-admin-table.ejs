@@ -9,7 +9,7 @@
         <td class="small"><a href="/admin/users/<%= r.user_id %>"><%= r.full_name %></a><div class="muted"><%= r.email %></div><% if (r.kyc_status !== 'approved') { %><span class="chip chip-danger">KYC non validé</span><% } %></td>
         <td><%= t('tx.' + r.type) %></td>
         <td class="mono"><%= r.reference %><% if (r.external_ref) { %><div class="small muted">Réf. ext. : <%= r.external_ref %></div><% } %></td>
-        <td class="num"><%= eur(r.amount_cents) %><% if (r.fee_cents) { %><div class="small muted">frais <%= eur(r.fee_cents) %> · net <%= eur(r.amount_cents - r.fee_cents) %></div><% } %></td>
+        <td class="num"><%= usd(r.amount_cents) %><% if (r.fee_cents) { %><div class="small muted">frais <%= usd(r.fee_cents) %> · net <%= usd(r.amount_cents - r.fee_cents) %></div><% } %></td>
         <td><%- include('../partials/tx-status', { status: r.status }) %><% if (r.admin_note) { %><div class="small muted"><%= r.admin_note %></div><% } %></td>
         <td style="min-width:240px">
           <% if (b) { %><div class="small"><strong><%= b.holder %></strong><br><span class="mono"><%= b.account %></span><br><%= b.bank %> <%= b.bic || '' %></div><% } %>

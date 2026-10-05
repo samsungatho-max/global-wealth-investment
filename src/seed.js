@@ -206,11 +206,62 @@ async function renameBrand() {
   await run(`INSERT INTO meta (key, value) VALUES (?, datetime('now')) ON CONFLICT (key) DO NOTHING`, key);
 }
 
+/**
+ * Fiches « Projet exemple » supplémentaires (simulations, une par catégorie au moins).
+ * Chaque fiche n'est insérée qu'une fois : si l'administrateur la supprime, elle ne revient pas.
+ */
+async function seedExampleProjects() {
+  if (process.env.SEED_DEMO === 'false') return;
+  const { PROJECTS, build } = require('./content/demo-projects');
+  const done = new Set((await all(`SELECT key FROM meta WHERE key LIKE 'project_seed:%'`)).map((r) => r.key));
+  let n = 0;
+  for (const p of PROJECTS) {
+    const key = `project_seed:${p.slug}`;
+    if (done.has(key)) continue;
+    const r = build(p);
+    await run(`INSERT INTO projects (slug, sector, country, i18n, target_cents, min_ticket_cents, duration_months, risk_level, photo_key, status, is_demo)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', 1) ON CONFLICT (slug) DO NOTHING`,
+      r.slug, r.sector, r.country, r.i18n, r.target_cents, r.min_ticket_cents, r.duration_months, r.risk_level, r.photo_key);
+    await run(`INSERT INTO meta (key, value) VALUES (?, datetime('now')) ON CONFLICT (key) DO NOTHING`, key);
+    n++;
+  }
+  if (n) console.log(`[seed] ${n} fiche(s) « Projet exemple » ajoutée(s) (simulations clairement signalées).`);
+}
+
+/**
+ * Passage à l'USD comme devise principale (une seule fois) : les taux enregistrés avec l'EUR pour référence
+ * sont convertis, et l'USD passe en tête des devises proposées. Les montants enregistrés ne sont pas recalculés.
+ */
+async function migrateCurrency() {
+  const key = 'currency:usd-base';
+  if (await one('SELECT key FROM meta WHERE key = ?', key)) return;
+  const read = async (k) => { const r = await one('SELECT value FROM settings WHERE key = ?', k); try { return r ? JSON.parse(r.value) : null; } catch { return null; } };
+  const rates = await read('rates');
+  if (rates && rates.base !== 'USD') {
+    const v = rates.values || {};
+    const usd = Number(v.USD);
+    const round = (x) => Math.round(x * 1e6) / 1e6;
+    rates.values = usd > 0
+      ? { USD: 1, EUR: round(1 / usd), GBP: v.GBP ? round(v.GBP / usd) : null, XOF: round((v.XOF || 655.957) / usd) }
+      : { USD: 1, EUR: null, GBP: null, XOF: null };
+    rates.base = 'USD';
+    await run('UPDATE settings SET value = ? WHERE key = ?', JSON.stringify(rates), 'rates');
+  }
+  const currencies = await read('currencies');
+  if (Array.isArray(currencies)) {
+    const next = ['USD', ...currencies.filter((c) => c !== 'USD')];
+    await run('UPDATE settings SET value = ? WHERE key = ?', JSON.stringify(next), 'currencies');
+  }
+  await run(`INSERT INTO meta (key, value) VALUES (?, datetime('now')) ON CONFLICT (key) DO NOTHING`, key);
+}
+
 async function seed() {
   await renameBrand();
+  await migrateCurrency();
   await seedAdmin();
   await seedPages();
   await seedDemoProjects();
+  await seedExampleProjects();
   await seedNews();
   await require('./lib/news').seedSources();
 }

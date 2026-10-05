@@ -13,7 +13,7 @@
             <td class="small"><%= fmtDate(r.created_at, true) %></td>
             <td><a href="/opportunities/<%= r.slug %>" target="_blank"><%= r.project %></a></td>
             <td><strong><%= r.name %></strong><div class="small"><a href="mailto:<%= r.email %>"><%= r.email %></a></div><% if (r.user_id) { %><a class="small" href="/admin/users/<%= r.user_id %>">Compte investisseur →</a><% } %></td>
-            <td class="num"><%= r.amount_cents ? eur(r.amount_cents) : '—' %></td>
+            <td class="num"><%= r.amount_cents ? usd(r.amount_cents) : '—' %></td>
             <td class="small" style="max-width:280px;white-space:pre-wrap"><%= r.message || '' %></td>
             <td>
               <form method="post" action="/admin/interests/<%= r.id %>/status" class="flex">

@@ -23,10 +23,21 @@ const PHOTOS = {
   cargo: { id: '1578575437130-527eed3abbec', author: 'Andy Li', alt: { fr: 'Porte-conteneurs à quai', en: 'Container ship at the quay', es: 'Buque portacontenedores en el muelle', de: 'Containerschiff am Kai' } },
   graphiques: { id: '1651341050677-24dba59ce0fd', author: 'Anne Nygård', alt: { fr: 'Tableau de bord financier sur écran', en: 'Financial dashboard on screen', es: 'Panel financiero en pantalla', de: 'Finanz-Dashboard auf dem Bildschirm' } },
   grues: { id: '1485083269755-a7b559a4fe5e', author: 'EJ Yao', alt: { fr: 'Grues de chantier au-dessus de la ville', en: 'Construction cranes over the city', es: 'Grúas de obra sobre la ciudad', de: 'Baukräne über der Stadt' } },
-  chantier: { id: '1536895058696-a69b1c7ba34f', author: 'Nathan Waters', alt: { fr: 'Structure d’immeuble en construction', en: 'Building structure under construction', es: 'Estructura de edificio en construcción', de: 'Gebäuderohbau' } }
+  chantier: { id: '1536895058696-a69b1c7ba34f', author: 'Nathan Waters', alt: { fr: 'Structure d’immeuble en construction', en: 'Building structure under construction', es: 'Estructura de edificio en construcción', de: 'Gebäuderohbau' } },
+  residence: { id: '1624204386084-dd8c05e32226', author: 'Tobias Wilden', alt: { fr: 'Immeuble résidentiel aux balcons vitrés', en: 'Residential building with glazed balconies', es: 'Edificio residencial con balcones acristalados', de: 'Wohngebäude mit verglasten Balkonen' } },
+  'centre-commercial': { id: '1696208732970-5744331c9fdf', author: 'Declan Sun', alt: { fr: 'Atrium d’un centre commercial', en: 'Shopping centre atrium', es: 'Atrio de un centro comercial', de: 'Atrium eines Einkaufszentrums' } },
+  bureaux: { id: '1462396240927-52058a6a84ec', author: 'Patrick Tomasso', alt: { fr: 'Immeubles de bureaux à façade vitrée', en: 'Glass-fronted office buildings', es: 'Edificios de oficinas con fachada de cristal', de: 'Bürogebäude mit Glasfassade' } },
+  entrepot: { id: '1627309366653-2dedc084cdf1', author: 'Jacques Dillies', alt: { fr: 'Entrepôt logistique', en: 'Logistics warehouse', es: 'Almacén logístico', de: 'Logistiklager' } },
+  pont: { id: '1515674744565-0d7112cd179a', author: 'CHUTTERSNAP', alt: { fr: 'Pont routier vu du ciel', en: 'Road bridge seen from above', es: 'Puente de carretera visto desde el aire', de: 'Straßenbrücke aus der Luft' } },
+  hotel: { id: '1540541338287-41700207dee6', author: 'Paolo Nicolello', alt: { fr: 'Complexe hôtelier en bord de mer', en: 'Seaside hotel resort', es: 'Complejo hotelero junto al mar', de: 'Hotelanlage am Meer' } },
+  datacenter: { id: '1558494949-ef010cbdcc31', author: 'Taylor Vick', alt: { fr: 'Baies de serveurs dans un centre de données', en: 'Server racks in a data centre', es: 'Racks de servidores en un centro de datos', de: 'Serverschränke in einem Rechenzentrum' } },
+  ville: { id: '1744907895363-d351aa6019ef', author: 'Tunde Buremo', alt: { fr: 'Vue aérienne d’une ville en développement', en: 'Aerial view of a growing city', es: 'Vista aérea de una ciudad en desarrollo', de: 'Luftaufnahme einer wachsenden Stadt' } }
 };
 
-const SECTOR_PHOTO = { real_estate: 'immeuble', agriculture: 'agriculture', energy: 'solaire', trade: 'port' };
+const SECTOR_PHOTO = {
+  real_estate: 'immeuble', commercial: 'centre-commercial', agriculture: 'agriculture', industry: 'usine', energy: 'solaire',
+  trade: 'port', infrastructure: 'pont', tourism: 'hotel', technology: 'datacenter', development: 'ville'
+};
 
 function photo(key, lang) {
   const p = PHOTOS[key];

@@ -22,8 +22,8 @@
         <% langs.forEach(function (l) { %><label class="check"><input type="checkbox" name="lang_<%= l %>" <%= s.languages.includes(l) ? 'checked' : '' %>> <%= l.toUpperCase() %></label><% }) %>
       </div>
       <div class="flex">
-        <label class="check"><input type="checkbox" checked disabled> EUR (référence)</label>
-        <% ['USD','GBP','XOF'].forEach(function (c) { %><label class="check"><input type="checkbox" name="cur_<%= c %>" <%= s.currencies.includes(c) ? 'checked' : '' %>> <%= c === 'XOF' ? 'FCFA (XOF)' : c %></label><% }) %>
+        <label class="check"><input type="checkbox" checked disabled> USD (devise principale)</label>
+        <% ['EUR','GBP','XOF'].forEach(function (c) { %><label class="check"><input type="checkbox" name="cur_<%= c %>" <%= s.currencies.includes(c) ? 'checked' : '' %>> <%= c === 'XOF' ? 'FCFA (XOF)' : c %></label><% }) %>
       </div>
 
       <h2 style="font-size:1.2rem" class="mt-2">Réception de fonds</h2>
@@ -37,14 +37,14 @@
       <input type="hidden" name="_csrf" value="<%= csrf %>">
       <h2 style="font-size:1.2rem">Simulateur — hypothèses</h2>
       <div class="form-row form-row-3">
-        <div><label>Capital initial par défaut (€)</label><input name="capital" type="number" step="any" min="1" value="<%= s.simulator.capital %>"></div>
+        <div><label>Capital initial par défaut ($)</label><input name="capital" type="number" step="any" min="1" value="<%= s.simulator.capital %>"></div>
         <div><label>Rendement annuel par défaut (%)</label><input name="rate" type="number" step="0.1" value="<%= s.simulator.rate %>"></div>
         <div><label>Durée par défaut (ans)</label><input name="years" type="number" min="1" value="<%= s.simulator.years %>"></div>
       </div>
       <div class="form-row form-row-3">
         <div><label>Hypothèses proposées (%, séparées par ;)</label><input name="presets" type="text" value="<%= s.simulator.presets.join('; ') %>"></div>
         <div><label>Rendement min / max (%)</label><div class="flex"><input name="min_rate" type="number" step="0.1" value="<%= s.simulator.min_rate %>" style="width:45%"><input name="max_rate" type="number" step="0.1" value="<%= s.simulator.max_rate %>" style="width:45%"></div></div>
-        <div><label>Durée max (ans) / capital max (€)</label><div class="flex"><input name="max_years" type="number" min="1" value="<%= s.simulator.max_years %>" style="width:35%"><input name="max_capital" type="number" min="1" value="<%= s.simulator.max_capital %>" style="width:55%"></div></div>
+        <div><label>Durée max (ans) / capital max ($)</label><div class="flex"><input name="max_years" type="number" min="1" value="<%= s.simulator.max_years %>" style="width:35%"><input name="max_capital" type="number" min="1" value="<%= s.simulator.max_capital %>" style="width:55%"></div></div>
       </div>
       <p class="hint">Conservez au moins une hypothèse négative afin d'illustrer le risque de perte.</p>
       <div><button class="btn btn-gold" type="submit">Enregistrer</button></div>
@@ -58,12 +58,12 @@
         <div><label>Instructions de paiement officielles (<%= l.toUpperCase() %>)</label><textarea name="instr_<%= l %>" rows="4"><%= s.payment_instructions[l] || '' %></textarea></div>
       <% }) %>
       <div class="form-row form-row-3">
-        <div><label>Dépôt minimum (€)</label><input name="deposit_min" type="text" inputmode="decimal" value="<%= (s.deposit.min_cents / 100).toFixed(2) %>"></div>
-        <div><label>Retrait minimum (€)</label><input name="withdraw_min" type="text" inputmode="decimal" value="<%= (s.withdrawal.min_cents / 100).toFixed(2) %>"></div>
+        <div><label>Dépôt minimum ($)</label><input name="deposit_min" type="text" inputmode="decimal" value="<%= (s.deposit.min_cents / 100).toFixed(2) %>"></div>
+        <div><label>Retrait minimum ($)</label><input name="withdraw_min" type="text" inputmode="decimal" value="<%= (s.withdrawal.min_cents / 100).toFixed(2) %>"></div>
         <div><label>Délai de traitement des retraits (jours ouvrés)</label><input name="delay_days" type="number" min="0" value="<%= s.withdrawal.delay_days %>"></div>
       </div>
       <div class="form-row form-row-2">
-        <div><label>Frais fixes de retrait (€)</label><input name="fee_fixed" type="text" inputmode="decimal" value="<%= (s.withdrawal.fee_fixed_cents / 100).toFixed(2) %>"></div>
+        <div><label>Frais fixes de retrait ($)</label><input name="fee_fixed" type="text" inputmode="decimal" value="<%= (s.withdrawal.fee_fixed_cents / 100).toFixed(2) %>"></div>
         <div><label>Frais proportionnels de retrait (%)</label><input name="fee_percent" type="number" step="0.01" min="0" max="20" value="<%= s.withdrawal.fee_percent %>"></div>
       </div>
       <div><button class="btn btn-gold" type="submit">Enregistrer</button></div>
@@ -77,9 +77,9 @@
         <form class="form" method="post" action="/admin/settings/rates">
           <input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="mode" value="manual">
           <div class="form-row form-row-3">
-            <div><label>1 EUR = … USD</label><input name="USD" type="text" value="<%= s.rates.values.USD || '' %>"></div>
-            <div><label>1 EUR = … GBP</label><input name="GBP" type="text" value="<%= s.rates.values.GBP || '' %>"></div>
-            <div><label>1 EUR = … XOF</label><input name="XOF" type="text" value="<%= s.rates.values.XOF || 655.957 %>"></div>
+            <div><label>1 USD = … EUR</label><input name="EUR" type="text" value="<%= s.rates.values.EUR || '' %>"></div>
+            <div><label>1 USD = … GBP</label><input name="GBP" type="text" value="<%= s.rates.values.GBP || '' %>"></div>
+            <div><label>1 USD = … XOF</label><input name="XOF" type="text" value="<%= s.rates.values.XOF || '' %>"></div>
           </div>
           <div class="form-row form-row-2">
             <div><label>Date du taux</label><input name="date" type="date" value="<%= s.rates.date || '' %>"></div>

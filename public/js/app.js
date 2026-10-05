@@ -113,7 +113,7 @@
   function fmt(v, cur) {
     if (!isFinite(v)) return '—';
     if (cur === 'XOF') return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(Math.round(v)) + ' FCFA';
-    return new Intl.NumberFormat(locale, { style: 'currency', currency: cur }).format(v);
+    return new Intl.NumberFormat(locale, { style: 'currency', currency: cur, currencyDisplay: 'narrowSymbol' }).format(v);
   }
   function num(input, fallback) {
     var v = parseFloat(String(input.value).replace(',', '.'));
@@ -122,7 +122,7 @@
   function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
 
   function render() {
-    var cur = el.currency ? el.currency.value : 'EUR';
+    var cur = el.currency ? el.currency.value : 'USD';
     var capital = clamp(num(el.capital, 0), 0, cfg.max_capital * (rates[cur] || 1));
     var rate = clamp(num(el.rate, 0), cfg.min_rate, cfg.max_rate);
     var years = Math.round(clamp(num(el.years, 1), 1, cfg.max_years));

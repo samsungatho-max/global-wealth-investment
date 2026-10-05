@@ -39,7 +39,7 @@ module.exports = {
   },
   home: {
     sectors_title: "Nos secteurs d'investissement",
-    sectors_sub: "Quatre domaines d'activité, sélectionnés pour leur rôle dans l'économie réelle.",
+    sectors_sub: "Dix domaines d’activité, sélectionnés pour leur rôle dans l’économie réelle.",
     featured_title: "Opportunités ouvertes",
     featured_all: "Voir toutes les opportunités",
     sim_title: "Estimez l'évolution potentielle de votre capital",
@@ -59,14 +59,26 @@ module.exports = {
     risk_text: "Tout investissement comporte des risques, y compris la perte partielle ou totale du capital investi. Les performances passées ne préjugent pas des performances futures. Aucun rendement n'est garanti. N'investissez que des sommes dont vous n'avez pas besoin à court terme et diversifiez vos placements."
   },
   sector: {
-    real_estate: "Immobilier et infrastructures",
-    real_estate_d: "Investissements immobiliers, projets résidentiels, bâtiments commerciaux, logements locatifs et infrastructures.",
+    real_estate: "Immobilier et résidences",
+    real_estate_d: "Grands projets immobiliers, résidences, logements locatifs et programmes résidentiels.",
+    commercial: "Centres commerciaux et bâtiments professionnels",
+    commercial_d: "Centres commerciaux, immeubles de bureaux, parcs d’activités et locaux professionnels.",
     agriculture: "Agriculture et agro-industrie",
-    agriculture_d: "Projets agricoles, transformation alimentaire, élevage, stockage et distribution de produits agricoles.",
+    agriculture_d: "Projets agricoles, agro-industrie, transformation alimentaire, stockage et distribution.",
+    industry: "Industrie et unités de production",
+    industry_d: "Projets industriels, usines, unités de production et de transformation.",
     energy: "Énergies renouvelables",
-    energy_d: "Projets solaires, éoliens et infrastructures énergétiques durables.",
-    trade: "Commerce et logistique internationale",
-    trade_d: "Financement de projets commerciaux, transport, import-export et chaînes d'approvisionnement."
+    energy_d: "Projets solaires, éoliens et infrastructures énergétiques.",
+    trade: "Transport, logistique et commerce international",
+    trade_d: "Transport, logistique, ports, import-export et chaînes d’approvisionnement.",
+    infrastructure: "Infrastructures et grands travaux",
+    infrastructure_d: "Routes, ponts, réseaux et ouvrages d’intérêt collectif.",
+    tourism: "Hôtellerie et tourisme",
+    tourism_d: "Hôtels, résidences de tourisme et complexes touristiques.",
+    technology: "Technologies et innovation",
+    technology_d: "Entreprises innovantes, infrastructures numériques et services technologiques.",
+    development: "Projets de développement",
+    development_d: "Projets à impact économique et social dans différents pays."
   },
   risk: {
     "1": "Très faible",
@@ -102,8 +114,8 @@ module.exports = {
     documents_login: "Certains documents sont réservés aux investisseurs connectés et vérifiés.",
     details_btn: "Consulter les détails du projet",
     interest_btn: "Manifester mon intérêt",
-    demo_badge: "Exemple de démonstration — projet fictif",
-    demo_note: "Cette fiche est un exemple fourni pour illustrer la plateforme. Elle ne correspond à aucun projet réel et ne constitue pas une offre.",
+    demo_badge: "Projet exemple — simulation",
+    demo_note: "Cette fiche est une simulation fournie pour illustrer la plateforme. Elle ne correspond à aucun projet réel, à aucune société ni à aucun résultat financier, et ne constitue pas une offre.",
     none: "Aucune opportunité n'est publiée pour le moment.",
     status_open: "Ouvert",
     status_closed: "Clôturé",
@@ -113,7 +125,7 @@ module.exports = {
     no_guarantee: "Aucun rendement n'est garanti. Le capital investi n'est pas garanti.",
     interest_title: "Manifester mon intérêt",
     interest_intro: "Cette démarche ne vous engage pas et ne constitue pas une souscription. Notre équipe vous recontactera avec la documentation complète.",
-    interest_amount: "Montant envisagé (€, indicatif)",
+    interest_amount: "Montant envisagé ($, indicatif)",
     interest_thanks: "Merci. Votre intérêt a bien été enregistré ; notre équipe vous recontactera.",
     back: "Retour aux opportunités",
     progress: "{p} % du montant recherché"
@@ -272,7 +284,7 @@ module.exports = {
   deposit: {
     title: "Demande de dépôt",
     intro: "Déclarez le montant que vous souhaitez déposer. Une référence unique vous sera attribuée : elle doit figurer dans le libellé de votre virement. Le dépôt ne sera crédité qu'après vérification effective de la réception des fonds.",
-    amount: "Montant (€)",
+    amount: "Montant ($)",
     submit: "Obtenir les instructions de paiement",
     instructions: "Instructions de paiement officielles",
     ref_label: "Référence à indiquer dans le libellé du virement",
@@ -285,7 +297,7 @@ module.exports = {
   withdraw: {
     title: "Demande de retrait",
     intro: "Les retraits sont versés uniquement sur un compte bancaire à votre nom, après vérification de votre identité et du compte bénéficiaire.",
-    amount: "Montant (€)",
+    amount: "Montant ($)",
     holder: "Titulaire du compte",
     iban: "IBAN / numéro de compte",
     bic: "BIC / SWIFT",
@@ -440,7 +452,7 @@ module.exports = {
     rights: "Tous droits réservés.",
     disclaimer: "Investir comporte des risques de perte en capital. Les informations publiées sur ce site ne constituent ni un conseil en investissement personnalisé ni une offre de souscription.",
     rates: "Taux de change du {date} — source : {source}.",
-    rates_none: "Taux de change non disponibles : montants affichés en EUR."
+    rates_none: "Taux de change non disponibles : montants affichés en USD."
   },
   mail: {
     greeting: "Bonjour {name},",
@@ -499,8 +511,8 @@ module.exports = {
     g_wind: "Énergie renouvelable",
     g_cargo: "Commerce international",
     g_fields: "Agriculture",
-    opp_eyebrow: "Opportunités",
-    opp_title: "Les projets ouverts en ce moment",
+    opp_eyebrow: "Opportunités internationales",
+    opp_title: "Découvrez des projets sélectionnés dans différents secteurs et marchés à travers le monde.",
     transp_eyebrow: "Transparence",
     transp_title: "Votre argent, en toute clarté",
     transp_sub: "Votre espace personnel vous montre, à tout moment :",
@@ -606,5 +618,24 @@ module.exports = {
     cta_t: "Vous portez un projet viable et rentable ?",
     cta_p: "Faites analyser votre dossier par nos équipes d’experts et accédez aux capitaux nécessaires pour changer d’échelle.",
     cta: "Faire analyser mon dossier"
+  },
+  opp: {
+    title: "Opportunités internationales",
+    lead: "Découvrez des projets sélectionnés dans différents secteurs et marchés à travers le monde.",
+    filter_title: "Rechercher une opportunité",
+    all_countries: "Tous les pays",
+    any_amount: "Tous les montants",
+    any_risk: "Tous les niveaux",
+    a1: "Moins de 1 million $",
+    a2: "De 1 à 5 millions $",
+    a3: "De 5 à 20 millions $",
+    a4: "Plus de 20 millions $",
+    apply: "Rechercher",
+    reset: "Réinitialiser",
+    count: "{n} projet(s) affiché(s) sur {total}",
+    none: "Aucun projet ne correspond à ces critères.",
+    demo_notice: "Les fiches marquées « Projet exemple » sont des simulations destinées à illustrer la plateforme : elles ne correspondent à aucun projet réel et ne constituent pas une offre. Les véritables opportunités sont publiées avec leurs documents justificatifs.",
+    usd_note: "Montants exprimés en dollars américains ($ USD), devise principale de la plateforme.",
+    example_amount: "Montant de l’exemple"
   }
 };

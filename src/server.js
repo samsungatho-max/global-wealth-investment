@@ -16,6 +16,7 @@ const { money, LOCALES, CURRENCY_LABELS } = require('./lib/money');
 const { refreshRates } = require('./lib/rates');
 const security = require('./lib/security');
 const photos = require('./lib/photos');
+const sectorsLib = require('./lib/sectors');
 const { seed } = require('./seed');
 
 // Sur Vercel (production et prévisualisations), le site est toujours servi en HTTPS.
@@ -129,7 +130,7 @@ app.use(security.csrfToken);
 app.use(async (req, res, next) => {
   const currencies = settings.get('currencies');
   if (req.query.currency && currencies.includes(req.query.currency)) req.session.currency = req.query.currency;
-  const currency = currencies.includes(req.session.currency) ? req.session.currency : 'EUR';
+  const currency = currencies.includes(req.session.currency) ? req.session.currency : 'USD';
   const lang = req.lang;
 
   res.locals.site = settings.get('site_name');
@@ -139,7 +140,8 @@ app.use(async (req, res, next) => {
   res.locals.currency = currency;
   res.locals.currencies = currencies.map((c) => ({ code: c, label: CURRENCY_LABELS[c] || c }));
   res.locals.money = (cents, cur) => money(cents, cur || currency, lang);
-  res.locals.eur = (cents) => money(cents, 'EUR', lang);
+  res.locals.moneyRound = (cents) => money(cents, currency, lang, 0);
+  res.locals.usd = (cents) => money(cents, 'USD', lang);
   res.locals.fmtDate = (d, withTime) => {
     if (!d) return '—';
     const date = new Date(/\d{2}:\d{2}/.test(d) && !/Z|[+-]\d{2}:?\d{2}$/.test(d) ? d.replace(' ', 'T') + 'Z' : d);
@@ -149,6 +151,9 @@ app.use(async (req, res, next) => {
   res.locals.pct = (x) => (x == null ? '—' : new Intl.NumberFormat(LOCALES[lang], { style: 'percent', minimumFractionDigits: 2, maximumFractionDigits: 2, signDisplay: 'exceptZero' }).format(x));
   res.locals.photo = (key) => photos.photo(key, lang);
   res.locals.sectorPhoto = (sector) => photos.photo(photos.SECTOR_PHOTO[sector] || 'hero', lang);
+  res.locals.projectPhoto = (p) => photos.photo(p.photo_key && photos.PHOTOS[p.photo_key] ? p.photo_key : (photos.SECTOR_PHOTO[p.sector] || 'hero'), lang);
+  res.locals.sectorIcon = (sector) => sectorsLib.SECTOR_ICON[sector] || 'globe';
+  res.locals.countryName = (name) => sectorsLib.countryName(name, lang);
   res.locals.num =(x, digits = 1) => new Intl.NumberFormat(LOCALES[lang], { maximumFractionDigits: digits }).format(x);
   res.locals.path = req.path;
   res.locals.langUrl = (code) => { const u = new URL(req.originalUrl, 'http://x'); u.searchParams.set('lang', code); return u.pathname + u.search; };

@@ -103,7 +103,7 @@ router.post('/deposit', async (req, res) => {
   if (!ctx.fundsEnabled || !ctx.kycOk) return res.status(403).render('account/deposit', ctx);
   const cents = parseAmount(req.body.amount);
   if (!cents || cents < ctx.minCents) {
-    return res.status(400).render('account/deposit', { ...ctx, error: t(req.lang, 'deposit.min', { amount: money(ctx.minCents, 'EUR', req.lang) }) });
+    return res.status(400).render('account/deposit', { ...ctx, error: t(req.lang, 'deposit.min', { amount: money(ctx.minCents, 'USD', req.lang) }) });
   }
   const reference = makeReference('DEP');
   const info = await run(`INSERT INTO transactions (user_id, type, amount_cents, status, reference, method) VALUES (?, 'deposit', ?, 'pending', ?, 'bank_transfer')`,
@@ -150,12 +150,12 @@ router.post('/withdraw', async (req, res, next) => {
   const fail = (msg) => res.status(400).render('account/withdraw', { ...ctx, values: v, error: msg });
   const cents = parseAmount(v.amount);
   if (!cents || !v.holder || !v.iban || !v.bank) return fail(t(req.lang, 'auth.err_required'));
-  if (cents < ctx.w.min_cents) return fail(t(req.lang, 'withdraw.min', { amount: money(ctx.w.min_cents, 'EUR', req.lang) }));
+  if (cents < ctx.w.min_cents) return fail(t(req.lang, 'withdraw.min', { amount: money(ctx.w.min_cents, 'USD', req.lang) }));
   if (normalizeName(v.holder) !== normalizeName(req.user.full_name)) return fail(t(req.lang, 'withdraw.holder_mismatch'));
   const account = validAccountNumber(v.iban);
   if (!account) return fail(t(req.lang, 'withdraw.err_iban'));
   const fee = withdrawalFee(cents);
-  if (fee >= cents) return fail(t(req.lang, 'withdraw.min', { amount: money(ctx.w.min_cents, 'EUR', req.lang) }));
+  if (fee >= cents) return fail(t(req.lang, 'withdraw.min', { amount: money(ctx.w.min_cents, 'USD', req.lang) }));
 
   try {
     const reference = makeReference('WDR');

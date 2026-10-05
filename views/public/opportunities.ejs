@@ -1,23 +1,66 @@
 <%- include('../partials/top') %>
 
-<%- include("../partials/page-hero", { heroPhoto: "grues", heroEyebrow: t("nav.opportunities"), heroTitle: t("project.title"), heroText: t("project.intro") }) %>
+<%- include("../partials/page-hero", { heroPhoto: "skyline", heroEyebrow: t("nav.opportunities"), heroTitle: t("opp.title"), heroText: t("opp.lead") }) %>
 
 <section class="section">
   <div class="container">
-    <nav class="tabs" aria-label="<%= t('project.sector') %>">
-      <a href="/opportunities" <%- !sector ? 'aria-current="true"' : '' %>><%= t('project.all') %></a>
+    <form class="opp-filters card" method="get" action="/opportunities" aria-label="<%= t('opp.filter_title') %>">
+      <h2 class="opp-filters-title"><%- include('../partials/icon', { name: 'search', size: 18 }) %> <%= t('opp.filter_title') %></h2>
+      <div class="opp-filters-grid">
+        <div>
+          <label for="f-sector"><%= t('project.sector') %></label>
+          <select id="f-sector" name="sector">
+            <option value=""><%= t('project.all') %></option>
+            <% sectors.forEach(function (s) { %><option value="<%= s %>" <%= f.sector === s ? 'selected' : '' %>><%= t('sector.' + s) %></option><% }) %>
+          </select>
+        </div>
+        <div>
+          <label for="f-country"><%= t('project.country') %></label>
+          <select id="f-country" name="country">
+            <option value=""><%= t('opp.all_countries') %></option>
+            <% countries.forEach(function (c) { %><option value="<%= c %>" <%= f.country === c ? 'selected' : '' %>><%= countryName(c) %></option><% }) %>
+          </select>
+        </div>
+        <div>
+          <label for="f-amount"><%= t('project.target') %></label>
+          <select id="f-amount" name="amount">
+            <option value=""><%= t('opp.any_amount') %></option>
+            <% amounts.forEach(function (a) { %><option value="<%= a %>" <%= f.amount === a ? 'selected' : '' %>><%= t('opp.' + a) %></option><% }) %>
+          </select>
+        </div>
+        <div>
+          <label for="f-risk"><%= t('risk.label') %></label>
+          <select id="f-risk" name="risk">
+            <option value=""><%= t('opp.any_risk') %></option>
+            <% [1,2,3,4,5].forEach(function (r) { %><option value="<%= r %>" <%= f.risk === r ? 'selected' : '' %>><%= r %>/5 — <%= t('risk.' + r) %></option><% }) %>
+          </select>
+        </div>
+        <div class="opp-filters-actions">
+          <button class="btn btn-navy" type="submit"><%= t('opp.apply') %></button>
+          <% if (filtered) { %><a class="btn btn-ghost" href="/opportunities"><%= t('opp.reset') %></a><% } %>
+        </div>
+      </div>
+    </form>
+
+    <nav class="cat-strip" aria-label="<%= t('project.sector') %>">
       <% sectors.forEach(function (s) { %>
-        <a href="/opportunities?sector=<%= s %>" <%- sector === s ? 'aria-current="true"' : '' %>><%= t('sector.' + s) %></a>
+        <a class="cat-pill" href="/opportunities?sector=<%= s %>" <%- f.sector === s ? 'aria-current="true"' : '' %>><%- include('../partials/icon', { name: sectorIcon(s), size: 16 }) %> <%= t('sector.' + s) %></a>
       <% }) %>
     </nav>
-    <% if (sector) { %><p class="muted"><%= t('sector.' + sector + '_d') %></p><% } %>
+
+    <p class="opp-count muted"><%= t('opp.count', { n: projects.length, total: total }) %> · <%= t('opp.usd_note') %></p>
+    <% if (f.sector) { %><p class="muted"><%= t('sector.' + f.sector + '_d') %></p><% } %>
+
+    <% if (projects.some(function (p) { return p.is_demo; })) { %>
+      <div class="alert alert-warning opp-demo-note"><%- include('../partials/icon', { name: 'alert', size: 18 }) %><span><%= t('opp.demo_notice') %></span></div>
+    <% } %>
 
     <% if (projects.length) { %>
       <div class="grid grid-3 mt-3">
         <% projects.forEach(function (p) { %><%- include('../partials/project-card', { p: p }) %><% }) %>
       </div>
     <% } else { %>
-      <p class="empty card card-muted mt-3"><%= t('project.none') %></p>
+      <p class="empty card card-muted mt-3"><%= filtered ? t('opp.none') : t('project.none') %></p>
     <% } %>
 
     <div class="risk-banner mt-4"><strong><%= t('risk.label') %> —</strong> <%= t('risk.scale') %> <%= t('project.no_guarantee') %> <a href="/page/risks"><%= t('common.learn_more') %></a></div>

@@ -8,8 +8,8 @@
     <% } else { %>
       <div class="card">
         <p><%= t('withdraw.intro') %></p>
-        <p><strong><%= t('withdraw.available', { amount: eur(available) }) %></strong></p>
-        <p class="small muted"><%= t('withdraw.fees', { fixed: eur(w.fee_fixed_cents), percent: w.fee_percent, days: w.delay_days }) %> <%= t('withdraw.min', { amount: eur(w.min_cents) }) %></p>
+        <p><strong><%= t('withdraw.available', { amount: usd(available) }) %></strong></p>
+        <p class="small muted"><%= t('withdraw.fees', { fixed: usd(w.fee_fixed_cents), percent: w.fee_percent, days: w.delay_days }) %> <%= t('withdraw.min', { amount: usd(w.min_cents) }) %></p>
         <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><%= error %></div><% } %>
         <form class="form" method="post" action="/account/withdraw" autocomplete="off">
           <input type="hidden" name="_csrf" value="<%= csrf %>">

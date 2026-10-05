@@ -18,7 +18,7 @@ const DEFAULTS = {
   // Tant que false : les demandes de dépôt sont désactivées côté investisseur.
   funds_enabled: false,
   languages: ['fr', 'en', 'es', 'de'],
-  currencies: ['EUR', 'USD', 'GBP', 'XOF'],
+  currencies: ['USD', 'EUR', 'GBP', 'XOF'],
   simulator: {
     capital: 10000,
     rate: 5,
@@ -43,10 +43,10 @@ const DEFAULTS = {
   },
   deposit: { min_cents: 10000 },
   rates: {
-    base: 'EUR',
+    base: 'USD',
     date: null,
-    source: 'ECB · frankfurter.app — XOF 655.957 (fixed peg)',
-    values: { EUR: 1, USD: null, GBP: null, XOF: 655.957 },
+    source: 'ECB · frankfurter.app — XOF 655.957 / EUR (fixed peg)',
+    values: { USD: 1, EUR: null, GBP: null, XOF: null },
     manual: false
   }
 };
