@@ -1,0 +1,21 @@
+<%- include('../partials/top') %>
+<section class="section section-gray req-sent-wrap">
+  <div class="container">
+    <div class="card req-sent" role="status">
+      <span class="req-sent-icon"><%- include('../partials/icon', { name: 'check', size: 34 }) %></span>
+      <h1><%= t('req.sent_title') %></h1>
+      <div class="req-ref">
+        <span><%= t('req.ref_label') %></span>
+        <strong class="mono"><%= done.ref %></strong>
+      </div>
+      <p class="req-sent-text"><%= t('req.sent_text') %></p>
+      <p class="small muted"><%= t('req.sent_keep') %></p>
+      <% if (done.mailed) { %><p class="small muted"><%= t('req.sent_mail', { email: done.email }) %></p><% } %>
+      <div class="req-sent-actions">
+        <a class="btn btn-navy" href="/"><%= t('req.back_home') %></a>
+        <a class="btn btn-ghost" href="/opportunities"><%= t('opp.title') %></a>
+      </div>
+    </div>
+  </div>
+</section>
+<%- include('../partials/bottom') %>

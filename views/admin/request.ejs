@@ -1,0 +1,81 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<%
+  var chipClass = { new: 'chip-warning', review: 'chip-gold', info_requested: 'chip-navy', forwarded: 'chip-success', closed: '' };
+  var stageLabels = { idea: 'Idée ou étude préalable', plan: 'Dossier et business plan finalisés', launch: 'Démarrage en cours', operating: 'Activité déjà en exploitation', expansion: 'Développement ou expansion' };
+  var yn = function (v) { return v === 1 ? 'Oui' : v === 0 ? 'Non' : '—'; };
+  var mailStatus = { queued: 'En attente', not_sent: 'Non envoyé', relay_accepted: 'Accepté par le serveur d\'envoi', deferred: 'Différé', delivered: 'Remis', failed: 'Échec', bounced: 'Rejeté', complained: 'Signalé' };
+%>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div>
+    <div class="dash-head">
+      <div><a class="small" href="/admin/requests">← Demandes et dossiers</a><h1>Dossier <span class="mono"><%= r.ref %></span></h1></div>
+      <span class="chip <%= chipClass[r.status] %>"><%= statusLabels[r.status] %></span>
+    </div>
+
+    <div class="req-detail">
+      <div>
+        <div class="card panel">
+          <h2>Demandeur</h2>
+          <dl class="kv">
+            <dt>Motif</dt><dd><strong><%= motiveLabels[r.motive] %></strong></dd>
+            <dt>Nom et prénom</dt><dd><%= r.full_name %><% if (r.user_id) { %> — <a href="/admin/users/<%= r.user_id %>">compte client</a><% } %></dd>
+            <dt>Entreprise / organisation</dt><dd><%= r.organisation || '—' %></dd>
+            <dt>Pays, ville</dt><dd><%= countryName(r.country) %><%= r.city ? ', ' + r.city : '' %></dd>
+            <dt>E-mail</dt><dd><a href="mailto:<%= r.email %>"><%= r.email %></a></dd>
+            <dt>Téléphone / WhatsApp</dt><dd><%= r.phone || '—' %></dd>
+            <dt>Site internet</dt><dd><% if (r.website) { %><a href="<%= r.website %>" target="_blank" rel="noopener noreferrer nofollow"><%= r.website %></a><% } else { %>—<% } %></dd>
+            <dt>Reçue le</dt><dd><%= fmtDate(r.created_at, true) %> (langue : <%= r.lang.toUpperCase() %>)</dd>
+            <dt>Certification</dt><dd>Exactitude des informations certifiée le <%= fmtDate(r.certified_at, true) %></dd>
+          </dl>
+        </div>
+
+        <% if (r.amount_cents != null || r.sector || r.nature) { %>
+        <div class="card panel">
+          <h2>Projet et financement</h2>
+          <dl class="kv">
+            <dt>Secteur d'activité</dt><dd><%= r.sector ? (r.sector === 'other' ? 'Autre secteur' : t('sector.' + r.sector)) : '—' %></dd>
+            <dt>Nature du projet</dt><dd><%= r.nature || '—' %></dd>
+            <dt>Montant recherché</dt><dd><strong><%= r.amount_cents ? usd(r.amount_cents) : '—' %></strong></dd>
+            <dt>Apport / financement disponible</dt><dd><%= r.own_funds_cents != null ? usd(r.own_funds_cents) : '—' %><% if (r.amount_cents && r.own_funds_cents) { %> <span class="muted small">(<%= num(r.own_funds_cents / r.amount_cents * 100) %> % du montant recherché)</span><% } %></dd>
+            <dt>Durée prévisionnelle</dt><dd><%= r.duration_months ? r.duration_months + ' mois' : '—' %></dd>
+            <dt>Stade actuel</dt><dd><%= stageLabels[r.stage] || '—' %></dd>
+            <dt>Business plan disponible</dt><dd><%= yn(r.has_business_plan) %></dd>
+            <dt>Documents justificatifs</dt><dd><%= yn(r.has_documents) %></dd>
+          </dl>
+        </div>
+        <% } %>
+
+        <div class="card panel">
+          <h2><%= r.amount_cents != null ? 'Description du projet' : 'Message' %></h2>
+          <p class="req-desc"><%= r.description %></p>
+          <p class="hint mt-2 mb-0">Informations déclarées par le demandeur : elles n'ont pas été vérifiées à ce stade.</p>
+        </div>
+      </div>
+
+      <div>
+        <form class="card panel form" method="post" action="/admin/requests/<%= r.id %>">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <h2>Traitement du dossier</h2>
+          <div><label for="status">Statut</label><select id="status" name="status"><% statuses.forEach(function (s) { %><option value="<%= s %>" <%= r.status === s ? 'selected' : '' %>><%= statusLabels[s] %></option><% }) %></select></div>
+          <div><label for="note">Note interne (jamais visible par le demandeur)</label><textarea id="note" name="admin_note" rows="5" maxlength="5000"><%= r.admin_note || '' %></textarea></div>
+          <div><label for="message">Message au demandeur <span class="hint">(facultatif — envoyé par e-mail)</span></label><textarea id="message" name="message" rows="5" maxlength="5000" placeholder="Ex. : merci de nous transmettre votre business plan et vos derniers états financiers."></textarea></div>
+          <p class="alert alert-warning small mb-0">Ne promettez ni financement ni rendement : toute mise en relation reste soumise à l'analyse du projet et aux vérifications des partenaires.</p>
+          <div class="actions"><button class="btn btn-gold" type="submit">Enregistrer</button></div>
+          <% if (r.updated_at && r.handled_by) { %><p class="hint mb-0">Dernière mise à jour : <%= fmtDate(r.updated_at, true) %></p><% } %>
+        </form>
+
+        <div class="card panel">
+          <h2>E-mails envoyés au demandeur</h2>
+          <% if (!emails.length) { %><p class="muted mb-0">Aucun e-mail enregistré.</p><% } %>
+          <ul class="req-mine">
+            <% emails.forEach(function (e) { %>
+              <li><a href="/admin/emails/<%= e.id %>"><%= { request_confirm: 'Confirmation de réception', request_update: 'Mise à jour du dossier', request_admin: 'Notification interne' }[e.kind] || e.kind %></a><span class="chip <%= ['relay_accepted', 'delivered'].indexOf(e.status) !== -1 ? 'chip-success' : 'chip-warning' %>"><%= mailStatus[e.status] || e.status %></span><span class="small muted"><%= fmtDate(e.created_at, true) %></span></li>
+            <% }) %>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

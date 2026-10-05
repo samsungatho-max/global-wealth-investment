@@ -11,6 +11,9 @@ const newsLib = require('../lib/news');
 
 const router = express.Router();
 const { SECTORS, AMOUNT_RANGES } = require('../lib/sectors');
+const requestsLib = require('../lib/requests');
+const { countries } = require('../lib/countries');
+const res_t = (req, key) => require('../i18n').t(req.lang, key);
 const PUBLIC_STATUSES = ['open', 'closed'];
 
 const formLimiter = rateLimit({
@@ -188,25 +191,39 @@ router.get('/page/:slug', async (req, res, next) => {
   res.render('public/page', { title: tr.title, slug: page.slug, tr, bodyHtml: markdown(tr.body), updated: page.updated_at });
 });
 
+const contactView = async (req, extra) => ({
+  title: res_t(req, 'req.title'),
+  motives: requestsLib.MOTIVES, fundingMotives: requestsLib.FUNDING_MOTIVES, stages: requestsLib.STAGES, sectorChoices: requestsLib.SECTOR_CHOICES,
+  countries: countries(req.lang),
+  mine: req.user ? await all('SELECT ref, motive, status, created_at FROM requests WHERE user_id = ? ORDER BY created_at DESC LIMIT 20', req.user.id) : [],
+  errors: [], ...extra
+});
+
 router.get('/contact', async (req, res) => {
-  const mine = req.user ? await all('SELECT * FROM messages WHERE user_id = ? ORDER BY created_at DESC LIMIT 20', req.user.id) : [];
-  res.render('public/contact', { title: res.locals.t('contact.title'), mine, values: {} });
+  const motive = requestsLib.MOTIVES.includes(req.query.motif) ? req.query.motif : 'project';
+  const values = { motive, full_name: req.user ? req.user.full_name : '', email: req.user ? req.user.email : '', country: (req.user && req.user.country) || '' };
+  res.render('public/contact', await contactView(req, { values }));
+});
+
+router.get('/contact/confirmation', (req, res) => {
+  const done = req.session.requestDone;
+  if (!done) return res.redirect('/contact');
+  res.render('public/contact-sent', { title: res.locals.t('req.sent_title'), done });
 });
 
 router.post('/contact', formLimiter, async (req, res) => {
-  const v = {
-    name: String(req.body.name || (req.user && req.user.full_name) || '').trim().slice(0, 120),
-    email: String(req.body.email || (req.user && req.user.email) || '').trim().slice(0, 200),
-    subject: String(req.body.subject || '').trim().slice(0, 200),
-    body: String(req.body.body || '').trim().slice(0, 5000)
-  };
-  if (!v.name || !isEmail(v.email) || !v.subject || !v.body) {
-    return res.status(400).render('public/contact', { title: res.locals.t('contact.title'), mine: [], values: v, error: res.locals.t('auth.err_required') });
+  // Champ piège invisible : rempli uniquement par les robots, la demande est alors ignorée sans message d'erreur.
+  if (String(req.body.fax_number || '').trim()) return res.redirect('/contact');
+  const { values, data, errors } = requestsLib.validate(req.body, req.user);
+  if (errors.length) {
+    return res.status(400).render('public/contact', await contactView(req, { values, errors, error: res.locals.t('req.err') }));
   }
-  await run('INSERT INTO messages (user_id, name, email, subject, body) VALUES (?, ?, ?, ?, ?)',
-    req.user ? req.user.id : null, v.name, v.email, v.subject, v.body);
-  req.flash('success', res.locals.t('contact.sent'));
-  res.redirect('/contact');
+  const { id, ref } = await requestsLib.create(data, req.lang);
+  const row = await one('SELECT * FROM requests WHERE id = ?', id);
+  const mailed = await requestsLib.sendConfirmation(row);
+  await requestsLib.notifyAdmins(row).catch((err) => console.error('[demande] notification', err));
+  req.session.requestDone = { ref, email: row.email, mailed };
+  res.redirect('/contact/confirmation');
 });
 
 router.get('/credits', (req, res) => {

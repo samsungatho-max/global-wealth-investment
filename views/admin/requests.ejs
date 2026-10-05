@@ -1,0 +1,46 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<%
+  var chipClass = { new: 'chip-warning', review: 'chip-gold', info_requested: 'chip-navy', forwarded: 'chip-success', closed: '' };
+  var qs = function (over) { var o = Object.assign({}, f, over); return '/admin/requests?' + Object.keys(o).filter(function (k) { return o[k]; }).map(function (k) { return k + '=' + encodeURIComponent(o[k]); }).join('&'); };
+  var total = Object.keys(counts).reduce(function (a, k) { return a + counts[k]; }, 0);
+%>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div>
+    <div class="dash-head"><div><h1>Demandes et dossiers</h1><p class="muted mb-0">Demandes déposées depuis la page Contact : porteurs de projets, recherches de financement, partenaires.</p></div></div>
+
+    <nav class="req-status-tabs" aria-label="Statut">
+      <a href="<%= qs({ status: '' }) %>" <%- !f.status ? 'aria-current="true"' : '' %>>Tous <b><%= total %></b></a>
+      <% statuses.forEach(function (s) { %><a href="<%= qs({ status: s }) %>" <%- f.status === s ? 'aria-current="true"' : '' %>><%= statusLabels[s] %> <b><%= counts[s] || 0 %></b></a><% }) %>
+    </nav>
+
+    <form class="card req-filter" method="get" action="/admin/requests">
+      <% if (f.status) { %><input type="hidden" name="status" value="<%= f.status %>"><% } %>
+      <div><label for="q">Recherche</label><input id="q" name="q" type="search" maxlength="100" placeholder="N° de dossier, nom, entreprise, e-mail, ville…" value="<%= f.q %>"></div>
+      <div><label for="motive">Motif</label><select id="motive" name="motive"><option value="">Tous</option><% motives.forEach(function (m) { %><option value="<%= m %>" <%= f.motive === m ? 'selected' : '' %>><%= motiveLabels[m] %></option><% }) %></select></div>
+      <div><label for="sector">Secteur</label><select id="sector" name="sector"><option value="">Tous</option><% sectors.forEach(function (s) { %><option value="<%= s %>" <%= f.sector === s ? 'selected' : '' %>><%= s === 'other' ? 'Autre secteur' : t('sector.' + s) %></option><% }) %></select></div>
+      <div><label for="status2">Statut</label><select id="status2" name="status" <%= f.status ? 'disabled' : '' %>><option value="">Tous</option><% statuses.forEach(function (s) { %><option value="<%= s %>" <%= f.status === s ? 'selected' : '' %>><%= statusLabels[s] %></option><% }) %></select></div>
+      <div class="flex"><button class="btn btn-navy" type="submit">Filtrer</button><a class="btn btn-ghost" href="/admin/requests">Effacer</a></div>
+    </form>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Dossier</th><th>Demandeur</th><th>Motif / secteur</th><th>Montant recherché</th><th>Statut</th><th></th></tr></thead>
+        <tbody>
+        <% if (!rows.length) { %><tr><td colspan="6" class="empty">Aucune demande ne correspond.</td></tr><% } %>
+        <% rows.forEach(function (r) { %>
+          <tr>
+            <td><strong class="mono"><%= r.ref %></strong><div class="small muted"><%= fmtDate(r.created_at, true) %></div></td>
+            <td><strong><%= r.full_name %></strong><div class="small muted"><%= r.organisation ? r.organisation + ' · ' : '' %><%= countryName(r.country) %><%= r.city ? ', ' + r.city : '' %></div><div class="small muted"><%= r.email %></div></td>
+            <td><%= motiveLabels[r.motive] %><% if (r.sector) { %><div class="small muted"><%= r.sector === 'other' ? 'Autre secteur' : t('sector.' + r.sector) %></div><% } %></td>
+            <td><%= r.amount_cents ? usd(r.amount_cents) : '—' %></td>
+            <td><span class="chip <%= chipClass[r.status] %>"><%= statusLabels[r.status] %></span></td>
+            <td><a class="btn btn-ghost btn-sm" href="/admin/requests/<%= r.id %>">Ouvrir</a></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

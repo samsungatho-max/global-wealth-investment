@@ -15,7 +15,7 @@ const { AsyncLocalStorage } = require('async_hooks');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
-const SCHEMA_VERSION = '5';
+const SCHEMA_VERSION = '6';
 
 const als = new AsyncLocalStorage();
 let driver = null; // { kind, query(text, params), exec(sql), transaction(fn), close() }
@@ -299,6 +299,37 @@ CREATE TABLE IF NOT EXISTS messages (
   replied_at TEXT,
   created_at TEXT NOT NULL DEFAULT datetime('now')
 );
+
+CREATE TABLE IF NOT EXISTS requests (
+  id BIGSERIAL PRIMARY KEY,
+  ref TEXT NOT NULL UNIQUE,
+  user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  motive TEXT NOT NULL CHECK (motive IN ('project','funding','opportunity','investor','other')),
+  full_name TEXT NOT NULL,
+  organisation TEXT,
+  country TEXT NOT NULL,
+  city TEXT,
+  email TEXT NOT NULL,
+  phone TEXT,
+  sector TEXT,
+  nature TEXT,
+  amount_cents BIGINT,
+  own_funds_cents BIGINT,
+  duration_months INTEGER,
+  description TEXT NOT NULL,
+  stage TEXT,
+  has_business_plan INTEGER,
+  has_documents INTEGER,
+  website TEXT,
+  lang TEXT NOT NULL DEFAULT 'fr',
+  certified_at TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','review','info_requested','forwarded','closed')),
+  admin_note TEXT,
+  handled_by BIGINT REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT datetime('now'),
+  updated_at TEXT NOT NULL DEFAULT datetime('now')
+);
+CREATE INDEX IF NOT EXISTS idx_requests_status ON requests(status, created_at);
 
 CREATE TABLE IF NOT EXISTS news (
   id BIGSERIAL PRIMARY KEY,

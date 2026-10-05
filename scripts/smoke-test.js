@@ -310,6 +310,80 @@ async function main() {
   assert.strictEqual((await inv.get('/admin')).status, 403);
   step('Connexion administrateur distincte ; investisseur refusé sur /admin');
 
+  // ---------- Page Contact : dépôt d'un dossier, numéro unique, e-mails, traitement par l'administration ----------
+  const vis = new Client();
+  let cp = await vis.get('/contact');
+  assert.match(cp.text, /Présentez-nous votre projet/);
+  assert.match(cp.text, /Chaque proposition fait l’objet d’une analyse préalable/);
+  for (const s of ['Analyse des projets', 'Sélection des opportunités', 'Mise en relation', 'Je suis porteur d’un projet', 'Je recherche un financement', 'Je souhaite présenter une opportunité d’affaires', 'Je suis investisseur \\/ partenaire', 'Autre demande', 'Soumettre mon projet', 'Demander un accompagnement', 'Je certifie que les informations communiquées sont exactes']) {
+    assert.match(cp.text, new RegExp(s), s);
+  }
+  const dossier = {
+    motive: 'funding', full_name: 'Awa Koné', organisation: 'Koné Agro SARL', country: 'CI', city: 'Abidjan', email: 'awa.kone@outlook.com', phone: '+225 07 00 00 00 00',
+    sector: 'agriculture', nature: 'Unité de transformation de mangues', amount: '750 000', own_funds: '120000', duration: '36',
+    description: 'Construction d’une unité de séchage et de conditionnement de mangues destinée à l’export, avec 40 emplois prévus.',
+    stage: 'plan', business_plan: 'yes', documents: 'no', website: 'kone-agro.example.org', certify: 'on'
+  };
+  r = await vis.post('/contact', { ...dossier, certify: '', amount: 'beaucoup', email: 'pas-un-email', phone: '' });
+  assert.strictEqual(r.status, 400);
+  assert.match(r.text, /Merci de vérifier les champs signalés/);
+  assert.match(r.text, /value="Koné Agro SARL"/, 'saisie conservée après une erreur');
+  assert.strictEqual(Number((await one('SELECT COUNT(*) AS n FROM requests')).n), 0);
+  r = await vis.post('/contact', { ...dossier, fax_number: 'robot' });
+  assert.strictEqual(Number((await one('SELECT COUNT(*) AS n FROM requests')).n), 0, 'envoi automatisé ignoré');
+  await vis.get('/contact');
+  const mailsBefore = inbox.length;
+  r = await vis.post('/contact', dossier);
+  assert.strictEqual(r.location, '/contact/confirmation');
+  const saved = await one('SELECT * FROM requests');
+  assert.match(saved.ref, /^GP-\d{4}-[A-Z2-9]{6}$/, 'numéro de dossier attribué');
+  assert.strictEqual(saved.status, 'new');
+  assert.strictEqual(Number(saved.amount_cents), 75000000);
+  assert.strictEqual(Number(saved.own_funds_cents), 12000000);
+  assert.strictEqual(saved.website, 'https://kone-agro.example.org/');
+  assert.ok(saved.certified_at);
+  const conf = await vis.get('/contact/confirmation');
+  assert.ok(conf.text.includes(saved.ref), 'numéro affiché à l’écran');
+  assert.match(conf.text, /La réception d’une demande ne constitue pas une acceptation de financement ni une promesse de rendement/);
+  assert.match(conf.text, /Un e-mail de confirmation a été envoyé à awa\.kone@outlook\.com/);
+  const newMails = inbox.slice(mailsBefore);
+  const toClient = newMails.find((m) => m.to.includes('awa.kone@outlook.com'));
+  assert.ok(toClient && decodeRaw(toClient.raw).includes(saved.ref), 'e-mail de confirmation avec le numéro de dossier');
+  assert.ok(newMails.some((m) => m.to.includes('admin@example.test') && decodeRaw(m.raw).includes(saved.ref)), 'notification e-mail à l’administration');
+  assert.ok(await one(`SELECT id FROM notifications WHERE message LIKE ? AND link = ?`, `%${saved.ref}%`, `/admin/requests/${saved.id}`), 'notification interne');
+  r = await vis.post('/contact', { motive: 'other', full_name: 'Jean Martin', country: 'FR', email: 'jean.martin@gmail.com', description: 'Bonjour, je souhaite un renseignement.', certify: 'on' });
+  assert.strictEqual(r.location, '/contact/confirmation', 'une autre demande n’exige pas le dossier de financement');
+  const refs = (await all('SELECT ref FROM requests')).map((x) => x.ref);
+  assert.strictEqual(new Set(refs).size, 2, 'numéros uniques');
+  assert.match((await adm.get('/admin')).text, /Nouvelles demandes/);
+  let list = await adm.get('/admin/requests');
+  assert.ok(list.text.includes(saved.ref) && list.text.includes('Jean Martin'));
+  list = await adm.get('/admin/requests?q=' + encodeURIComponent('koné agro'));
+  assert.ok(list.text.includes(saved.ref) && !list.text.includes('Jean Martin'), 'recherche');
+  list = await adm.get('/admin/requests?motive=other');
+  assert.ok(!list.text.includes(saved.ref) && list.text.includes('Jean Martin'), 'filtre par motif');
+  assert.ok(!(await adm.get('/admin/requests?sector=energy')).text.includes(saved.ref), 'filtre par secteur');
+  const detail = await adm.get(`/admin/requests/${saved.id}`);
+  assert.match(detail.text, /750\s000,00\s\$/);
+  assert.match(detail.text, /Unité de transformation de mangues/);
+  const mailsUpd = inbox.length;
+  r = await adm.post(`/admin/requests/${saved.id}`, { status: 'info_requested', admin_note: 'Dossier sérieux, demander le business plan.', message: 'Merci de nous transmettre votre business plan.' });
+  assert.strictEqual(r.location, `/admin/requests/${saved.id}`);
+  const upd = await one('SELECT * FROM requests WHERE id = ?', saved.id);
+  assert.strictEqual(upd.status, 'info_requested');
+  assert.strictEqual(upd.admin_note, 'Dossier sérieux, demander le business plan.');
+  const upMail = inbox.slice(mailsUpd).find((m) => m.to.includes('awa.kone@outlook.com'));
+  assert.ok(upMail && /business plan/.test(decodeRaw(upMail.raw)) && !/Dossier sérieux/.test(decodeRaw(upMail.raw)), 'message envoyé au demandeur, note interne non divulguée');
+  assert.ok((await adm.get('/admin/requests?status=info_requested')).text.includes(saved.ref), 'filtre par statut');
+  for (const s of ['review', 'forwarded', 'closed']) {
+    await adm.get(`/admin/requests/${saved.id}`);
+    await adm.post(`/admin/requests/${saved.id}`, { status: s });
+    assert.strictEqual((await one('SELECT status FROM requests WHERE id = ?', saved.id)).status, s);
+  }
+  assert.strictEqual((await vis.get(`/admin/requests/${saved.id}`)).status, 302, 'dossiers réservés à l’administration');
+  assert.ok(await one(`SELECT id FROM audit_log WHERE action = 'request.update'`), 'traitement journalisé');
+  step('Contact : dossier enregistré, numéro unique, confirmation, e-mails, recherche, filtres et statuts côté administration');
+
   // ---------- E-mails / Journal d'envoi ----------
   let ep = await adm.get('/admin/emails');
   assert.strictEqual(ep.status, 200);

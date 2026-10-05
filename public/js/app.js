@@ -189,3 +189,20 @@
   });
   render();
 })();
+
+/* Page Contact : les champs du dossier de financement suivent le motif choisi */
+(function () {
+  var form = document.querySelector('[data-req-form]');
+  if (!form) return;
+  var funding = (form.getAttribute('data-funding') || '').split(',');
+  function apply() {
+    var c = form.querySelector('input[name="motive"]:checked');
+    var on = !!c && funding.indexOf(c.value) !== -1;
+    form.querySelectorAll('[data-funding-block]').forEach(function (b) { b.hidden = !on; });
+    form.querySelectorAll('[data-funding-required]').forEach(function (i) { i.required = on; });
+    form.querySelectorAll('[data-req-star], [data-label-funding]').forEach(function (s) { s.hidden = !on; });
+    form.querySelectorAll('[data-label-other]').forEach(function (s) { s.hidden = on; });
+  }
+  form.querySelectorAll('input[name="motive"]').forEach(function (r) { r.addEventListener('change', apply); });
+  apply();
+})();

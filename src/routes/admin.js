@@ -43,6 +43,7 @@ router.get('/', async (req, res) => {
     (SELECT COUNT(*) FROM transactions WHERE type = 'deposit' AND status = 'pending') AS deposits,
     (SELECT COUNT(*) FROM transactions WHERE type = 'withdrawal' AND status IN ('pending','processing')) AS withdrawals,
     (SELECT COUNT(*) FROM messages WHERE status = 'new') AS messages,
+    (SELECT COUNT(*) FROM requests WHERE status = 'new') AS requests,
     (SELECT COUNT(*) FROM interests WHERE status = 'new') AS interests,
     (SELECT COUNT(*) FROM projects WHERE status = 'open') AS projects,
     (SELECT COUNT(*) FROM projects WHERE is_demo = 1 AND status IN ('open','closed')) AS demo,
@@ -454,6 +455,61 @@ router.post('/transactions/:id/action', async (req, res, next) => {
 });
 
 // ---------- Messages ----------
+// ---------- Demandes (page Contact) ----------
+const requestsLib = require('../lib/requests');
+const REQ_STATUS = { new: 'Nouveau', review: 'En étude', info_requested: 'Informations complémentaires demandées', forwarded: 'Transmis pour examen', closed: 'Clôturé' };
+const REQ_MOTIVE = { project: 'Porteur de projet', funding: 'Recherche de financement', opportunity: 'Opportunité d\'affaires', investor: 'Investisseur / partenaire', other: 'Autre demande' };
+const reqLabels = { statusLabels: REQ_STATUS, motiveLabels: REQ_MOTIVE, countryName: (c) => countryName(c, 'fr') };
+
+router.get('/requests', async (req, res) => {
+  const f = {
+    q: String(req.query.q || '').trim().slice(0, 100),
+    status: requestsLib.STATUSES.includes(req.query.status) ? req.query.status : '',
+    motive: requestsLib.MOTIVES.includes(req.query.motive) ? req.query.motive : '',
+    sector: requestsLib.SECTOR_CHOICES.includes(req.query.sector) ? req.query.sector : ''
+  };
+  const where = [], params = [];
+  if (f.status) { where.push('status = ?'); params.push(f.status); }
+  if (f.motive) { where.push('motive = ?'); params.push(f.motive); }
+  if (f.sector) { where.push('sector = ?'); params.push(f.sector); }
+  if (f.q) {
+    const like = `%${f.q.toLowerCase().replace(/[\\%_]/g, (c) => '\\' + c)}%`;
+    where.push(`(lower(ref) LIKE ? OR lower(full_name) LIKE ? OR lower(COALESCE(organisation, '')) LIKE ? OR lower(email) LIKE ? OR lower(COALESCE(city, '')) LIKE ? OR lower(COALESCE(nature, '')) LIKE ?)`);
+    params.push(like, like, like, like, like, like);
+  }
+  const rows = await all(`SELECT * FROM requests ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY status = 'new' DESC, created_at DESC, id DESC LIMIT 300`, ...params);
+  const counts = {};
+  (await all('SELECT status, COUNT(*) AS n FROM requests GROUP BY status')).forEach((r) => { counts[r.status] = Number(r.n); });
+  res.render('admin/requests', { title: 'Demandes et dossiers', rows, f, counts, statuses: requestsLib.STATUSES, motives: requestsLib.MOTIVES, sectors: requestsLib.SECTOR_CHOICES, ...reqLabels });
+});
+
+router.get('/requests/:id', async (req, res, next) => {
+  const r = await one('SELECT * FROM requests WHERE id = ?', req.params.id);
+  if (!r) return next();
+  const emails = await all(`SELECT id, kind, status, created_at FROM email_log WHERE to_email = ? AND kind LIKE 'request_%' ORDER BY id DESC LIMIT 20`, r.email).catch(() => []);
+  res.render('admin/request', { title: `Dossier ${r.ref}`, r, emails, statuses: requestsLib.STATUSES, ...reqLabels });
+});
+
+router.post('/requests/:id', async (req, res, next) => {
+  try {
+    const r = await one('SELECT * FROM requests WHERE id = ?', req.params.id);
+    if (!r) return next();
+    const status = requestsLib.STATUSES.includes(req.body.status) ? req.body.status : r.status;
+    const note = String(req.body.admin_note || '').trim().slice(0, 5000);
+    const message = String(req.body.message || '').trim().slice(0, 5000);
+    await run(`UPDATE requests SET status = ?, admin_note = ?, handled_by = ?, updated_at = datetime('now') WHERE id = ?`, status, note || null, req.user.id, r.id);
+    await audit(req, 'request.update', 'request', r.id, { ref: r.ref, from: r.status, to: status, message: !!message });
+    if (message) {
+      const log = await requestsLib.sendUpdate({ ...r, status }, message).catch((err) => { console.error('[mail] dossier', err); return null; });
+      const ok = log && ['relay_accepted', 'delivered'].includes(log.status);
+      req.flash(ok ? 'success' : 'error', ok ? 'Dossier mis à jour et message envoyé au demandeur.' : 'Dossier mis à jour, mais le message n\'a pas pu être envoyé (voir E-mails / Journal d\'envoi).');
+    } else {
+      req.flash('success', 'Dossier mis à jour.');
+    }
+    res.redirect(`/admin/requests/${r.id}`);
+  } catch (e) { next(e); }
+});
+
 router.get('/messages', async (req, res) => {
   res.render('admin/messages', { title: 'Messages clients', rows: await all('SELECT * FROM messages ORDER BY status = \'new\' DESC, created_at DESC LIMIT 300') });
 });
