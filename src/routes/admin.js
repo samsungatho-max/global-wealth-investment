@@ -92,13 +92,14 @@ router.post('/projects', projectUpload.single('image'), verifyCsrf, async (req, 
     req.flash('error', 'Secteur, pays, montant recherché et titre (FR) sont obligatoires.');
     return res.redirect('/admin/projects/new');
   }
+  const publish = req.body.publish === '1';
   let slug = slugify(d.i18n.fr.title);
   if (await one('SELECT id FROM projects WHERE slug = ?', slug)) slug += '-' + Date.now().toString(36);
   const info = await run(`INSERT INTO projects (slug, sector, country, i18n, target_cents, min_ticket_cents, duration_months, risk_level, image_path, photo_key, status, is_demo)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?)`,
-    slug, d.sector, d.country, JSON.stringify(d.i18n), d.target, d.ticket, d.duration, d.risk, req.file ? req.file.filename : null, d.photo_key, d.is_demo);
-  await audit(req, 'project.create', 'project', info.lastInsertRowid, { slug });
-  req.flash('success', 'Projet créé (brouillon). Publiez-le lorsqu\'il est prêt.');
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    slug, d.sector, d.country, JSON.stringify(d.i18n), d.target, d.ticket, d.duration, d.risk, req.file ? req.file.filename : null, d.photo_key, publish ? 'open' : 'draft', d.is_demo);
+  await audit(req, 'project.create', 'project', info.lastInsertRowid, { slug, status: publish ? 'open' : 'draft' });
+  req.flash('success', publish ? 'Projet créé et publié : il est visible sur le site.' : 'Projet enregistré en brouillon : il n\'est PAS encore visible sur le site. Cliquez sur « Publier / ouvrir » pour l\'afficher.');
   res.redirect(`/admin/projects/${info.lastInsertRowid}/edit`);
 });
 

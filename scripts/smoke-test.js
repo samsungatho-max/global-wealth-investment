@@ -539,8 +539,15 @@ async function main() {
   await adm.get('/admin/projects/new');
   r = await adm.post('/admin/projects', { sector: 'energy', country: 'Maroc', risk_level: '3', target: '200000', min_ticket: '1000', duration_months: '24', title_fr: 'Parc solaire de test', summary_fr: 'Résumé', description_fr: 'Description', conditions_fr: 'Conditions', fees_fr: 'Frais' }, { multipart: true });
   const projectId = Number(r.location.match(/projects\/(\d+)/)[1]);
-  await adm.get(r.location);
+  const draftPage = await adm.get(r.location);
+  assert.match(draftPage.text, /Brouillon : ce projet n'est pas visible sur le site|Brouillon : ce projet n&#39;est pas visible sur le site/);
+  assert.ok(!(await pub.get('/opportunities?sector=energy')).text.includes('Parc solaire de test'), 'un brouillon n’est pas visible sur le site');
   await adm.post(`/admin/projects/${projectId}/status`, { status: 'open' });
+  assert.ok((await pub.get('/opportunities?sector=energy')).text.includes('Parc solaire de test'), 'visible une fois publié');
+  await adm.get('/admin/projects/new');
+  r = await adm.post('/admin/projects', { sector: 'tourism', country: 'Maroc', risk_level: '2', target: '300000', duration_months: '12', title_fr: 'Hôtel publié directement', publish: '1' });
+  assert.ok((await pub.get('/opportunities?sector=tourism')).text.includes('Hôtel publié directement'), '« Enregistrer et publier » affiche le projet immédiatement');
+  await adm.post(`/admin/projects/${r.location.match(/projects\/(\d+)/)[1]}/status`, { status: 'archived' });
   await adm.get(`/admin/users/${marie.id}`);
   const demo = await one('SELECT id FROM projects WHERE is_demo = 1 LIMIT 1');
   await adm.post(`/admin/users/${marie.id}/investments`, { project_id: String(demo.id), amount: '1000', start_date: '2026-01-01', end_date: '2027-01-01' });

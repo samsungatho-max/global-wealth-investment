@@ -8,6 +8,8 @@
     </div>
 
     <% if (p.id) { %>
+    <% if (p.status === 'draft') { %><div class="alert alert-warning"><strong>Brouillon : ce projet n'est pas visible sur le site.</strong> Cliquez sur « Publier / ouvrir » ci-dessous pour l'afficher dans les opportunités.</div><% } %>
+    <% if (p.status === 'archived' || p.status === 'suspended') { %><div class="alert alert-warning"><strong>Ce projet n'est pas visible sur le site</strong> (statut : <%= t('project.status_' + p.status) %>).</div><% } %>
     <section class="card panel">
       <div class="panel-head"><h2>Publication</h2><span class="small muted">Montant mobilisé vérifié : <strong><%= usd(raised) %></strong></span></div>
       <div class="actions">
@@ -50,7 +52,7 @@
         ['conditions', 'Conditions de participation', 'textarea', 3], ['fees', 'Frais applicables', 'textarea', 3]
       ] }) %>
       <p class="alert alert-warning small">N'indiquez jamais de rendement garanti ni de chiffre de performance non vérifié. Les informations doivent correspondre à un projet réel et documenté (sauf fiche de démonstration).</p>
-      <div><button class="btn btn-gold" type="submit">Enregistrer</button></div>
+      <div class="actions"><% if (!p.id) { %><button class="btn btn-gold" type="submit" name="publish" value="1">Enregistrer et publier sur le site</button><button class="btn btn-ghost" type="submit">Enregistrer en brouillon</button><% } else { %><button class="btn btn-gold" type="submit">Enregistrer</button><% } %></div>
     </form>
 
     <% if (p.id) { %>
