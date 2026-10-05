@@ -62,7 +62,7 @@
           <% if (project.source_url) { %><dt><%= t('project.source') %></dt><dd><a href="<%= project.source_url %>" target="_blank" rel="noopener noreferrer"><%= project.source_name || project.source_url %></a><% if (project.source_ref) { %> · <span class="mono"><%= project.source_ref %></span><% } %></dd><% } %>
           <% if (project.verified_at) { %><dt><%= t('project.verified') %></dt><dd><%= fmtDate(project.verified_at) %></dd><% } %>
         </dl>
-        <p class="alert alert-info mt-3"><%= t('project.ref_notice', { site: site }) %></p>
+        <p class="project-ref-note"><%= t('project.ref_notice', { site: site }) %></p>
       <% } else { %>
         <h2 class="mt-4"><%= t('risk.label') %> : <%= project.risk_level %>/5 — <%= t('risk.' + project.risk_level) %></h2>
         <p><span class="risk-meter r<%= project.risk_level %>"><% for (var i = 1; i <= 5; i++) { %><i class="<%= i <= project.risk_level ? 'on' : '' %>"></i><% } %></span></p>

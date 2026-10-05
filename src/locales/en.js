@@ -121,7 +121,7 @@ module.exports = {
     source: "Official source",
     verified: "Information verified on",
     committed: "Committed financing",
-    ref_notice: "Public project led by the body shown and financed by the institution cited. {site} is neither its sponsor nor its agent and collects no funds for this project: this sheet is an original presentation based on the official source.",
+    ref_notice: "Information sheet based on the official source. {site} is not a party to this project and collects no funds for it.",
     request_intro: "Write to us about this project: our team will reply. This does not constitute a subscription or a commitment.",
     title: "Investment opportunities",
     intro: "Each sheet presents the project, its country, the amount sought, the amount actually raised, the expected duration, the risk level, the conditions, the fees and the available documents.",

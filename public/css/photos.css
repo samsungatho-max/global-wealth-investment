@@ -348,3 +348,4 @@ h2 { letter-spacing: -.015em; }
 .project-key h3 { font-size: .98rem; margin: 0 0 4px; }
 .project-key p { margin: 0; color: var(--gray-600); font-size: .94rem; }
 .project-hero .contact-hero-actions { margin-top: 18px; }
+.project-ref-note { margin: 12px 2px 0; font-size: .8rem; line-height: 1.5; color: var(--gray-500); }

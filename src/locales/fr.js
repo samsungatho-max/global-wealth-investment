@@ -121,7 +121,7 @@ module.exports = {
     source: "Source officielle",
     verified: "Informations vérifiées le",
     committed: "Financement engagé",
-    ref_notice: "Projet public porté par l’organisme indiqué et financé par l’institution citée. {site} n’en est ni le promoteur ni le mandataire et ne collecte aucun fonds pour ce projet : cette fiche est une présentation originale établie à partir de la source officielle.",
+    ref_notice: "Fiche d’information établie à partir de la source officielle. {site} n’est pas partie à ce projet et ne collecte aucun fonds à ce titre.",
     request_intro: "Écrivez-nous au sujet de ce projet : notre équipe vous répondra. Cette démarche ne constitue ni une souscription ni un engagement.",
     title: "Opportunités d'investissement",
     intro: "Chaque fiche présente le projet, son pays, le montant recherché, le montant réellement mobilisé, la durée prévisionnelle, le niveau de risque, les conditions, les frais et les documents disponibles.",

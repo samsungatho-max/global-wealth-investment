@@ -67,7 +67,7 @@ delete process.env.SESSION_SECRET;
   }
   const sheetFr = await req('GET', '/opportunities/wb-p176812?lang=fr');
   assert.match(sheetFr.text, /650\s000\s000,00\s\$/);
-  assert.match(sheetFr.text, /n’en est ni le promoteur ni le mandataire/);
+  assert.match(sheetFr.text, /n’est pas partie à ce projet et ne collecte aucun fonds/);
   const refRow = await one(`SELECT * FROM projects WHERE slug = 'wb-p176812'`);
   assert.strictEqual(refRow.kind, 'referenced');
   assert.strictEqual(refRow.verified_at, '2026-10-05');

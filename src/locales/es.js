@@ -121,7 +121,7 @@ module.exports = {
     source: "Fuente oficial",
     verified: "Información verificada el",
     committed: "Financiación comprometida",
-    ref_notice: "Proyecto público a cargo del organismo indicado y financiado por la institución citada. {site} no es ni su promotor ni su mandatario y no recauda fondos para este proyecto: esta ficha es una presentación original elaborada a partir de la fuente oficial.",
+    ref_notice: "Ficha informativa elaborada a partir de la fuente oficial. {site} no es parte de este proyecto y no recauda fondos por él.",
     request_intro: "Escríbanos sobre este proyecto: nuestro equipo le responderá. Esta gestión no constituye una suscripción ni un compromiso.",
     title: "Oportunidades de inversión",
     intro: "Cada ficha presenta el proyecto, su país, el importe buscado, el importe realmente movilizado, la duración prevista, el nivel de riesgo, las condiciones, las comisiones y los documentos disponibles.",

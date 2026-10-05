@@ -121,7 +121,7 @@ module.exports = {
     source: "Offizielle Quelle",
     verified: "Angaben geprüft am",
     committed: "Zugesagte Finanzierung",
-    ref_notice: "Öffentliches Projekt der genannten Stelle, finanziert von der angegebenen Institution. {site} ist weder Träger noch Beauftragter und sammelt keine Mittel für dieses Projekt: Dieses Projektblatt ist eine eigenständige Darstellung auf Grundlage der offiziellen Quelle.",
+    ref_notice: "Informationsblatt auf Grundlage der offiziellen Quelle. {site} ist an diesem Projekt nicht beteiligt und sammelt dafür keine Mittel.",
     request_intro: "Schreiben Sie uns zu diesem Projekt: Unser Team antwortet Ihnen. Dies ist weder eine Zeichnung noch eine Verpflichtung.",
     title: "Anlagechancen",
     intro: "Jedes Projektblatt zeigt das Projekt, das Land, den gesuchten Betrag, den tatsächlich eingeworbenen Betrag, die voraussichtliche Laufzeit, die Risikostufe, die Bedingungen, die Gebühren und die verfügbaren Unterlagen.",
