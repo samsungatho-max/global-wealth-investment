@@ -199,7 +199,7 @@ app.use((err, req, res, next) => {
 const PORT = Number(process.env.PORT || 3000);
 if (require.main === module) {
   init()
-    .then(() => app.listen(PORT, () => console.log(`SYNERGIX COMPANY PARTNERS — http://localhost:${PORT}`)))
+    .then(() => app.listen(PORT, () => console.log(`GLOBACOR Partners INC — http://localhost:${PORT}`)))
     .catch((err) => { console.error('Initialisation impossible :', err); process.exit(1); });
 }
 

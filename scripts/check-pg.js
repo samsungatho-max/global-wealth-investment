@@ -12,7 +12,7 @@ const { spawn } = require('child_process');
 (async () => {
   const { PGlite } = require('@electric-sql/pglite');
   const { PGLiteSocketServer } = require('@electric-sql/pglite-socket');
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'synergix-pg-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'globacor-pg-'));
   const db = await PGlite.create(path.join(dir, 'pgdata'));
   const server = new PGLiteSocketServer({ db, port: 0, host: '127.0.0.1' });
   await server.start();

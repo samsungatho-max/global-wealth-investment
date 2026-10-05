@@ -1,4 +1,4 @@
-/* SYNERGIX COMPANY PARTNERS — scripts client (aucun script inline : CSP stricte) */
+/* GLOBACOR Partners INC — scripts client (aucun script inline : CSP stricte) */
 (function () {
   'use strict';
 

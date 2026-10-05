@@ -47,10 +47,10 @@ async function seedAdmin() {
 
 const PAGES = {
   about: {
-    fr: { title: 'À propos de notre société', body: `## Notre mission\nSYNERGIX COMPANY PARTNERS accompagne particuliers, entrepreneurs, investisseurs privés et entreprises dans la construction d'un patrimoine diversifié, fondé sur des actifs de l'économie réelle.\n\n## Nos valeurs\n- **Transparence** : risques, frais et performances réelles présentés clairement.\n- **Prudence** : sélection rigoureuse et diversification des projets.\n- **Long terme** : création de valeur durable plutôt que promesses de court terme.\n\n## Informations sur la société\nLes informations légales complètes (raison sociale, immatriculation, siège, autorisations réglementaires) figurent dans les [mentions légales](/page/legal).` },
-    en: { title: 'About our company', body: `## Our mission\nSYNERGIX COMPANY PARTNERS supports individuals, entrepreneurs, private investors and companies in building diversified wealth based on real-economy assets.\n\n## Our values\n- **Transparency**: risks, fees and actual performance presented clearly.\n- **Prudence**: rigorous selection and diversification of projects.\n- **Long term**: lasting value creation rather than short-term promises.\n\n## Company information\nFull legal information (company name, registration, head office, regulatory authorisations) is available in the [legal notice](/page/legal).` },
-    es: { title: 'Sobre nuestra sociedad', body: `## Nuestra misión\nSYNERGIX COMPANY PARTNERS acompaña a particulares, emprendedores, inversores privados y empresas en la construcción de un patrimonio diversificado, basado en activos de la economía real.\n\n## Nuestros valores\n- **Transparencia**: riesgos, comisiones y rentabilidades reales presentados con claridad.\n- **Prudencia**: selección rigurosa y diversificación de los proyectos.\n- **Largo plazo**: creación de valor duradero en lugar de promesas a corto plazo.\n\n## Información sobre la sociedad\nLa información legal completa figura en el [aviso legal](/page/legal).` },
-    de: { title: 'Über unser Unternehmen', body: `## Unsere Mission\nSYNERGIX COMPANY PARTNERS begleitet Privatpersonen, Unternehmer, Privatanleger und Unternehmen beim Aufbau eines diversifizierten Vermögens auf Basis von Sachwerten der Realwirtschaft.\n\n## Unsere Werte\n- **Transparenz**: Risiken, Gebühren und tatsächliche Wertentwicklung klar dargestellt.\n- **Vorsicht**: sorgfältige Auswahl und Diversifikation der Projekte.\n- **Langfristigkeit**: nachhaltige Wertschöpfung statt kurzfristiger Versprechen.\n\n## Unternehmensangaben\nVollständige rechtliche Angaben finden Sie im [Impressum](/page/legal).` }
+    fr: { title: 'À propos de notre société', body: `## Notre mission\nGLOBACOR Partners INC accompagne particuliers, entrepreneurs, investisseurs privés et entreprises dans la construction d'un patrimoine diversifié, fondé sur des actifs de l'économie réelle.\n\n## Nos valeurs\n- **Transparence** : risques, frais et performances réelles présentés clairement.\n- **Prudence** : sélection rigoureuse et diversification des projets.\n- **Long terme** : création de valeur durable plutôt que promesses de court terme.\n\n## Informations sur la société\nLes informations légales complètes (raison sociale, immatriculation, siège, autorisations réglementaires) figurent dans les [mentions légales](/page/legal).` },
+    en: { title: 'About our company', body: `## Our mission\nGLOBACOR Partners INC supports individuals, entrepreneurs, private investors and companies in building diversified wealth based on real-economy assets.\n\n## Our values\n- **Transparency**: risks, fees and actual performance presented clearly.\n- **Prudence**: rigorous selection and diversification of projects.\n- **Long term**: lasting value creation rather than short-term promises.\n\n## Company information\nFull legal information (company name, registration, head office, regulatory authorisations) is available in the [legal notice](/page/legal).` },
+    es: { title: 'Sobre nuestra sociedad', body: `## Nuestra misión\nGLOBACOR Partners INC acompaña a particulares, emprendedores, inversores privados y empresas en la construcción de un patrimonio diversificado, basado en activos de la economía real.\n\n## Nuestros valores\n- **Transparencia**: riesgos, comisiones y rentabilidades reales presentados con claridad.\n- **Prudencia**: selección rigurosa y diversificación de los proyectos.\n- **Largo plazo**: creación de valor duradero en lugar de promesas a corto plazo.\n\n## Información sobre la sociedad\nLa información legal completa figura en el [aviso legal](/page/legal).` },
+    de: { title: 'Über unser Unternehmen', body: `## Unsere Mission\nGLOBACOR Partners INC begleitet Privatpersonen, Unternehmer, Privatanleger und Unternehmen beim Aufbau eines diversifizierten Vermögens auf Basis von Sachwerten der Realwirtschaft.\n\n## Unsere Werte\n- **Transparenz**: Risiken, Gebühren und tatsächliche Wertentwicklung klar dargestellt.\n- **Vorsicht**: sorgfältige Auswahl und Diversifikation der Projekte.\n- **Langfristigkeit**: nachhaltige Wertschöpfung statt kurzfristiger Versprechen.\n\n## Unternehmensangaben\nVollständige rechtliche Angaben finden Sie im [Impressum](/page/legal).` }
   },
   strategies: {
     fr: { title: 'Nos stratégies d\'investissement', body: `## Diversification\nRépartition des capitaux entre plusieurs secteurs, pays et horizons afin de limiter l'impact d'un événement isolé.\n\n## Sélection des projets\nChaque projet fait l'objet d'une analyse documentaire, financière et juridique avant sa publication.\n\n## Suivi et valorisation\nLes investissements sont valorisés périodiquement ; chaque valorisation est datée et consultable dans l'espace investisseur.\n\n## Horizon long terme\nNos stratégies visent la création de valeur durable. Elles ne garantissent aucun rendement et comportent un risque de perte en capital.` },
@@ -189,19 +189,20 @@ async function seedNews() {
 
 /**
  * Changement de dénomination : remplace une seule fois l'ancien nom dans les contenus déjà enregistrés
- * (nom du site, pages, fiches, publications, notifications). Les modifications ultérieures de l'administrateur sont conservées.
+ * (nom du site, coordonnées de la société, pages, fiches, publications, notifications). Les modifications ultérieures de l'administrateur sont conservées.
  */
 async function renameBrand() {
-  const key = 'brand:synergix-company-partners';
+  const key = 'brand:globacor-partners-inc';
   if (await one('SELECT key FROM meta WHERE key = ?', key)) return;
-  const OLD = 'Global Wealth Investment';
-  const NEW = 'SYNERGIX COMPANY PARTNERS';
-  const like = `%${OLD}%`;
-  await run(`UPDATE settings SET value = replace(value, ?, ?) WHERE key = 'site_name' AND value LIKE ?`, OLD, NEW, like);
-  await run(`UPDATE pages SET i18n = replace(i18n, ?, ?) WHERE i18n LIKE ?`, OLD, NEW, like);
-  await run(`UPDATE projects SET i18n = replace(i18n, ?, ?) WHERE i18n LIKE ?`, OLD, NEW, like);
-  await run(`UPDATE news SET i18n = replace(i18n, ?, ?) WHERE i18n LIKE ?`, OLD, NEW, like);
-  await run(`UPDATE notifications SET message = replace(message, ?, ?) WHERE message LIKE ?`, OLD, NEW, like);
+  const NEW = 'GLOBACOR Partners INC';
+  for (const OLD of ['Global Wealth Investment', 'SYNERGIX COMPANY PARTNERS']) {
+    const like = `%${OLD}%`;
+    await run(`UPDATE settings SET value = replace(value, ?, ?) WHERE key IN ('site_name', 'company') AND value LIKE ?`, OLD, NEW, like);
+    await run(`UPDATE pages SET i18n = replace(i18n, ?, ?) WHERE i18n LIKE ?`, OLD, NEW, like);
+    await run(`UPDATE projects SET i18n = replace(i18n, ?, ?) WHERE i18n LIKE ?`, OLD, NEW, like);
+    await run(`UPDATE news SET i18n = replace(i18n, ?, ?) WHERE i18n LIKE ?`, OLD, NEW, like);
+    await run(`UPDATE notifications SET message = replace(message, ?, ?) WHERE message LIKE ?`, OLD, NEW, like);
+  }
   await run(`INSERT INTO meta (key, value) VALUES (?, datetime('now')) ON CONFLICT (key) DO NOTHING`, key);
 }
 

@@ -33,7 +33,7 @@ function parseFrom(from) {
 
 function config() {
   const env = process.env;
-  const from = env.MAIL_FROM || 'SYNERGIX COMPANY PARTNERS <no-reply@example.com>';
+  const from = env.MAIL_FROM || 'GLOBACOR Partners INC <no-reply@example.com>';
   const { address, domain } = parseFrom(from);
   const port = Number(env.SMTP_PORT || 587);
   const secure = env.SMTP_SECURE === 'true';

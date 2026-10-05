@@ -1,19 +1,19 @@
 {
-  "name": "SYNERGIX COMPANY PARTNERS",
-  "short_name": "SYNERGIX",
+  "name": "GLOBACOR Partners INC",
+  "short_name": "GLOBACOR",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a1628",
   "theme_color": "#0a1628",
   "icons": [
     {
-      "src": "/static/img/brand/synergix-icone-192.png",
+      "src": "/static/img/brand/globacor-icone-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/static/img/brand/synergix-icone-512.png",
+      "src": "/static/img/brand/globacor-icone-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

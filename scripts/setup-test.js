@@ -6,7 +6,7 @@ const path = require('path');
 const crypto = require('crypto');
 const assert = require('assert');
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'synergix-setup-'));
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'globacor-setup-'));
 const token = crypto.randomBytes(32).toString('hex');
 process.env.DATA_DIR = tmp;
 process.env.ADMIN_SEED = 'false';

@@ -1,8 +1,8 @@
 {
-  "name": "synergix-company-partners",
+  "name": "globacor-partners-inc",
   "version": "1.0.0",
   "private": true,
-  "description": "Plateforme internationale d'investissement — SYNERGIX COMPANY PARTNERS",
+  "description": "Plateforme internationale d'investissement — GLOBACOR Partners INC",
   "type": "commonjs",
   "engines": {
     "node": "22.x"

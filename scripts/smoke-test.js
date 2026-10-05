@@ -9,12 +9,12 @@ const os = require('os');
 const path = require('path');
 const assert = require('assert');
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'synergix-test-'));
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'globacor-test-'));
 process.env.DATA_DIR = tmp;
 process.env.ADMIN_EMAIL = 'admin@example.test';
 process.env.ADMIN_PASSWORD = 'AdminTest12345';
 process.env.PORT = '0';
-process.env.MAIL_FROM = 'SYNERGIX COMPANY PARTNERS <no-reply@synergix-test.fr>';
+process.env.MAIL_FROM = 'GLOBACOR Partners INC <no-reply@globacor-test.fr>';
 process.env.EMAIL_WEBHOOK_TOKEN = 'jeton-webhook-test-0123456789';
 
 // ---------- Serveur SMTP local : simule le service d'envoi ----------
@@ -110,18 +110,18 @@ async function main() {
   assert.match((await pub.get('/?lang=fr')).text, /Chaque investissement mérite une vision/);
   step('Pages publiques accessibles dans les 4 langues');
 
-  // ---------- Identité : SYNERGIX COMPANY PARTNERS ----------
+  // ---------- Identité : GLOBACOR Partners INC ----------
   for (const u of ['/', '/page/about', '/login', '/register', '/news', '/contact', '/credits', '/page/about?lang=en']) {
     const html = (await pub.get(u)).text;
-    assert.match(html, /<title>[^<]*SYNERGIX COMPANY PARTNERS/, `titre de ${u}`);
-    assert.ok(!/global wealth/i.test(html), `ancien nom absent de ${u}`);
-    assert.strictEqual(html.split('<span class="brand-name">Synergix<small>Company Partners</small></span>').length, 3, `logo en en-tête et pied de page de ${u}`);
-    assert.match(html, /og:site_name" content="SYNERGIX COMPANY PARTNERS"/);
+    assert.match(html, /<title>[^<]*GLOBACOR Partners INC/, `titre de ${u}`);
+    assert.ok(!/global wealth|synergix/i.test(html), `ancien nom absent de ${u}`);
+    assert.strictEqual(html.split('<span class="brand-name">Globacor<small>Partners Inc</small></span>').length, 3, `logo en en-tête et pied de page de ${u}`);
+    assert.match(html, /og:site_name" content="GLOBACOR Partners INC"/);
   }
-  for (const f of ['/static/img/favicon.svg', '/static/site.webmanifest', '/static/img/brand/synergix-icone-180.png', '/static/img/brand/synergix-icone-512.png', '/static/img/brand/synergix-partage-1200x630.png', '/static/img/brand/synergix-logo-fond-clair.svg']) {
+  for (const f of ['/static/img/favicon.svg', '/static/site.webmanifest', '/static/img/brand/globacor-icone-180.png', '/static/img/brand/globacor-icone-512.png', '/static/img/brand/globacor-partage-1200x630.png', '/static/img/brand/globacor-logo-fond-clair.svg']) {
     assert.strictEqual((await pub.get(f)).status, 200, f);
   }
-  assert.match((await pub.get('/static/site.webmanifest')).text, /"name": ?"SYNERGIX COMPANY PARTNERS"/);
+  assert.match((await pub.get('/static/site.webmanifest')).text, /"name": ?"GLOBACOR Partners INC"/);
   step('Nouveau nom et nouveau logo : titres, en-tête, pied de page, métadonnées, icônes');
 
   const homeFr = (await pub.get('/?lang=fr')).text;
@@ -164,13 +164,13 @@ async function main() {
   const code1 = lastCodeFor('marie.dupont@gmail.com');
   assert.match(code1, /^\d{6}$/, 'code reçu dans la boîte (serveur SMTP)');
   const mailMsg = inbox[inbox.length - 1];
-  assert.strictEqual(mailMsg.from, 'no-reply@synergix-test.fr');
-  assert.match(mailMsg.raw, /^From: "?SYNERGIX COMPANY PARTNERS"? </m);
-  assert.match(mailMsg.raw, /quipe SYNERGIX COMPANY PARTNERS/, 'signature des e-mails');
-  assert.ok(!/global wealth/i.test(mailMsg.raw), 'ancien nom absent des e-mails');
+  assert.strictEqual(mailMsg.from, 'no-reply@globacor-test.fr');
+  assert.match(mailMsg.raw, /^From: "?GLOBACOR Partners INC"? </m);
+  assert.match(mailMsg.raw, /quipe GLOBACOR Partners INC/, 'signature des e-mails');
+  assert.ok(!/global wealth|synergix/i.test(mailMsg.raw), 'ancien nom absent des e-mails');
   assert.match(mailMsg.raw, /Content-Type: text\/plain/);
   assert.match(mailMsg.raw, /Content-Type: text\/html/);
-  assert.match(mailMsg.raw, /Message-ID: <[a-f0-9]+@synergix-test\.fr>/i);
+  assert.match(mailMsg.raw, /Message-ID: <[a-f0-9]+@globacor-test\.fr>/i);
   assert.ok(!(await one('SELECT code_hash FROM email_verifications WHERE user_id = ?', marieId)).code_hash.includes(code1), 'code jamais stocké en clair');
   let page = await inv.get('/verify-email');
   assert.match(page.text, /Un code de confirmation a été envoyé à m•••@gmail\.com/);
@@ -409,9 +409,9 @@ async function main() {
   step('Validation KYC par l\'administrateur');
 
   await adm.get('/admin/settings');
-  r = await adm.post('/admin/settings/general', { site_name: 'SYNERGIX COMPANY PARTNERS', lang_fr: 'on', lang_en: 'on', lang_es: 'on', lang_de: 'on', cur_USD: 'on', cur_GBP: 'on', cur_XOF: 'on', funds_enabled: 'on' });
+  r = await adm.post('/admin/settings/general', { site_name: 'GLOBACOR Partners INC', lang_fr: 'on', lang_en: 'on', lang_es: 'on', lang_de: 'on', cur_USD: 'on', cur_GBP: 'on', cur_XOF: 'on', funds_enabled: 'on' });
   assert.strictEqual(await one(`SELECT value FROM settings WHERE key = 'funds_enabled'`), undefined, 'activation impossible sans confirmation réglementaire');
-  await adm.post('/admin/settings/general', { site_name: 'SYNERGIX COMPANY PARTNERS', lang_fr: 'on', lang_en: 'on', lang_es: 'on', lang_de: 'on', cur_USD: 'on', cur_GBP: 'on', cur_XOF: 'on', funds_enabled: 'on', funds_ack: 'on' });
+  await adm.post('/admin/settings/general', { site_name: 'GLOBACOR Partners INC', lang_fr: 'on', lang_en: 'on', lang_es: 'on', lang_de: 'on', cur_USD: 'on', cur_GBP: 'on', cur_XOF: 'on', funds_enabled: 'on', funds_ack: 'on' });
   step('Réception de fonds activable uniquement avec confirmation réglementaire');
 
   // ---------- Dépôt ----------

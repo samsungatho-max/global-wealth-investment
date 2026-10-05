@@ -3,7 +3,7 @@
 const { one, all, run } = require('../db');
 
 const DEFAULTS = {
-  site_name: 'SYNERGIX COMPANY PARTNERS',
+  site_name: 'GLOBACOR Partners INC',
   company: {
     legal_name: '[Raison sociale à compléter]',
     legal_form: '[Forme juridique à compléter]',

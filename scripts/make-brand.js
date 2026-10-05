@@ -1,8 +1,9 @@
 'use strict';
 /**
- * Génère l'identité visuelle SYNERGIX COMPANY PARTNERS dans public/img/brand/ :
+ * Génère l'identité visuelle GLOBACOR Partners INC dans public/img/brand/ :
  *  - logos vectoriels (SVG) : symbole seul, versions horizontales pour fond clair et fond sombre ;
  *  - icônes PNG (180, 192, 512) et image de partage 1200×630, dessinées sans dépendance externe.
+ * Symbole : un « G » or ouvert vers le haut, dont la barre forme l'équateur d'un globe (méridien blanc).
  * Usage : node scripts/make-brand.js
  */
 const fs = require('fs');
@@ -15,71 +16,68 @@ fs.mkdirSync(OUT, { recursive: true });
 const NAVY = '#0a1628';
 const GOLD = '<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e6d3ad"/><stop offset=".55" stop-color="#c9a96e"/><stop offset="1" stop-color="#b08e52"/></linearGradient>';
 
-/** Symbole (48×48). `light` = tracé blanc (fond sombre) ; sinon tracé bleu nuit (fond clair). */
-const mark = (light, tx = 0, ty = 0, s = 1) => {
-  const second = light ? '#ffffff' : NAVY;
-  const hole = light ? NAVY : '#ffffff';
-  return `<g transform="translate(${tx} ${ty}) scale(${s})">
-    <circle cx="24" cy="24" r="21.2" fill="none" stroke="url(#g)" stroke-width="1.5"/>
-    <path d="M31.5 17.5A7.5 7.5 0 1 0 24 25" fill="none" stroke="url(#g)" stroke-width="4" stroke-linecap="round"/>
-    <path d="M24 25A7.5 7.5 0 1 1 16.5 32.5" fill="none" stroke="${second}" stroke-width="4" stroke-linecap="round"/>
-    <circle cx="31.5" cy="17.5" r="3.1" fill="${hole}" stroke="url(#g)" stroke-width="1.5"/>
-    <circle cx="16.5" cy="32.5" r="3.1" fill="${hole}" stroke="${second}" stroke-width="1.5"/>
+// Géométrie du symbole (repère 48×48)
+const R = 16, W = 4.4, OPEN = -44;                       // rayon et épaisseur du G, angle d'ouverture (degrés)
+const rad = (a) => a * Math.PI / 180;
+const END = [24 + R * Math.cos(rad(OPEN)), 24 + R * Math.sin(rad(OPEN))];
+const BAR_X = 24;                                        // extrémité intérieure de la barre du G
+const MER = { rx: 6.6, ry: 14.4, w: 1.5 };                // méridien du globe
+
+/** Symbole (48×48). `light` = méridien blanc (fond sombre) ; sinon bleu nuit (fond clair). */
+const mark = (light, tx = 0, ty = 0, s = 1) => `<g transform="translate(${tx} ${ty}) scale(${s})" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="24" cy="24" rx="${MER.rx}" ry="${MER.ry}" stroke="${light ? '#ffffff' : NAVY}" stroke-width="${MER.w}"/>
+    <path d="M${END[0].toFixed(2)} ${END[1].toFixed(2)}A${R} ${R} 0 1 0 ${24 + R} 24H${BAR_X}" stroke="url(#g)" stroke-width="${W}"/>
   </g>`;
-};
 
 const FONT = "font-family=\"Montserrat, 'Segoe UI', Arial, Helvetica, sans-serif\"";
 const wordmark = (light, x, y) => `
-  <text x="${x}" y="${y}" ${FONT} font-size="25" font-weight="700" letter-spacing="3.2" fill="${light ? '#ffffff' : NAVY}">SYNERGIX</text>
-  <text x="${x + 1}" y="${y + 17}" ${FONT} font-size="8.6" font-weight="600" letter-spacing="3.6" fill="${light ? '#d7bd8a' : '#b08e52'}">COMPANY PARTNERS</text>`;
+  <text x="${x}" y="${y}" ${FONT} font-size="25" font-weight="700" letter-spacing="3" fill="${light ? '#ffffff' : NAVY}">GLOBACOR</text>
+  <text x="${x + 1}" y="${y + 17}" ${FONT} font-size="8.6" font-weight="600" letter-spacing="5.3" fill="${light ? '#d7bd8a' : '#b08e52'}">PARTNERS INC</text>`;
 
-const svg = (w, h, body, bg) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="SYNERGIX COMPANY PARTNERS"><defs>${GOLD}</defs>${bg || ''}${body}</svg>\n`;
+const svg = (w, h, body, bg) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="GLOBACOR Partners INC"><defs>${GOLD}</defs>${bg || ''}${body}</svg>\n`;
 
 // Symbole seul : icône (fond bleu nuit arrondi), et versions transparentes
-fs.writeFileSync(path.join(OUT, 'synergix-symbole.svg'), svg(48, 48, mark(true, 4.8, 4.8, 0.8), `<rect width="48" height="48" rx="10.5" fill="${NAVY}"/>`));
-fs.writeFileSync(path.join(OUT, 'synergix-symbole-fond-sombre.svg'), svg(48, 48, mark(true)));
-fs.writeFileSync(path.join(OUT, 'synergix-symbole-fond-clair.svg'), svg(48, 48, mark(false)));
+fs.writeFileSync(path.join(OUT, 'globacor-symbole.svg'), svg(48, 48, mark(true, 3.6, 3.6, 0.85), `<rect width="48" height="48" rx="10.5" fill="${NAVY}"/>`));
+fs.writeFileSync(path.join(OUT, 'globacor-symbole-fond-sombre.svg'), svg(48, 48, mark(true)));
+fs.writeFileSync(path.join(OUT, 'globacor-symbole-fond-clair.svg'), svg(48, 48, mark(false)));
 // Logo horizontal
-fs.writeFileSync(path.join(OUT, 'synergix-logo-fond-clair.svg'), svg(260, 60, mark(false, 6, 6, 1) + wordmark(false, 66, 30)));
-fs.writeFileSync(path.join(OUT, 'synergix-logo-fond-sombre.svg'), svg(260, 60, mark(true, 6, 6, 1) + wordmark(true, 66, 30), `<rect width="260" height="60" fill="${NAVY}"/>`));
-fs.writeFileSync(path.join(OUT, 'synergix-logo-transparent-blanc.svg'), svg(260, 60, mark(true, 6, 6, 1) + wordmark(true, 66, 30)));
+fs.writeFileSync(path.join(OUT, 'globacor-logo-fond-clair.svg'), svg(262, 60, mark(false, 6, 6, 1) + wordmark(false, 62, 30)));
+fs.writeFileSync(path.join(OUT, 'globacor-logo-fond-sombre.svg'), svg(262, 60, mark(true, 6, 6, 1) + wordmark(true, 62, 30), `<rect width="262" height="60" fill="${NAVY}"/>`));
+fs.writeFileSync(path.join(OUT, 'globacor-logo-transparent-blanc.svg'), svg(262, 60, mark(true, 6, 6, 1) + wordmark(true, 62, 30)));
 // Favicon
-fs.copyFileSync(path.join(OUT, 'synergix-symbole.svg'), path.join(__dirname, '..', 'public', 'img', 'favicon.svg'));
+fs.copyFileSync(path.join(OUT, 'globacor-symbole.svg'), path.join(__dirname, '..', 'public', 'img', 'favicon.svg'));
 
 // ---------------------------------------------------------------------------
-// Rendu PNG du symbole (sans dépendance) : distances signées + suréchantillonnage 4×4
+// Rendu PNG du symbole (sans dépendance) : distance aux tracés + suréchantillonnage 4×4
 // ---------------------------------------------------------------------------
 const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
-const G0 = hex('#e6d3ad'), G1 = hex('#c9a96e'), G2 = hex('#b08e52'), WHITE = [255, 255, 255], N0 = hex('#0f2140'), N1 = hex('#050d1c'), HOLE = hex('#0a1628');
+const G0 = hex('#e6d3ad'), G1 = hex('#c9a96e'), G2 = hex('#b08e52'), WHITE = [255, 255, 255], N0 = hex('#0f2140'), N1 = hex('#050d1c');
 const gold = (t) => (t < 0.55 ? mix(G0, G1, t / 0.55) : mix(G1, G2, (t - 0.55) / 0.45));
+
+const gPath = [];
+for (let a = 360 + OPEN; a >= 0; a -= 2) gPath.push([24 + R * Math.cos(rad(a)), 24 + R * Math.sin(rad(a))]);
+gPath.push([BAR_X, 24]);
+const merPath = [];
+for (let a = 0; a <= 360; a += 4) merPath.push([24 + MER.rx * Math.cos(rad(a)), 24 + MER.ry * Math.sin(rad(a))]);
+
+function dist(pts, x, y) {
+  let best = Infinity;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
+    const dx = bx - ax, dy = by - ay;
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy)));
+    const d = Math.hypot(x - ax - t * dx, y - ay - t * dy);
+    if (d < best) best = d;
+  }
+  return best;
+}
 
 /** Couleur du symbole au point (x, y) en coordonnées 48×48, ou null si le point est hors du tracé. */
 function markColor(x, y) {
-  const g = gold(Math.min(1, Math.max(0, (x + y) / 96)));
-  const d = (cx, cy) => Math.hypot(x - cx, y - cy);
-  // Points de connexion (au-dessus de tout)
-  for (const [cx, cy, c] of [[31.5, 17.5, g], [16.5, 32.5, WHITE]]) {
-    const r = d(cx, cy);
-    if (r <= 2.35) return HOLE;
-    if (r <= 3.85) return c;
-  }
-  // Arcs (épaisseur 4) avec extrémités arrondies
-  const arc = (cx, cy, excluded, ends, c) => {
-    const r = d(cx, cy);
-    if (Math.abs(r - 7.5) <= 2) {
-      let a = Math.atan2(y - cy, x - cx) * 180 / Math.PI; // 0 = droite, 90 = bas
-      if (!(a > excluded[0] && a < excluded[1])) return c;
-    }
-    for (const [ex, ey] of ends) if (d(ex, ey) <= 2) return c;
-    return null;
-  };
-  const top = arc(24, 17.5, [0, 90], [[31.5, 17.5], [24, 25]], g);
-  if (top) return top;
-  const bottom = arc(24, 32.5, [-180, -90], [[24, 25], [16.5, 32.5]], WHITE);
-  if (bottom) return bottom;
-  // Anneau
-  if (Math.abs(d(24, 24) - 21.2) <= 0.75) return g;
+  if (x < 4 || x > 44 || y < 4 || y > 44) return null;
+  if (dist(gPath, x, y) <= W / 2) return gold(Math.min(1, Math.max(0, (x + y) / 96)));
+  if (dist(merPath, x, y) <= MER.w / 2) return WHITE;
   return null;
 }
 
@@ -111,6 +109,8 @@ function render(w, h, size) {
   const ox = (w - size) / 2, oy = (h - size) / 2, k = 48 / size, SS = 4;
   return png(w, h, (px, py) => {
     const bg = mix(N0, N1, Math.min(1, (px / w + py / h) / 2 * 1.15));
+    const x0 = (px - ox) * k, y0 = (py - oy) * k;
+    if (x0 < 3 || x0 > 45 || y0 < 3 || y0 > 45) return bg;
     let acc = [0, 0, 0];
     for (let i = 0; i < SS; i++) for (let j = 0; j < SS; j++) {
       const c = markColor((px + (i + 0.5) / SS - ox) * k, (py + (j + 0.5) / SS - oy) * k) || bg;
@@ -120,15 +120,15 @@ function render(w, h, size) {
   });
 }
 
-for (const s of [180, 192, 512]) fs.writeFileSync(path.join(OUT, `synergix-icone-${s}.png`), render(s, s, Math.round(s * 0.74)));
-fs.writeFileSync(path.join(OUT, 'synergix-partage-1200x630.png'), render(1200, 630, 330));
+for (const s of [180, 192, 512]) fs.writeFileSync(path.join(OUT, `globacor-icone-${s}.png`), render(s, s, Math.round(s * 0.86)));
+fs.writeFileSync(path.join(OUT, 'globacor-partage-1200x630.png'), render(1200, 630, 380));
 
 fs.writeFileSync(path.join(__dirname, '..', 'public', 'site.webmanifest'), JSON.stringify({
-  name: 'SYNERGIX COMPANY PARTNERS', short_name: 'SYNERGIX', start_url: '/', display: 'standalone',
+  name: 'GLOBACOR Partners INC', short_name: 'GLOBACOR', start_url: '/', display: 'standalone',
   background_color: '#0a1628', theme_color: '#0a1628',
   icons: [
-    { src: '/static/img/brand/synergix-icone-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-    { src: '/static/img/brand/synergix-icone-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+    { src: '/static/img/brand/globacor-icone-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+    { src: '/static/img/brand/globacor-icone-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
   ]
 }, null, 2) + '\n');
 
