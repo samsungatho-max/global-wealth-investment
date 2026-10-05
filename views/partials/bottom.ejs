@@ -38,9 +38,6 @@
     <div class="footer-legal">
       <% if (company.regulatory_status) { %><div><strong><%= t('footer.regulatory') %> :</strong> <%= company.regulatory_status %></div><% } %>
       <% var idLine = [company.legal_name, company.registration, company.address].filter(Boolean); if (idLine.length) { %><div><%= idLine.join(' — ') %></div><% } %>
-      <div>
-        <% if (rates.date) { %><%= t('footer.rates', { date: fmtDate(rates.date), source: rates.source }) %><% } else { %><%= t('footer.rates_none') %><% } %>
-      </div>
       <div>© <%= new Date().getFullYear() %> <%= site %>. <%= t('footer.rights') %></div>
     </div>
   </div>
