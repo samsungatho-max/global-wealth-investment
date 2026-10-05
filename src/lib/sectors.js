@@ -1,11 +1,11 @@
 'use strict';
 /** Catégories de projets, icônes associées, tranches de montant (en cents d'USD) et noms de pays traduits. */
 
-const SECTORS = ['real_estate', 'commercial', 'agriculture', 'industry', 'energy', 'trade', 'infrastructure', 'tourism', 'technology', 'development'];
+const SECTORS = ['real_estate', 'commercial', 'agriculture', 'industry', 'energy', 'trade', 'infrastructure', 'tourism', 'technology', 'mining', 'development'];
 
 const SECTOR_ICON = {
   real_estate: 'building', commercial: 'store', agriculture: 'leaf', industry: 'factory', energy: 'sun',
-  trade: 'ship', infrastructure: 'road', tourism: 'bed', technology: 'cpu', development: 'globe'
+  trade: 'ship', infrastructure: 'road', tourism: 'bed', technology: 'cpu', mining: 'mine', development: 'globe'
 };
 
 /** Tranches de montant recherché : [clé, minimum inclus, maximum exclu] en cents d'USD. */

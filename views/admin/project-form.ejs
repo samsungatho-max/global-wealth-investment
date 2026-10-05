@@ -40,8 +40,11 @@
           <% if (p.image_path) { %><div class="flex mt-1"><img src="/media/<%= p.image_path %>" alt="" style="width:140px;border-radius:8px"><label class="check"><input type="checkbox" name="remove_image"> Retirer l'image</label></div><% } %>
         </div>
         <div>
-          <label for="p-photo">Photo d'illustration (si aucune photographie n'est envoyée)</label>
-          <select id="p-photo" name="photo_key"><option value="">Automatique selon le secteur</option><% photoKeys.forEach(function (k) { %><option value="<%= k %>" <%= p.photo_key === k ? 'selected' : '' %>><%= k %></option><% }) %></select>
+          <label for="p-photo">Photo de la photothèque (utilisée si vous n'envoyez pas votre propre photographie)</label>
+          <div class="photo-picker" id="p-photo">
+            <label class="photo-choice"><input type="radio" name="photo_key" value="" <%= !p.photo_key ? 'checked' : '' %>><span class="photo-auto">Choix automatique selon le secteur</span></label>
+            <% photoKeys.forEach(function (k) { %><label class="photo-choice"><input type="radio" name="photo_key" value="<%= k %>" <%= p.photo_key === k ? 'checked' : '' %>><img src="/static/img/photos/<%= k %>-800.webp" alt="<%= k %>" loading="lazy" width="160" height="120"></label><% }) %>
+          </div>
           <label class="check mt-1"><input type="checkbox" name="is_demo" <%= p.is_demo ? 'checked' : '' %>> Projet exemple — simulation (affiché comme tel, aucun investissement possible)</label>
         </div>
       </div>

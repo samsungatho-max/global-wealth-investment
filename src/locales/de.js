@@ -39,7 +39,7 @@ module.exports = {
   },
   home: {
     sectors_title: "Unsere Anlagesektoren",
-    sectors_sub: "Zehn Tätigkeitsbereiche, ausgewählt wegen ihrer Rolle in der Realwirtschaft.",
+    sectors_sub: "Elf Tätigkeitsbereiche, ausgewählt wegen ihrer Rolle in der Realwirtschaft.",
     featured_title: "Offene Anlagechancen",
     featured_all: "Alle Anlagechancen ansehen",
     sim_title: "Schätzen Sie die mögliche Entwicklung Ihres Kapitals",
@@ -77,6 +77,8 @@ module.exports = {
     tourism_d: "Hotels, Ferienresidenzen und Tourismusanlagen.",
     technology: "Technologie und Innovation",
     technology_d: "Innovative Unternehmen, digitale Infrastruktur und Technologiedienste.",
+    mining: "Bergbau und Rohstoffe",
+    mining_d: "Bergbau, Steinbrüche, Rohstoffe und zugehörige Verarbeitung.",
     development: "Entwicklungsprojekte",
     development_d: "Projekte mit wirtschaftlicher und sozialer Wirkung in verschiedenen Ländern."
   },
@@ -112,7 +114,7 @@ module.exports = {
     documents: "Rechtliche und finanzielle Unterlagen",
     documents_none: "Noch keine Unterlagen veröffentlicht.",
     documents_login: "Einige Unterlagen sind angemeldeten und verifizierten Anlegern vorbehalten.",
-    details_btn: "Projektdetails ansehen",
+    details_btn: "Projekt ansehen",
     interest_btn: "Interesse bekunden",
     demo_badge: "Beispielprojekt — Simulation",
     demo_note: "Dieses Projektblatt ist eine Simulation zur Veranschaulichung der Plattform. Es entspricht keinem realen Projekt, Unternehmen oder Finanzergebnis und stellt kein Angebot dar.",

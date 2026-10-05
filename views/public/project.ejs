@@ -5,7 +5,7 @@
   <% if (project.image_path) { %>
     <img class="page-hero-bg" src="/media/<%= project.image_path %>" alt="" fetchpriority="high">
   <% } else { %>
-    <img class="page-hero-bg" src="<%= sp.large %>" srcset="<%= sp.small %> 800w, <%= sp.large %> 1600w" sizes="100vw" alt="" fetchpriority="high" decoding="async">
+    <img class="page-hero-bg" src="<%= sp.large %>" srcset="<%= sp.small %> 800w, <%= sp.large %> 1600w" sizes="100vw" alt="<%= sp.alt %>" fetchpriority="high" decoding="async">
   <% } %>
   <div class="container page-hero-inner">
     <div class="breadcrumb"><a href="/opportunities">← <%= t('project.back') %></a></div>

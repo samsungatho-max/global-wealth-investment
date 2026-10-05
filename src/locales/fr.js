@@ -39,7 +39,7 @@ module.exports = {
   },
   home: {
     sectors_title: "Nos secteurs d'investissement",
-    sectors_sub: "Dix domaines d’activité, sélectionnés pour leur rôle dans l’économie réelle.",
+    sectors_sub: "Onze domaines d’activité, sélectionnés pour leur rôle dans l’économie réelle.",
     featured_title: "Opportunités ouvertes",
     featured_all: "Voir toutes les opportunités",
     sim_title: "Estimez l'évolution potentielle de votre capital",
@@ -77,6 +77,8 @@ module.exports = {
     tourism_d: "Hôtels, résidences de tourisme et complexes touristiques.",
     technology: "Technologies et innovation",
     technology_d: "Entreprises innovantes, infrastructures numériques et services technologiques.",
+    mining: "Mines et ressources naturelles",
+    mining_d: "Exploitation minière, carrières, matières premières et activités de transformation associées.",
     development: "Projets de développement",
     development_d: "Projets à impact économique et social dans différents pays."
   },
@@ -112,7 +114,7 @@ module.exports = {
     documents: "Documents juridiques et financiers",
     documents_none: "Aucun document publié pour le moment.",
     documents_login: "Certains documents sont réservés aux investisseurs connectés et vérifiés.",
-    details_btn: "Consulter les détails du projet",
+    details_btn: "Voir le projet",
     interest_btn: "Manifester mon intérêt",
     demo_badge: "Projet exemple — simulation",
     demo_note: "Cette fiche est une simulation fournie pour illustrer la plateforme. Elle ne correspond à aucun projet réel, à aucune société ni à aucun résultat financier, et ne constitue pas une offre.",

@@ -156,7 +156,7 @@ app.use(async (req, res, next) => {
   res.locals.pct = (x) => (x == null ? '—' : new Intl.NumberFormat(LOCALES[lang], { style: 'percent', minimumFractionDigits: 2, maximumFractionDigits: 2, signDisplay: 'exceptZero' }).format(x));
   res.locals.photo = (key) => photos.photo(key, lang);
   res.locals.sectorPhoto = (sector) => photos.photo(photos.SECTOR_PHOTO[sector] || 'hero', lang);
-  res.locals.projectPhoto = (p) => photos.photo(p.photo_key && photos.PHOTOS[p.photo_key] ? p.photo_key : (photos.SECTOR_PHOTO[p.sector] || 'hero'), lang);
+  res.locals.projectPhoto = (p) => photos.photo(photos.projectPhotoKey(p), lang);
   res.locals.sectorIcon = (sector) => sectorsLib.SECTOR_ICON[sector] || 'globe';
   res.locals.countryName = (name) => sectorsLib.countryName(name, lang);
   res.locals.num =(x, digits = 1) => new Intl.NumberFormat(LOCALES[lang], { maximumFractionDigits: digits }).format(x);

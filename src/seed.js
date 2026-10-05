@@ -305,6 +305,28 @@ async function cleanSite() {
   await run(`INSERT INTO meta (key, value) VALUES (?, datetime('now')) ON CONFLICT (key) DO NOTHING`, key);
 }
 
+/**
+ * Photos des trois projets publiés (une seule fois) : les visuels envoyés, qui comportaient du texte incrusté et des
+ * marques de tiers, sont remplacés par une photo de la photothèque. Les fichiers d'origine ne sont pas supprimés.
+ */
+async function setProjectPhotos() {
+  const key = 'photos:2026-10-projets';
+  if (await one('SELECT key FROM meta WHERE key = ?', key)) return;
+  const list = [
+    ['exemple-centre-commercial', 'f4abb5b6b0c96ce650ce7427126f6b7b', 'centre-affaires'],
+    ['exemple-centre-donnees', '0706c6360430025caf65d4c8d000270c', 'complexe'],
+    ['exemple-amenagement-urbain', 'b7d22b6811efaade801d9af0043b5f01', 'ville']
+  ];
+  const kept = [];
+  for (const [slug, file, photoKey] of list) {
+    const p = await one('SELECT id, image_path FROM projects WHERE slug = ?', slug);
+    if (!p || !p.image_path || !String(p.image_path).startsWith(file)) continue;
+    await run(`UPDATE projects SET photo_key = ?, image_path = NULL, updated_at = datetime('now') WHERE id = ?`, photoKey, p.id);
+    kept.push(`${slug}=${p.image_path}`);
+  }
+  await run('INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING', key, kept.join(';') || '-');
+}
+
 async function seed() {
   await renameBrand();
   await migrateCurrency();
@@ -314,6 +336,7 @@ async function seed() {
   await seedDemoProjects();
   await seedExampleProjects();
   await fixExampleProjects();
+  await setProjectPhotos();
   await seedNews();
   await require('./lib/news').seedSources();
 }

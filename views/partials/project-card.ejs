@@ -1,27 +1,29 @@
 <article class="card project-card">
   <a class="project-media" href="/opportunities/<%= p.slug %>" tabindex="-1" aria-hidden="true">
-    <% if (p.image_path) { %><img src="/media/<%= p.image_path %>" alt="" loading="lazy" decoding="async"><% } else { var sp = projectPhoto(p); %><img src="<%= sp.small %>" alt="" loading="lazy" decoding="async" width="800" height="600"><% } %>
+    <% if (p.image_path) { %><img src="/media/<%= p.image_path %>" alt="" loading="lazy" decoding="async"><% } else { var sp = projectPhoto(p); %><img src="<%= sp.small %>" srcset="<%= sp.small %> 800w, <%= sp.large %> 1600w" sizes="(min-width: 1000px) 33vw, (min-width: 640px) 50vw, 100vw" alt="<%= sp.alt %>" loading="lazy" decoding="async" width="800" height="600"><% } %>
     <% if (p.is_demo) { %><span class="chip chip-demo"><%= t('project.demo_badge') %></span><% } else if (p.status !== 'open') { %><span class="chip chip-navy"><%= t('project.status_' + p.status) %></span><% } %>
-    <span class="project-amount"><small><%= p.is_demo ? t('opp.example_amount') : t('project.target') %></small><strong><%= moneyRound(p.target_cents) %></strong></span>
   </a>
   <div class="project-body">
-    <div class="project-tags small"><span class="chip chip-gold"><%- include('icon', { name: sectorIcon(p.sector), size: 14 }) %> <%= t('sector.' + p.sector) %></span><span class="project-country">📍 <%= countryName(p.country) %></span></div>
     <h3><a href="/opportunities/<%= p.slug %>"><%= p.tr.title %></a></h3>
+    <div class="project-meta">
+      <span class="project-country"><%- include('icon', { name: 'globe', size: 15 }) %> <%= countryName(p.country) %></span>
+      <span class="project-sector"><%- include('icon', { name: sectorIcon(p.sector), size: 15 }) %> <%= t('sector.' + p.sector) %></span>
+    </div>
+    <div class="project-amount"><small><%= t('project.target') %></small><strong><%= moneyRound(p.target_cents) %></strong></div>
     <p class="project-summary"><%= p.tr.summary %></p>
     <dl class="project-facts">
       <div><dt><%= t('project.duration') %></dt><dd><%= t('project.months', { n: p.duration_months }) %></dd></div>
-      <div><dt><%= t('project.min_ticket') %></dt><dd><%= p.min_ticket_cents ? money(p.min_ticket_cents) : '—' %></dd></div>
+      <div><dt><%= t('project.min_ticket') %></dt><dd><%= p.min_ticket_cents ? moneyRound(p.min_ticket_cents) : '—' %></dd></div>
       <div class="project-fact-wide"><dt><%= t('risk.label') %></dt><dd><span class="risk-meter r<%= p.risk_level %>"><% for (var i = 1; i <= 5; i++) { %><i class="<%= i <= p.risk_level ? 'on' : '' %>"></i><% } %></span> <%= p.risk_level %>/5 · <%= t('risk.' + p.risk_level) %></dd></div>
     </dl>
-    <% if (!p.is_demo) { %>
+    <% if (!p.is_demo && p.raised > 0) { %>
     <div>
       <div class="progress" role="progressbar" aria-valuenow="<%= p.pct %>" aria-valuemin="0" aria-valuemax="100"><span style="width:<%= p.pct %>%"></span></div>
-      <div class="progress-label"><span><%= t('project.raised') %> : <%= money(p.raised) %></span><span><%= t('project.progress', { p: num(p.pct) }) %></span></div>
+      <div class="progress-label"><span><%= t('project.raised') %> : <%= moneyRound(p.raised) %></span><span><%= t('project.progress', { p: num(p.pct) }) %></span></div>
     </div>
     <% } %>
     <div class="project-actions">
-      <a class="btn btn-navy btn-sm" href="/opportunities/<%= p.slug %>"><%= t('project.details_btn') %> <%- include('icon', { name: 'arrow', size: 14 }) %></a>
-      <% if (p.status === 'open' && !p.is_demo) { %><a class="btn btn-ghost btn-sm" href="/opportunities/<%= p.slug %>#interest"><%= t('project.interest_btn') %></a><% } %>
+      <a class="btn btn-navy btn-block" href="/opportunities/<%= p.slug %>"><%= t('project.details_btn') %> <%- include('icon', { name: 'arrow', size: 16 }) %></a>
     </div>
   </div>
 </article>

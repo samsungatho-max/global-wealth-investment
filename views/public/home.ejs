@@ -75,7 +75,7 @@
     <div class="sector-grid">
             <% sectors.forEach(function (s, i) { var sp = sectorPhoto(s); %>
       <a class="sector-tile reveal" style="--d:<%= (i % 5) * 80 %>ms" href="/opportunities?sector=<%= s %>">
-        <img src="<%= sp.small %>" srcset="<%= sp.small %> 800w, <%= sp.large %> 1600w" sizes="(min-width: 1100px) 20vw, (min-width: 640px) 50vw, 100vw" alt="<%= sp.alt %>" loading="lazy" decoding="async" width="800" height="600">
+        <img src="<%= sp.small %>" srcset="<%= sp.small %> 800w, <%= sp.large %> 1600w" sizes="(min-width: 1100px) 25vw, (min-width: 640px) 50vw, 100vw" alt="<%= sp.alt %>" loading="lazy" decoding="async" width="800" height="600">
         <div class="sector-tile-body">
           <span class="sector-tile-icon"><%- include('../partials/icon', { name: sectorIcon(s), size: 22 }) %></span>
           <h3><%= t('sector.' + s) %></h3>

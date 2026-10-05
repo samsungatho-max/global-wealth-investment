@@ -31,13 +31,43 @@ const PHOTOS = {
   pont: { id: '1515674744565-0d7112cd179a', author: 'CHUTTERSNAP', alt: { fr: 'Pont routier vu du ciel', en: 'Road bridge seen from above', es: 'Puente de carretera visto desde el aire', de: 'Straßenbrücke aus der Luft' } },
   hotel: { id: '1540541338287-41700207dee6', author: 'Paolo Nicolello', alt: { fr: 'Complexe hôtelier en bord de mer', en: 'Seaside hotel resort', es: 'Complejo hotelero junto al mar', de: 'Hotelanlage am Meer' } },
   datacenter: { id: '1558494949-ef010cbdcc31', author: 'Taylor Vick', alt: { fr: 'Baies de serveurs dans un centre de données', en: 'Server racks in a data centre', es: 'Racks de servidores en un centro de datos', de: 'Serverschränke in einem Rechenzentrum' } },
-  ville: { id: '1744907895363-d351aa6019ef', author: 'Tunde Buremo', alt: { fr: 'Vue aérienne d’une ville en développement', en: 'Aerial view of a growing city', es: 'Vista aérea de una ciudad en desarrollo', de: 'Luftaufnahme einer wachsenden Stadt' } }
+  ville: { id: '1744907895363-d351aa6019ef', author: 'Tunde Buremo', alt: { fr: 'Vue aérienne d’une ville en développement', en: 'Aerial view of a growing city', es: 'Vista aérea de una ciudad en desarrollo', de: 'Luftaufnahme einer wachsenden Stadt' } },
+  'centre-affaires': { id: '1543892607-04657ef3a279', author: 'Matt Reames', alt: { fr: 'Immeuble de bureaux contemporain', en: 'Contemporary office building', es: 'Edificio de oficinas contemporáneo', de: 'Zeitgenössisches Bürogebäude' } },
+  tours: { id: '1511963039483-c8c419fa95db', author: 'Tim Gouw', alt: { fr: 'Tours résidentielles en centre-ville', en: 'Residential towers in a city centre', es: 'Torres residenciales en el centro urbano', de: 'Wohntürme in der Innenstadt' } },
+  complexe: { id: '1759193531945-f4d3ab0ca3e4', author: 'Emily Wassmansdorf', alt: { fr: 'Ensemble résidentiel au bord de l’eau', en: 'Waterfront residential development', es: 'Conjunto residencial junto al agua', de: 'Wohnanlage am Wasser' } },
+  'residence-2': { id: '1432297984334-707d34c4163a', author: 'Hans Eiskonen', alt: { fr: 'Résidence contemporaine', en: 'Contemporary residence', es: 'Residencia contemporánea', de: 'Zeitgenössische Wohnanlage' } },
+  mine: { id: '1523660778745-247ed0bcce31', author: 'Dominik Vanyi', alt: { fr: 'Camion minier sur un site d’extraction', en: 'Haul truck on a mining site', es: 'Camión minero en una explotación', de: 'Muldenkipper auf einem Abbaugelände' } },
+  conteneurs: { id: '1494412685616-a5d310fbb07d', author: 'CHUTTERSNAP', alt: { fr: 'Terminal à conteneurs vu du ciel', en: 'Container terminal seen from above', es: 'Terminal de contenedores vista desde el aire', de: 'Containerterminal aus der Luft' } },
+  autoroute: { id: '1465447142348-e9952c393450', author: 'Denys Nevozhai', alt: { fr: 'Échangeur autoroutier vu du ciel', en: 'Motorway interchange seen from above', es: 'Enlace de autopistas visto desde el aire', de: 'Autobahnkreuz aus der Luft' } },
+  serre: { id: '1524486361537-8ad15938e1a3', author: 'Erwan Hesry', alt: { fr: 'Cultures sous serre', en: 'Greenhouse crops', es: 'Cultivos en invernadero', de: 'Gewächshauskulturen' } },
+  barrage: { id: '1560279966-2d681f3d4dfc', author: 'Dan Meyers', alt: { fr: 'Barrage hydroélectrique', en: 'Hydroelectric dam', es: 'Presa hidroeléctrica', de: 'Wasserkraftwerk mit Staudamm' } },
+  camions: { id: '1565793298595-6a879b1d9492', author: 'Marcin Jozwiak', alt: { fr: 'Flotte de camions de transport', en: 'Fleet of transport trucks', es: 'Flota de camiones de transporte', de: 'Lkw-Flotte' } },
+  'usine-2': { id: '1647427060118-4911c9821b82', author: 'Simon Kadula', alt: { fr: 'Atelier de production automatisé', en: 'Automated production workshop', es: 'Taller de producción automatizado', de: 'Automatisierte Fertigungshalle' } },
+  moisson: { id: '1506519056028-d18449e82c6f', author: 'Johny Goerend', alt: { fr: 'Moissonneuses dans un champ', en: 'Harvesters in a field', es: 'Cosechadoras en un campo', de: 'Mähdrescher auf einem Feld' } }
 };
 
-const SECTOR_PHOTO = {
-  real_estate: 'immeuble', commercial: 'centre-commercial', agriculture: 'agriculture', industry: 'usine', energy: 'solaire',
-  trade: 'port', infrastructure: 'pont', tourism: 'hotel', technology: 'datacenter', development: 'ville'
+/** Photos proposées par secteur : la première sert de visuel du secteur, les suivantes varient les fiches projets. */
+const SECTOR_PHOTOS = {
+  real_estate: ['immeuble', 'complexe', 'residence', 'tours', 'villa', 'residence-2', 'immeuble-2', 'villa-2'],
+  commercial: ['centre-commercial', 'centre-affaires', 'bureaux', 'skyline'],
+  agriculture: ['agriculture', 'moisson', 'serre', 'champs'],
+  industry: ['usine', 'usine-2', 'chantier'],
+  energy: ['solaire', 'eolien', 'barrage'],
+  trade: ['port', 'conteneurs', 'camions', 'entrepot', 'cargo'],
+  infrastructure: ['pont', 'autoroute', 'grues', 'chantier'],
+  tourism: ['hotel', 'villa-2'],
+  technology: ['datacenter', 'graphiques'],
+  mining: ['mine'],
+  development: ['ville', 'grues', 'skyline']
 };
+const SECTOR_PHOTO = Object.fromEntries(Object.entries(SECTOR_PHOTOS).map(([k, v]) => [k, v[0]]));
+
+/** Photo d'une fiche projet : celle choisie dans l'administration, sinon une photo du secteur (variée d'un projet à l'autre). */
+function projectPhotoKey(p) {
+  if (p.photo_key && PHOTOS[p.photo_key]) return p.photo_key;
+  const list = SECTOR_PHOTOS[p.sector] || ['hero'];
+  return list[Math.abs(Number(p.id) || 0) % list.length];
+}
 
 function photo(key, lang) {
   const p = PHOTOS[key];
@@ -55,4 +85,4 @@ function credits() {
   return Object.entries(PHOTOS).map(([key, p]) => ({ key, author: p.author, alt: p.alt, url: `https://images.unsplash.com/photo-${p.id}` }));
 }
 
-module.exports = { PHOTOS, SECTOR_PHOTO, photo, credits };
+module.exports = { PHOTOS, SECTOR_PHOTO, SECTOR_PHOTOS, projectPhotoKey, photo, credits };
