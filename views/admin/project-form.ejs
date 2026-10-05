@@ -49,9 +49,24 @@
         </div>
       </div>
 
+      <h2 style="font-size:1.2rem" class="mt-2">Origine et traçabilité <span class="hint">(informations internes de contrôle)</span></h2>
+      <div class="form-row form-row-3">
+        <div><label for="p-kind">Origine du projet</label><select id="p-kind" name="kind"><option value="own" <%= p.kind !== 'referenced' ? 'selected' : '' %>>Projet présenté par la plateforme</option><option value="referenced" <%= p.kind === 'referenced' ? 'selected' : '' %>>Projet international référencé (porté par un tiers)</option></select></div>
+        <div><label for="p-promoter">Organisme porteur du projet</label><input id="p-promoter" name="promoter" type="text" maxlength="300" value="<%= p.promoter || '' %>"></div>
+        <div><label for="p-verified">Date de vérification</label><input id="p-verified" name="verified_at" type="date" value="<%= p.verified_at || '' %>"></div>
+      </div>
+      <div class="form-row form-row-3">
+        <div><label for="p-srcname">Source (nom)</label><input id="p-srcname" name="source_name" type="text" maxlength="200" value="<%= p.source_name || '' %>"></div>
+        <div><label for="p-srcurl">Source (adresse https://…)</label><input id="p-srcurl" name="source_url" type="url" maxlength="500" value="<%= p.source_url || '' %>"></div>
+        <div><label for="p-srcref">Référence officielle</label><input id="p-srcref" name="source_ref" type="text" maxlength="80" value="<%= p.source_ref || '' %>"></div>
+      </div>
+      <div><label for="p-note">Note interne de contrôle (jamais affichée sur le site)</label><textarea id="p-note" name="internal_note" rows="3" maxlength="4000"><%= p.internal_note || '' %></textarea></div>
+      <p class="hint">Pour un projet international référencé, l'organisme porteur, la source et la date de vérification sont affichés sur la fiche publique ; aucun investissement ne peut y être enregistré.</p>
+
       <h2 style="font-size:1.2rem" class="mt-2">Contenus multilingues</h2>
       <%- include('../partials/lang-fields', { values: p.i18n || {}, fields: [
-        ['title', 'Nom du projet', 'text'], ['summary', 'Résumé (fiche)', 'textarea', 2], ['description', 'Description détaillée', 'textarea', 8],
+        ['title', 'Nom du projet', 'text'], ['location', 'Ville / région', 'text'], ['summary', 'Description courte (carte)', 'textarea', 2], ['objective', 'Objectif du projet', 'textarea', 2], ['description', 'Description détaillée', 'textarea', 8],
+        ['funding_type', 'Type de financement recherché', 'textarea', 2], ['stage', 'Niveau d\'avancement', 'textarea', 2], ['potential', 'Potentiel économique (sans promesse de rendement)', 'textarea', 3],
         ['conditions', 'Conditions de participation', 'textarea', 3], ['fees', 'Frais applicables', 'textarea', 3]
       ] }) %>
       <p class="alert alert-warning small">N'indiquez jamais de rendement garanti ni de chiffre de performance non vérifié. Les informations doivent correspondre à un projet réel et documenté (sauf fiche de démonstration).</p>

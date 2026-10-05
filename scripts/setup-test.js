@@ -46,8 +46,33 @@ delete process.env.SESSION_SECRET;
     }
   }
   const opp = await req('GET', '/opportunities?lang=fr');
-  assert.match(opp.text, /Des projets présentés après une étude rigoureuse/);
-  assert.strictEqual((opp.text.match(/class="card project-card"/g) || []).length, 0);
+  // Projets internationaux référencés : réels, sourcés, un par secteur, jamais présentés comme des projets de la plateforme
+  const cards = (html) => (html.match(/class="card project-card"/g) || []).length;
+  assert.strictEqual(cards(opp.text), 18, '18 projets référencés');
+  assert.match(opp.text, /Voir l’opportunité/);
+  assert.match(opp.text, /Soumettre une demande/);
+  assert.match(opp.text, /Financement engagé/);
+  const { SECTORS } = require('../src/lib/sectors');
+  assert.strictEqual(SECTORS.length, 18);
+  for (const s of SECTORS) assert.strictEqual(cards((await req('GET', `/opportunities?sector=${s}`)).text), 1, `secteur ${s}`);
+  assert.strictEqual(cards((await req('GET', '/opportunities?country=' + encodeURIComponent('Sénégal'))).text), 1);
+  for (const lang of ['fr', 'en', 'es', 'de']) {
+    const sheet = await req('GET', `/opportunities/wb-p176812?lang=${lang}`);
+    assert.strictEqual(sheet.status, 200);
+    assert.match(sheet.text, /https:\/\/projects\.worldbank\.org\/en\/projects-operations\/project-detail\/P176812/, 'lien vers la source officielle');
+    assert.match(sheet.text, /CC BY 4\.0/, 'attribution de licence');
+    assert.match(sheet.text, /Ministry of Shipping/);
+    assert.doesNotMatch(visible(sheet.text), banned);
+    assert.doesNotMatch(sheet.text, /risk-meter|name="amount"/, 'ni niveau de risque ni montant d’investissement sur un projet référencé');
+  }
+  const sheetFr = await req('GET', '/opportunities/wb-p176812?lang=fr');
+  assert.match(sheetFr.text, /650\s000\s000,00\s\$/);
+  assert.match(sheetFr.text, /n’en est ni le promoteur ni le mandataire/);
+  const refRow = await one(`SELECT * FROM projects WHERE slug = 'wb-p176812'`);
+  assert.strictEqual(refRow.kind, 'referenced');
+  assert.strictEqual(refRow.verified_at, '2026-10-05');
+  assert.ok(refRow.internal_note && refRow.source_ref === 'P176812', 'source et date de vérification conservées en interne');
+  console.log('  ✓ 18 projets internationaux référencés : un par secteur, source officielle, date de vérification, aucun investissement possible');
   console.log('  ✓ Site public sans mention de maquette, de crédit photo ni de contenu provisoire (16 pages × 4 langues)');
 
   let r = await req('GET', '/admin/setup?token=mauvais');

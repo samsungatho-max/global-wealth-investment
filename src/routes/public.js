@@ -34,11 +34,11 @@ async function decorateProject(p, lang) {
 const isEmail = (s) => /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/.test(String(s || ''));
 
 router.get('/', async (req, res) => {
-  const projects = await Promise.all((await all(`SELECT * FROM projects WHERE status = 'open' ORDER BY is_demo ASC, created_at DESC, id DESC LIMIT 6`))
+  const projects = await Promise.all((await all(`SELECT * FROM projects WHERE status = 'open' ORDER BY is_demo ASC, kind = 'referenced' ASC, created_at DESC, id DESC LIMIT 6`))
     .map((p) => decorateProject(p, req.lang)));
   const news = (await all(`SELECT * FROM news WHERE ${newsLib.VISIBLE} ORDER BY featured DESC, ${newsLib.ORDER} LIMIT 3`))
     .map((n) => newsLib.decorate(n, req.lang));
-  res.render('public/home', { projects, news, sectors: SECTORS, sim: settings.get('simulator') });
+  res.render('public/home', { projects, news, sectors: SECTORS, featuredSectors: require('../lib/sectors').FEATURED_SECTORS, sim: settings.get('simulator') });
 });
 
 router.get('/opportunities', async (req, res) => {
@@ -59,7 +59,7 @@ router.get('/opportunities', async (req, res) => {
     where.push('target_cents >= ?'); params.push(min);
     if (max) { where.push('target_cents < ?'); params.push(max); }
   }
-  const rows = await all(`SELECT * FROM projects WHERE ${where.join(' AND ')} ORDER BY status = 'open' DESC, is_demo ASC, created_at DESC, id DESC`, ...params);
+  const rows = await all(`SELECT * FROM projects WHERE ${where.join(' AND ')} ORDER BY status = 'open' DESC, is_demo ASC, kind = 'referenced' ASC, created_at DESC, id DESC`, ...params);
   const total = (await one(`SELECT COUNT(*) AS n FROM projects WHERE ${base}`)).n;
   res.render('public/opportunities', {
     title: res.locals.t('opp.title'),

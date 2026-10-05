@@ -10,7 +10,7 @@
         <% if (!rows.length) { %><tr><td colspan="7" class="empty">Aucun projet.</td></tr><% } %>
         <% rows.forEach(function (p) { %>
           <tr>
-            <td><strong><%= p.tr.title %></strong><% if (p.is_demo) { %> <span class="chip chip-demo">Projet exemple</span><% } %><div class="small muted mono">/<%= p.slug %></div></td>
+            <td><strong><%= p.tr.title %></strong><% if (p.is_demo) { %> <span class="chip chip-demo">Projet exemple</span><% } %><% if (p.kind === 'referenced') { %> <span class="chip chip-navy">Référencé<%= p.source_ref ? ' · ' + p.source_ref : '' %></span><% } %><div class="small muted mono">/<%= p.slug %></div></td>
             <td class="small"><%= t('sector.' + p.sector) %><br><%= p.country %></td>
             <td class="num"><%= usd(p.target_cents) %></td>
             <td class="num"><%= usd(p.raised) %></td>

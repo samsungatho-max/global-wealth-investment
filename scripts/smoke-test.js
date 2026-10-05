@@ -15,6 +15,7 @@ process.env.ADMIN_EMAIL = 'admin@example.test';
 process.env.ADMIN_PASSWORD = 'AdminTest12345';
 process.env.PORT = '0';
 process.env.SEED_DEMO = 'true'; // fiches fictives : uniquement pour les tests, jamais créées par défaut
+process.env.SEED_REFERENCED = 'false'; // les projets référencés sont contrôlés dans setup-test.js
 process.env.MAIL_FROM = 'GLOBACOR Partners INC <no-reply@globacor-test.fr>';
 process.env.EMAIL_WEBHOOK_TOKEN = 'jeton-webhook-test-0123456789';
 

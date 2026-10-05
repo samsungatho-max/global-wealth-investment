@@ -73,8 +73,8 @@
       <p class="reveal"><%= t('home.sectors_sub') %></p>
     </div>
     <div class="sector-grid">
-            <% sectors.forEach(function (s, i) { var sp = sectorPhoto(s); %>
-      <a class="sector-tile reveal" style="--d:<%= (i % 5) * 80 %>ms" href="/opportunities?sector=<%= s %>">
+            <% featuredSectors.forEach(function (s, i) { var sp = sectorPhoto(s); %>
+      <a class="sector-tile reveal" style="--d:<%= (i % 4) * 80 %>ms" href="/opportunities?sector=<%= s %>">
         <img src="<%= sp.small %>" srcset="<%= sp.small %> 800w, <%= sp.large %> 1600w" sizes="(min-width: 1100px) 25vw, (min-width: 640px) 50vw, 100vw" alt="<%= sp.alt %>" loading="lazy" decoding="async" width="800" height="600">
         <div class="sector-tile-body">
           <span class="sector-tile-icon"><%- include('../partials/icon', { name: sectorIcon(s), size: 22 }) %></span>
@@ -85,6 +85,11 @@
       </a>
       <% }) %>
     </div>
+    <nav class="cat-strip reveal" aria-label="<%= t('project.sector') %>">
+      <% sectors.forEach(function (s) { %>
+        <a class="cat-pill" href="/opportunities?sector=<%= s %>"><span class="cat-ico"><%- include('../partials/icon', { name: sectorIcon(s), size: 20 }) %></span><span class="cat-name"><%= t('sector.' + s) %></span></a>
+      <% }) %>
+    </nav>
   </div>
 </section>
 

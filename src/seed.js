@@ -327,6 +327,29 @@ async function setProjectPhotos() {
   await run('INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING', key, kept.join(';') || '-');
 }
 
+/**
+ * Projets internationaux référencés (réels, sourcés). Chaque fiche n'est insérée qu'une fois :
+ * si l'administrateur la supprime ou l'archive, elle ne revient pas.
+ */
+async function seedReferencedProjects() {
+  if (process.env.SEED_REFERENCED === 'false') return;
+  const { PROJECTS, build } = require('./content/referenced-projects');
+  const done = new Set((await all(`SELECT key FROM meta WHERE key LIKE 'ref_seed:%'`)).map((r) => r.key));
+  let n = 0;
+  for (const p of PROJECTS) {
+    const key = `ref_seed:${p.id}`;
+    if (done.has(key)) continue;
+    const r = build(p);
+    await run(`INSERT INTO projects (slug, kind, sector, country, i18n, target_cents, min_ticket_cents, duration_months, risk_level, photo_key, status, is_demo,
+                                     promoter, source_name, source_url, source_ref, verified_at, internal_note)
+               VALUES (?, 'referenced', ?, ?, ?, ?, 0, ?, 3, ?, 'open', 0, ?, ?, ?, ?, ?, ?) ON CONFLICT (slug) DO NOTHING`,
+      r.slug, r.sector, r.country, r.i18n, r.target_cents, r.duration_months, r.photo_key, r.promoter, r.source_name, r.source_url, r.source_ref, r.verified_at, r.internal_note);
+    await run(`INSERT INTO meta (key, value) VALUES (?, datetime('now')) ON CONFLICT (key) DO NOTHING`, key);
+    n++;
+  }
+  if (n) console.log(`[seed] ${n} projet(s) international(aux) référencé(s) ajouté(s) (source officielle conservée).`);
+}
+
 async function seed() {
   await renameBrand();
   await migrateCurrency();
@@ -337,6 +360,7 @@ async function seed() {
   await seedExampleProjects();
   await fixExampleProjects();
   await setProjectPhotos();
+  await seedReferencedProjects();
   await seedNews();
   await require('./lib/news').seedSources();
 }

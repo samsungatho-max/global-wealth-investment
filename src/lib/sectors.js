@@ -1,12 +1,16 @@
 'use strict';
 /** Catégories de projets, icônes associées, tranches de montant (en cents d'USD) et noms de pays traduits. */
 
-const SECTORS = ['real_estate', 'commercial', 'agriculture', 'industry', 'energy', 'trade', 'infrastructure', 'tourism', 'technology', 'mining', 'development'];
+const SECTORS = ['real_estate', 'commercial', 'tourism', 'agriculture', 'livestock', 'fishing', 'industry', 'trade', 'infrastructure', 'energy', 'mining', 'technology', 'health', 'education', 'import_export', 'business', 'maritime', 'development'];
 
 const SECTOR_ICON = {
-  real_estate: 'building', commercial: 'store', agriculture: 'leaf', industry: 'factory', energy: 'sun',
-  trade: 'ship', infrastructure: 'road', tourism: 'bed', technology: 'cpu', mining: 'mine', development: 'globe'
+  real_estate: 'building', commercial: 'store', tourism: 'bed', agriculture: 'leaf', livestock: 'cattle', fishing: 'fish', industry: 'factory',
+  trade: 'ship', infrastructure: 'road', energy: 'sun', mining: 'mine', technology: 'cpu', health: 'health', education: 'book',
+  import_export: 'swap', business: 'growth', maritime: 'anchor', development: 'globe'
 };
+
+/** Secteurs mis en avant (avec photo) sur la page d'accueil. */
+const FEATURED_SECTORS = ['real_estate', 'commercial', 'tourism', 'agriculture', 'industry', 'infrastructure', 'energy', 'maritime'];
 
 /** Tranches de montant recherché : [clé, minimum inclus, maximum exclu] en cents d'USD. */
 const AMOUNT_RANGES = [
@@ -34,9 +38,24 @@ const COUNTRIES = {
   'États-Unis': { en: 'United States', es: 'Estados Unidos', de: 'Vereinigte Staaten' },
   'Nigeria': { en: 'Nigeria', es: 'Nigeria', de: 'Nigeria' },
   'Maurice': { en: 'Mauritius', es: 'Mauricio', de: 'Mauritius' },
+  'Équateur': { en: 'Ecuador', es: 'Ecuador', de: 'Ecuador' },
+  'Sierra Leone': { en: 'Sierra Leone', es: 'Sierra Leona', de: 'Sierra Leone' },
+  'Zambie': { en: 'Zambia', es: 'Zambia', de: 'Sambia' },
+  'Tchad': { en: 'Chad', es: 'Chad', de: 'Tschad' },
+  'Niger': { en: 'Niger', es: 'Níger', de: 'Niger' },
+  'Philippines': { en: 'Philippines', es: 'Filipinas', de: 'Philippinen' },
+  'Turquie': { en: 'Türkiye', es: 'Turquía', de: 'Türkei' },
+  'Rwanda': { en: 'Rwanda', es: 'Ruanda', de: 'Ruanda' },
+  'Honduras': { en: 'Honduras', es: 'Honduras', de: 'Honduras' },
+  'Botswana': { en: 'Botswana', es: 'Botsuana', de: 'Botswana' },
+  'Guinée': { en: 'Guinea', es: 'Guinea', de: 'Guinea' },
+  'Togo': { en: 'Togo', es: 'Togo', de: 'Togo' },
+  'Inde': { en: 'India', es: 'India', de: 'Indien' },
+  'Bangladesh': { en: 'Bangladesh', es: 'Bangladés', de: 'Bangladesch' },
+  'Angola': { en: 'Angola', es: 'Angola', de: 'Angola' },
   'France': { en: 'France', es: 'Francia', de: 'Frankreich' }
 };
 
 const countryName = (name, lang) => (COUNTRIES[name] && COUNTRIES[name][lang]) || name;
 
-module.exports = { SECTORS, SECTOR_ICON, AMOUNT_RANGES, COUNTRIES, countryName };
+module.exports = { SECTORS, SECTOR_ICON, FEATURED_SECTORS, AMOUNT_RANGES, COUNTRIES, countryName };

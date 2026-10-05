@@ -43,21 +43,35 @@ const PHOTOS = {
   barrage: { id: '1560279966-2d681f3d4dfc', author: 'Dan Meyers', alt: { fr: 'Barrage hydroélectrique', en: 'Hydroelectric dam', es: 'Presa hidroeléctrica', de: 'Wasserkraftwerk mit Staudamm' } },
   camions: { id: '1565793298595-6a879b1d9492', author: 'Marcin Jozwiak', alt: { fr: 'Flotte de camions de transport', en: 'Fleet of transport trucks', es: 'Flota de camiones de transporte', de: 'Lkw-Flotte' } },
   'usine-2': { id: '1647427060118-4911c9821b82', author: 'Simon Kadula', alt: { fr: 'Atelier de production automatisé', en: 'Automated production workshop', es: 'Taller de producción automatizado', de: 'Automatisierte Fertigungshalle' } },
-  moisson: { id: '1506519056028-d18449e82c6f', author: 'Johny Goerend', alt: { fr: 'Moissonneuses dans un champ', en: 'Harvesters in a field', es: 'Cosechadoras en un campo', de: 'Mähdrescher auf einem Feld' } }
+  moisson: { id: '1506519056028-d18449e82c6f', author: 'Johny Goerend', alt: { fr: 'Moissonneuses dans un champ', en: 'Harvesters in a field', es: 'Cosechadoras en un campo', de: 'Mähdrescher auf einem Feld' } },
+  elevage: { id: '1566310203664-bb0828838943', author: 'Ronnie Overgoor', alt: { fr: 'Troupeau de bovins au pâturage', en: 'Cattle grazing in a pasture', es: 'Ganado bovino pastando', de: 'Rinder auf der Weide' } },
+  peche: { id: '1545214766-04116e13521c', author: 'Chris King', alt: { fr: 'Bateaux de pêche à quai', en: 'Fishing boats at the quay', es: 'Barcos de pesca en el muelle', de: 'Fischerboote am Kai' } },
+  sante: { id: '1719934398679-d764c1410770', author: 'Arturo Esparza', alt: { fr: 'Galerie vitrée d’un établissement de santé', en: 'Glazed gallery of a health facility', es: 'Galería acristalada de un centro de salud', de: 'Verglaste Galerie einer Gesundheitseinrichtung' } },
+  education: { id: '1576495199011-eb94736d05d6', author: 'Wonderlane', alt: { fr: 'Bâtiment universitaire moderne', en: 'Modern university building', es: 'Edificio universitario moderno', de: 'Modernes Universitätsgebäude' } },
+  savane: { id: '1535940360221-641a69c43bac', author: 'David Clode', alt: { fr: 'Savane arborée', en: 'Wooded savanna', es: 'Sabana arbolada', de: 'Baumsavanne' } },
+  route: { id: '1646383850884-f0e389eb3659', author: 'Pavel Neznanov', alt: { fr: 'Route traversant une vallée boisée', en: 'Road through a wooded valley', es: 'Carretera que atraviesa un valle boscoso', de: 'Straße durch ein bewaldetes Tal' } },
+  marche: { id: '1532079563951-0c8a7dacddb3', author: 'Lisheng Chang', alt: { fr: 'Marché vu du ciel', en: 'Market seen from above', es: 'Mercado visto desde el aire', de: 'Markt aus der Luft' } }
 };
 
 /** Photos proposées par secteur : la première sert de visuel du secteur, les suivantes varient les fiches projets. */
 const SECTOR_PHOTOS = {
   real_estate: ['immeuble', 'complexe', 'residence', 'tours', 'villa', 'residence-2', 'immeuble-2', 'villa-2'],
-  commercial: ['centre-commercial', 'centre-affaires', 'bureaux', 'skyline'],
+  commercial: ['centre-commercial', 'centre-affaires', 'bureaux', 'marche'],
+  tourism: ['hotel', 'savane', 'villa-2'],
   agriculture: ['agriculture', 'moisson', 'serre', 'champs'],
+  livestock: ['elevage'],
+  fishing: ['peche'],
   industry: ['usine', 'usine-2', 'chantier'],
+  trade: ['camions', 'entrepot', 'conteneurs'],
+  infrastructure: ['pont', 'autoroute', 'route', 'grues', 'chantier'],
   energy: ['solaire', 'eolien', 'barrage'],
-  trade: ['port', 'conteneurs', 'camions', 'entrepot', 'cargo'],
-  infrastructure: ['pont', 'autoroute', 'grues', 'chantier'],
-  tourism: ['hotel', 'villa-2'],
-  technology: ['datacenter', 'graphiques'],
   mining: ['mine'],
+  technology: ['datacenter', 'graphiques'],
+  health: ['sante'],
+  education: ['education'],
+  import_export: ['conteneurs', 'cargo'],
+  business: ['reunion', 'poignee-main', 'skyline'],
+  maritime: ['port', 'cargo'],
   development: ['ville', 'grues', 'skyline']
 };
 const SECTOR_PHOTO = Object.fromEntries(Object.entries(SECTOR_PHOTOS).map(([k, v]) => [k, v[0]]));

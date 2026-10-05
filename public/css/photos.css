@@ -336,3 +336,15 @@ h2 { letter-spacing: -.015em; }
 .opp-sector { display: flex; gap: 14px; align-items: flex-start; padding: 18px 20px; background: var(--white); border: 1px solid var(--gray-200); border-radius: 14px; }
 .opp-sector strong { display: block; color: var(--navy-900); font-size: .98rem; }
 .opp-sector p { margin: 3px 0 0; font-size: .9rem; color: var(--gray-500); }
+
+/* ---------- Fiches : boutons, informations clés ---------- */
+.project-actions { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.project-actions .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.project-facts dd { font-weight: 500; font-size: .86rem; line-height: 1.45; }
+.project-objective { font-size: 1.08rem; color: var(--navy-900); border-left: 3px solid var(--gold-500); padding: 4px 0 4px 16px; }
+.project-keys { display: grid; gap: 14px; grid-template-columns: 1fr; }
+.project-key { display: flex; gap: 14px; align-items: flex-start; padding: 18px 20px; border: 1px solid var(--gray-200); border-radius: 14px; background: var(--white); }
+.project-key-ico { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 12px; background: var(--navy-900); color: var(--gold-400); }
+.project-key h3 { font-size: .98rem; margin: 0 0 4px; }
+.project-key p { margin: 0; color: var(--gray-600); font-size: .94rem; }
+.project-hero .contact-hero-actions { margin-top: 18px; }

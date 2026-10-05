@@ -27,7 +27,17 @@ const router = express.Router();
 router.use(requireAdmin);
 router.use(async (req, res, next) => { res.locals.section = 'admin'; res.locals.countryName = (c) => countryName(c, 'fr'); next(); });
 
-const PROJECT_FIELDS = ['title', 'summary', 'description', 'conditions', 'fees'];
+const PROJECT_FIELDS = ['title', 'summary', 'location', 'objective', 'description', 'funding_type', 'stage', 'potential', 'conditions', 'fees'];
+/** Origine et traçabilité d'un projet (informations internes : source, référence, date de vérification, note de contrôle). */
+async function saveProjectOrigin(id, body) {
+  const text = (v, max) => String(v || '').trim().slice(0, max) || null;
+  let src = text(body.source_url, 500);
+  if (src && !/^https?:\/\//i.test(src)) src = null;
+  await run(`UPDATE projects SET kind = ?, promoter = ?, source_name = ?, source_url = ?, source_ref = ?, verified_at = ?, internal_note = ? WHERE id = ?`,
+    body.kind === 'referenced' ? 'referenced' : 'own', text(body.promoter, 300), text(body.source_name, 200), src, text(body.source_ref, 80),
+    isDateStr(body.verified_at) ? body.verified_at : null, text(body.internal_note, 4000), id);
+}
+const isDateStr = (s) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) && !Number.isNaN(Date.parse(s));
 const NEWS_FIELDS = ['title', 'summary', 'body', 'figures', 'chart_title', 'chart_unit', 'chart', 'takeaways', 'risks'];
 const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) && !Number.isNaN(Date.parse(s));
 const today = () => new Date().toISOString().slice(0, 10);
@@ -98,6 +108,7 @@ router.post('/projects', projectUpload.single('image'), verifyCsrf, async (req, 
   const info = await run(`INSERT INTO projects (slug, sector, country, i18n, target_cents, min_ticket_cents, duration_months, risk_level, image_path, photo_key, status, is_demo)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     slug, d.sector, d.country, JSON.stringify(d.i18n), d.target, d.ticket, d.duration, d.risk, req.file ? req.file.filename : null, d.photo_key, publish ? 'open' : 'draft', d.is_demo);
+  await saveProjectOrigin(info.lastInsertRowid, req.body);
   await audit(req, 'project.create', 'project', info.lastInsertRowid, { slug, status: publish ? 'open' : 'draft' });
   req.flash('success', publish ? 'Projet créé et publié : il est visible sur le site.' : 'Projet enregistré en brouillon : il n\'est PAS encore visible sur le site. Cliquez sur « Publier / ouvrir » pour l\'afficher.');
   res.redirect(`/admin/projects/${info.lastInsertRowid}/edit`);
@@ -130,6 +141,7 @@ router.post('/projects/:id', projectUpload.single('image'), verifyCsrf, async (r
   await run(`UPDATE projects SET sector = ?, country = ?, i18n = ?, target_cents = ?, min_ticket_cents = ?, duration_months = ?, risk_level = ?,
        image_path = ?, photo_key = ?, is_demo = ?, updated_at = datetime('now') WHERE id = ?`,
     d.sector, d.country, JSON.stringify(d.i18n), d.target, d.ticket, d.duration, d.risk, image, d.photo_key, d.is_demo, p.id);
+  await saveProjectOrigin(p.id, req.body);
   await audit(req, 'project.update', 'project', p.id, { target_cents: d.target, risk: d.risk });
   req.flash('success', 'Projet enregistré.');
   res.redirect(`/admin/projects/${p.id}/edit`);
@@ -296,6 +308,7 @@ router.post('/users/:id/investments', async (req, res, next) => {
   if (u.kyc_status !== 'approved') return fail('L\'identité de l\'investisseur doit être vérifiée.');
   if (!project || !cents || !start || !end || end <= start) return fail('Projet ouvert, montant et dates valides obligatoires.');
   if (project.is_demo) return fail('Impossible d\'investir dans une fiche de démonstration.');
+  if (project.kind === 'referenced') return fail('Impossible d\'investir dans un projet international référencé : la plateforme n\'en est pas le promoteur.');
   if (cents < project.min_ticket_cents) return fail('Montant inférieur au ticket minimum du projet.');
   const title = parseI18n(project.i18n, 'fr').title;
   const invId = await tx(async () => {

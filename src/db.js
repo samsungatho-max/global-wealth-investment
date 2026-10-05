@@ -15,7 +15,7 @@ const { AsyncLocalStorage } = require('async_hooks');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
-const SCHEMA_VERSION = '7';
+const SCHEMA_VERSION = '8';
 
 const als = new AsyncLocalStorage();
 let driver = null; // { kind, query(text, params), exec(sql), transaction(fn), close() }
@@ -189,7 +189,7 @@ CREATE TABLE IF NOT EXISTS kyc_submissions (
 CREATE TABLE IF NOT EXISTS projects (
   id BIGSERIAL PRIMARY KEY,
   slug TEXT NOT NULL UNIQUE,
-  sector TEXT NOT NULL CHECK (sector IN ('real_estate','commercial','agriculture','industry','energy','trade','infrastructure','tourism','technology','mining','development')),
+  sector TEXT NOT NULL CHECK (sector IN ('real_estate','commercial','tourism','agriculture','livestock','fishing','industry','trade','infrastructure','energy','mining','technology','health','education','import_export','business','maritime','development')),
   country TEXT NOT NULL,
   i18n TEXT NOT NULL DEFAULT '{}',
   target_cents BIGINT NOT NULL DEFAULT 0,
@@ -435,8 +435,15 @@ CREATE TABLE IF NOT EXISTS rate_limits (
 
 -- Actualités et rapports : catégories, sources, planification
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS photo_key TEXT;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'own';
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS promoter TEXT;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS source_name TEXT;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS source_url TEXT;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS source_ref TEXT;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS verified_at TEXT;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS internal_note TEXT;
 ALTER TABLE projects DROP CONSTRAINT IF EXISTS projects_sector_check;
-ALTER TABLE projects ADD CONSTRAINT projects_sector_check CHECK (sector IN ('real_estate','commercial','agriculture','industry','energy','trade','infrastructure','tourism','technology','mining','development'));
+ALTER TABLE projects ADD CONSTRAINT projects_sector_check CHECK (sector IN ('real_estate','commercial','tourism','agriculture','livestock','fishing','industry','trade','infrastructure','energy','mining','technology','health','education','import_export','business','maritime','development'));
 ALTER TABLE news ADD COLUMN IF NOT EXISTS region TEXT NOT NULL DEFAULT 'world';
 ALTER TABLE news ADD COLUMN IF NOT EXISTS sector TEXT NOT NULL DEFAULT 'macro';
 ALTER TABLE news ADD COLUMN IF NOT EXISTS inv_type TEXT NOT NULL DEFAULT 'markets';
