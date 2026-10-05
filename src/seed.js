@@ -96,8 +96,18 @@ const PAGES = {
   }
 };
 
+/** Retire d'un texte de page les notes de travail (« Modèle à faire valider… ») et les rubriques restées vides (« [À compléter] »). */
+function cleanPageText(body) {
+  return String(body || '')
+    .replace(/\n*\*\*(Modèle à faire valider|Template to be validated|Plantilla que debe|Modelo que debe|Vorlage, die)[^*]*\*\*/g, '')
+    .replace(/(^|\n)##[^\n]*\n+\[[^\]\n]*\]\s*(?=\n|$)/g, '$1')
+    .replace(/\n{3,}/g, '\n\n').trim();
+}
+const cleanPage = (i18n) => Object.fromEntries(Object.entries(i18n).map(([lang, v]) => [lang, v && typeof v.body === 'string' ? { ...v, body: cleanPageText(v.body) } : v]));
+
 async function seedPages() {
-  for (const [slug, i18n] of Object.entries(PAGES)) {
+  for (const [slug, raw] of Object.entries(PAGES)) {
+    const i18n = cleanPage(raw);
     if (!await one('SELECT slug FROM pages WHERE slug = ?', slug)) {
       await run('INSERT INTO pages (slug, i18n) VALUES (?, ?) ON CONFLICT (slug) DO NOTHING', slug, JSON.stringify(i18n));
     }
@@ -151,8 +161,9 @@ const DEMO_PROJECTS = [
 ];
 
 async function seedDemoProjects() {
+  // Fiches fictives : uniquement sur demande explicite (tests, démonstration locale), jamais par défaut.
+  if (process.env.SEED_DEMO !== 'true') return;
   if (await one('SELECT id FROM projects LIMIT 1')) return;
-  if (process.env.SEED_DEMO === 'false') return;
   for (const p of DEMO_PROJECTS) {
     const i18n = {};
     for (const [lang, [title, summary, description, conditions, fees]] of Object.entries(p.t)) {
@@ -211,7 +222,7 @@ async function renameBrand() {
  * Chaque fiche n'est insérée qu'une fois : si l'administrateur la supprime, elle ne revient pas.
  */
 async function seedExampleProjects() {
-  if (process.env.SEED_DEMO === 'false') return;
+  if (process.env.SEED_DEMO !== 'true') return;
   const { PROJECTS, build } = require('./content/demo-projects');
   const done = new Set((await all(`SELECT key FROM meta WHERE key LIKE 'project_seed:%'`)).map((r) => r.key));
   let n = 0;
@@ -274,9 +285,30 @@ async function fixExampleProjects() {
   await run(`INSERT INTO meta (key, value) VALUES (?, datetime('now')) ON CONFLICT (key) DO NOTHING`, key);
 }
 
+/**
+ * Nettoyage du site public (une seule fois) :
+ *  - les fiches fictives créées pour la démonstration sont archivées (elles restent consultables dans l'administration) ;
+ *  - les notes de travail et rubriques vides sont retirées des pages institutionnelles.
+ */
+async function cleanSite() {
+  const key = 'cleanup:2026-10-site';
+  if (await one('SELECT key FROM meta WHERE key = ?', key)) return;
+  const slugs = [...DEMO_PROJECTS.map((p) => p.slug), ...require('./content/demo-projects').PROJECTS.map((p) => p.slug)];
+  await run(`UPDATE projects SET status = 'archived', updated_at = datetime('now')
+             WHERE status <> 'archived' AND (is_demo = 1 OR slug IN (${slugs.map(() => '?').join(', ')}))
+               AND NOT EXISTS (SELECT 1 FROM investments WHERE investments.project_id = projects.id)`, ...slugs);
+  for (const row of await all('SELECT slug, i18n FROM pages')) {
+    let i18n; try { i18n = JSON.parse(row.i18n); } catch { continue; }
+    const next = JSON.stringify(cleanPage(i18n));
+    if (next !== row.i18n) await run(`UPDATE pages SET i18n = ?, updated_at = datetime('now') WHERE slug = ?`, next, row.slug);
+  }
+  await run(`INSERT INTO meta (key, value) VALUES (?, datetime('now')) ON CONFLICT (key) DO NOTHING`, key);
+}
+
 async function seed() {
   await renameBrand();
   await migrateCurrency();
+  await cleanSite();
   await seedAdmin();
   await seedPages();
   await seedDemoProjects();

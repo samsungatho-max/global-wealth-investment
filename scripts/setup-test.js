@@ -33,6 +33,23 @@ delete process.env.SESSION_SECRET;
     return { status: res.status, location: res.headers.get('location'), text };
   };
 
+  // Site public sans fiche fictive : aucune mention de maquette ou de contenu provisoire, dans les 4 langues.
+  const banned = /fictif|fictitious|ficticio|fiktiv|crédits? photo|photo credit|illustrati|ilustrativ|Symbolfoto|projet exemple|example project|proyecto de ejemplo|Beispielprojekt|par exemple|démonstration|demonstration|demostración|placeholder|lorem ipsum|provisoire|temporaire|à venir|coming soon|générée|à compléter|\[[^\]<>]{3,40}\]|Modèle à faire valider/i;
+  const visible = (html) => html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<option[\s\S]*?<\/option>/g, ' ').replace(/<[^>]+>/g, ' ');
+  for (const lang of ['fr', 'en', 'es', 'de']) {
+    for (const u of ['/', '/opportunities', '/simulator', '/news', '/contact', '/page/about', '/page/faq', '/page/legal', '/page/terms', '/page/privacy', '/page/strategies', '/page/sectors', '/page/risks', '/login', '/register', '/forgot-password']) {
+      const page = await req('GET', `${u}?lang=${lang}`);
+      assert.strictEqual(page.status, 200, u);
+      assert.doesNotMatch(page.text, /ph-label|chip-demo|mosaic-note/, u);
+      const hit = visible(page.text).match(banned);
+      assert.ok(!hit, `${u} (${lang}) : « ${hit && hit[0]} » — ${hit ? visible(page.text).slice(Math.max(0, hit.index - 80), hit.index + 80).replace(/\s+/g, ' ') : ''}`);
+    }
+  }
+  const opp = await req('GET', '/opportunities?lang=fr');
+  assert.match(opp.text, /Des projets présentés après une étude rigoureuse/);
+  assert.strictEqual((opp.text.match(/class="card project-card"/g) || []).length, 0);
+  console.log('  ✓ Site public sans mention de maquette, de crédit photo ni de contenu provisoire (16 pages × 4 langues)');
+
   let r = await req('GET', '/admin/setup?token=mauvais');
   assert.match(r.text, /lien d'installation est invalide/);
   r = await req('POST', '/admin/setup', { token: 'mauvais', full_name: 'X', email: 'x@y.fr', password: 'MotDePasse2026', password_confirm: 'MotDePasse2026' });

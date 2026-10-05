@@ -4,6 +4,7 @@
 
 <section class="section">
   <div class="container">
+    <% if (total) { %>
     <form class="opp-filters card" method="get" action="/opportunities" aria-label="<%= t('opp.filter_title') %>">
       <h2 class="opp-filters-title"><%- include('../partials/icon', { name: 'search', size: 18 }) %> <%= t('opp.filter_title') %></h2>
       <div class="opp-filters-grid">
@@ -49,6 +50,7 @@
     </nav>
 
     <p class="opp-count muted"><%= t('opp.count', { n: projects.length, total: total }) %> · <%= t('opp.usd_note') %></p>
+    <% } %>
     <% if (f.sector) { %><p class="muted"><%= t('sector.' + f.sector + '_d') %></p><% } %>
 
     <% if (projects.some(function (p) { return p.is_demo; })) { %>
@@ -60,7 +62,17 @@
         <% projects.forEach(function (p) { %><%- include('../partials/project-card', { p: p }) %><% }) %>
       </div>
     <% } else { %>
-      <p class="empty card card-muted mt-3"><%= filtered ? t('opp.none') : t('project.none') %></p>
+      <% if (total) { %>
+        <p class="empty card card-muted mt-3"><%= t('opp.none') %></p>
+      <% } else { %>
+        <%- include('../partials/opp-empty') %>
+        <h2 class="opp-sectors-title"><%= t('home.sectors_title') %></h2>
+        <div class="opp-sectors">
+          <% sectors.forEach(function (s) { %>
+            <div class="opp-sector"><span class="cat-ico"><%- include('../partials/icon', { name: sectorIcon(s), size: 20 }) %></span><div><strong><%= t('sector.' + s) %></strong><p><%= t('sector.' + s + '_d') %></p></div></div>
+          <% }) %>
+        </div>
+      <% } %>
     <% } %>
 
     <div class="risk-banner mt-4"><strong><%= t('risk.label') %> —</strong> <%= t('risk.scale') %> <%= t('project.no_guarantee') %> <a href="/page/risks"><%= t('common.learn_more') %></a></div>

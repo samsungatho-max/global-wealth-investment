@@ -5,5 +5,4 @@
   <img src="<%= p.small %>" srcset="<%= p.small %> 800w, <%= p.large %> 1600w" sizes="<%= _sizes %>"
        alt="<%= p.alt %>" width="1600" height="900" decoding="async"
        <%- typeof eager !== 'undefined' && eager ? 'fetchpriority="high"' : 'loading="lazy"' %>>
-  <% if (typeof label !== 'undefined' && label) { %><figcaption class="ph-label" title="<%= t('ux.credits_by', { author: p.author }) %>"><%= label %></figcaption><% } %>
 </figure>

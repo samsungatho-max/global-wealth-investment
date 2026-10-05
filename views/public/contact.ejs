@@ -9,7 +9,6 @@
 <!-- ============ EN-TÊTE ============ -->
 <section class="page-hero has-photo contact-hero">
   <img class="page-hero-bg" src="<%= hp.large %>" srcset="<%= hp.small %> 800w, <%= hp.large %> 1600w" sizes="100vw" alt="<%= hp.alt %>" fetchpriority="high" decoding="async">
-  <span class="ph-label ph-label-hero" title="<%= t('ux.credits_by', { author: hp.author }) %>"><%= t('ux.photo_label') %></span>
   <div class="container page-hero-inner">
     <div class="eyebrow"><%= t('nav.contact') %></div>
     <h1><%= t('contact.title') %></h1>
@@ -126,7 +125,7 @@
               <label class="yn-option"><input type="radio" name="documents" value="no" <%= values.documents === 'no' ? 'checked' : '' %>><span><%= t('req.no') %></span></label>
             </fieldset>
           </div>
-          <div><label for="r-web"><%= t('req.website') %> <span class="hint">(<%= t('common.optional') %>)</span></label><input id="r-web" name="website" type="text" inputmode="url" maxlength="200" placeholder="www.exemple.com" autocomplete="url" value="<%= values.website || '' %>" <%- inv('website') %>></div>
+          <div><label for="r-web"><%= t('req.website') %> <span class="hint">(<%= t('common.optional') %>)</span></label><input id="r-web" name="website" type="text" inputmode="url" maxlength="200" placeholder="www.votre-entreprise.com" autocomplete="url" value="<%= values.website || '' %>" <%- inv('website') %>></div>
         </div>
 
         <div>
@@ -154,14 +153,16 @@
           <% }) %>
         </ol>
       </div>
+      <% if (company.legal_name || company.address || company.email || company.phone) { %>
       <div class="card card-muted">
         <h3><%= t('req.direct') %></h3>
         <dl class="contact-direct">
-          <div><dt><%- include('../partials/icon', { name: 'building', size: 18 }) %></dt><dd><%= company.legal_name %><br><span class="muted"><%= company.address %></span></dd></div>
-          <div><dt><%- include('../partials/icon', { name: 'file', size: 18 }) %></dt><dd><a href="mailto:<%= company.email %>"><%= company.email %></a></dd></div>
-          <div><dt><%- include('../partials/icon', { name: 'user', size: 18 }) %></dt><dd><%= company.phone %></dd></div>
+          <% if (company.legal_name || company.address) { %><div><dt><%- include('../partials/icon', { name: 'building', size: 18 }) %></dt><dd><%= company.legal_name %><% if (company.legal_name && company.address) { %><br><% } %><span class="muted"><%= company.address %></span></dd></div><% } %>
+          <% if (company.email) { %><div><dt><%- include('../partials/icon', { name: 'file', size: 18 }) %></dt><dd><a href="mailto:<%= company.email %>"><%= company.email %></a></dd></div><% } %>
+          <% if (company.phone) { %><div><dt><%- include('../partials/icon', { name: 'user', size: 18 }) %></dt><dd><%= company.phone %></dd></div><% } %>
         </dl>
       </div>
+      <% } %>
       <% if (mine.length) { %>
       <div class="card">
         <h3><%= t('req.mine_title') %></h3>

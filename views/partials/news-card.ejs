@@ -2,7 +2,7 @@
 <% var np = n.image_path ? null : photo(n.photo); var src0 = n.sourceList && n.sourceList[0]; %>
 <article class="card news-card<%= typeof big !== 'undefined' && big ? ' news-card-big' : '' %>">
   <a class="news-media" href="/news/<%= n.slug %>" tabindex="-1" aria-hidden="true">
-    <% if (n.image_path) { %><img src="/media/<%= n.image_path %>" alt="" loading="lazy" decoding="async"><% } else { %><img src="<%= np.small %>" <%- typeof big !== 'undefined' && big ? 'srcset="' + np.small + ' 800w, ' + np.large + ' 1600w" sizes="(min-width: 1000px) 60vw, 100vw"' : '' %> alt="" loading="lazy" decoding="async" width="800" height="600"><span class="ph-label"><%= t('ux.photo_label') %></span><% } %>
+    <% if (n.image_path) { %><img src="/media/<%= n.image_path %>" alt="" loading="lazy" decoding="async"><% } else { %><img src="<%= np.small %>" <%- typeof big !== 'undefined' && big ? 'srcset="' + np.small + ' 800w, ' + np.large + ' 1600w" sizes="(min-width: 1000px) 60vw, 100vw"' : '' %> alt="" loading="lazy" decoding="async" width="800" height="600"><% } %>
     <span class="news-kind <%= n.kind %>"><%= t('news.' + n.kind) %></span>
   </a>
   <div class="news-body">

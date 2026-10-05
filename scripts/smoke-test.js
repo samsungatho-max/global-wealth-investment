@@ -14,6 +14,7 @@ process.env.DATA_DIR = tmp;
 process.env.ADMIN_EMAIL = 'admin@example.test';
 process.env.ADMIN_PASSWORD = 'AdminTest12345';
 process.env.PORT = '0';
+process.env.SEED_DEMO = 'true'; // fiches fictives : uniquement pour les tests, jamais créées par défaut
 process.env.MAIL_FROM = 'GLOBACOR Partners INC <no-reply@globacor-test.fr>';
 process.env.EMAIL_WEBHOOK_TOKEN = 'jeton-webhook-test-0123456789';
 
@@ -132,11 +133,8 @@ async function main() {
     assert.strictEqual(res.status, 200, u);
     assert.strictEqual(res.headers.get('content-type'), 'image/webp', u);
   }
-  assert.match(homeFr, /Photo d’illustration/);
-  const credits = await pub.get('/credits');
-  assert.strictEqual(credits.status, 200);
-  assert.ok((credits.text.match(/\/ Unsplash/g) || []).length >= 18, 'crédits de chaque photo');
-  step('Photos WebP servies, signalées comme illustrations et créditées');
+  assert.doesNotMatch(homeFr, /Photo d’illustration|Crédits photos|ph-label/, 'aucune étiquette sur les photos');
+  step('Photos WebP servies, intégrées sans étiquette');
 
   const home = await pub.get('/opportunities');
   assert.match(home.text, /Projet exemple — simulation/);

@@ -1,0 +1,9 @@
+<div class="opp-empty">
+  <span class="opp-empty-icon"><%- include('icon', { name: 'search', size: 26 }) %></span>
+  <h3><%= t('opp.empty_t') %></h3>
+  <p><%= t('opp.empty_p') %></p>
+  <div class="opp-empty-actions">
+    <a class="btn btn-gold" href="<%= user ? '/account' : '/register' %>"><%= t('hero.cta_open') %> <%- include('icon', { name: 'arrow', size: 16 }) %></a>
+    <a class="btn btn-ghost" href="/contact?motif=project#formulaire"><%= t('req.btn_submit') %></a>
+  </div>
+</div>

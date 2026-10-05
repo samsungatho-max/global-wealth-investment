@@ -5,18 +5,17 @@
     <div class="prose">
       <%- bodyHtml %>
       <% if (slug === 'legal') { %>
+        <%
+          var cLabels = {"fr":["Raison sociale","Forme juridique","Immatriculation","Siège social","E-mail","Téléphone","Directeur de la publication","Hébergeur"],"en":["Company name","Legal form","Registration","Head office","Email","Phone","Publication director","Host"],"es":["Razón social","Forma jurídica","Registro","Sede social","Correo electrónico","Teléfono","Director de la publicación","Alojamiento"],"de":["Firma","Rechtsform","Registernummer","Sitz","E-Mail","Telefon","Verantwortlich für den Inhalt","Hosting-Anbieter"]};
+          var cRows = ['legal_name', 'legal_form', 'registration', 'address', 'email', 'phone', 'director', 'host'].map(function (k, i) { return [(cLabels[lang] || cLabels.fr)[i], company[k], k]; }).filter(function (r) { return r[1]; });
+          if (company.regulatory_status) cRows.push([t('footer.regulatory'), company.regulatory_status, 'regulatory_status']);
+        %>
+        <% if (cRows.length) { %>
         <h2><%= t('contact.company') %></h2>
         <dl class="kv card">
-          <dt>Raison sociale / Company</dt><dd><%= company.legal_name %></dd>
-          <dt>Forme juridique / Legal form</dt><dd><%= company.legal_form %></dd>
-          <dt>Immatriculation / Registration</dt><dd><%= company.registration %></dd>
-          <dt>Siège / Head office</dt><dd><%= company.address %></dd>
-          <dt>E-mail</dt><dd><a href="mailto:<%= company.email %>"><%= company.email %></a></dd>
-          <dt>Téléphone / Phone</dt><dd><%= company.phone %></dd>
-          <dt>Directeur de la publication</dt><dd><%= company.director %></dd>
-          <dt>Hébergeur / Host</dt><dd><%= company.host %></dd>
-          <dt><%= t('footer.regulatory') %></dt><dd><%= company.regulatory_status %></dd>
+          <% cRows.forEach(function (r) { %><dt><%= r[0] %></dt><dd><% if (r[2] === 'email') { %><a href="mailto:<%= r[1] %>"><%= r[1] %></a><% } else { %><%= r[1] %><% } %></dd><% }) %>
         </dl>
+        <% } %>
       <% } %>
       <% if (slug === 'risks') { %>
         <h2><%= t('risk.label') %></h2>

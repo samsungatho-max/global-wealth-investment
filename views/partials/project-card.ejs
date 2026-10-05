@@ -1,6 +1,6 @@
 <article class="card project-card">
   <a class="project-media" href="/opportunities/<%= p.slug %>" tabindex="-1" aria-hidden="true">
-    <% if (p.image_path) { %><img src="/media/<%= p.image_path %>" alt="" loading="lazy" decoding="async"><% } else { var sp = projectPhoto(p); %><img src="<%= sp.small %>" alt="" loading="lazy" decoding="async" width="800" height="600"><span class="ph-label" title="<%= t('ux.credits_by', { author: sp.author }) %>"><%= t('ux.photo_label') %></span><% } %>
+    <% if (p.image_path) { %><img src="/media/<%= p.image_path %>" alt="" loading="lazy" decoding="async"><% } else { var sp = projectPhoto(p); %><img src="<%= sp.small %>" alt="" loading="lazy" decoding="async" width="800" height="600"><% } %>
     <% if (p.is_demo) { %><span class="chip chip-demo"><%= t('project.demo_badge') %></span><% } else if (p.status !== 'open') { %><span class="chip chip-navy"><%= t('project.status_' + p.status) %></span><% } %>
     <span class="project-amount"><small><%= p.is_demo ? t('opp.example_amount') : t('project.target') %></small><strong><%= moneyRound(p.target_cents) %></strong></span>
   </a>

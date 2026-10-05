@@ -21,7 +21,6 @@
       </ul>
     </div>
   </div>
-  <span class="ph-label ph-label-hero" title="<%= t('ux.credits_by', { author: hero.author }) %>"><%= t('ux.photo_label') %></span>
 </section>
 
 <!-- ============ ENGAGEMENTS ============ -->
@@ -105,7 +104,6 @@
         </figure>
       <% }) %>
     </div>
-    <p class="mosaic-note"><%= t('ux.photo_label') %> · <a href="/credits"><%= t('ux.credits') %></a></p>
   </div>
 </section>
 
@@ -126,7 +124,7 @@
       </div>
       <% if (projects.some(function (p) { return p.is_demo; })) { %><p class="opp-demo-note small muted mt-3"><%- include('../partials/icon', { name: 'alert', size: 14 }) %><span><%= t('opp.demo_notice') %></span></p><% } %>
     <% } else { %>
-      <p class="empty card card-muted mt-3"><%= t('project.none') %></p>
+      <%- include('../partials/opp-empty') %>
     <% } %>
   </div>
 </section>
@@ -181,7 +179,6 @@
         </article>
       <% }) %>
     </div>
-    <p class="mosaic-note"><%= t('ux.photo_label') %> · <a href="/credits"><%= t('ux.credits') %></a></p>
   </div>
 </section>
 

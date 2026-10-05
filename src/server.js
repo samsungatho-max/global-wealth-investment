@@ -139,7 +139,8 @@ app.use(async (req, res, next) => {
   res.locals.site = settings.get('site_name');
   res.locals.assetV = ASSET_VERSION;
   res.locals.baseUrl = require('./lib/notify').baseUrl();
-  res.locals.company = settings.get('company');
+  // Les informations de société non encore renseignées (valeurs d'origine entre crochets) ne sont pas affichées.
+  res.locals.company = Object.fromEntries(Object.entries(settings.get('company') || {}).map(([k, v]) => [k, typeof v === 'string' && (/^\s*\[/.test(v) || /@example\.(com|org|net)$/i.test(v.trim())) ? '' : v]));
   res.locals.rates = settings.get('rates');
   res.locals.currency = currency;
   res.locals.currencies = currencies.map((c) => ({ code: c, label: CURRENCY_LABELS[c] || c }));
