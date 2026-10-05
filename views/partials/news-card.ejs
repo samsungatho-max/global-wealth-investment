@@ -13,6 +13,6 @@
     </div>
     <h3><a href="/news/<%= n.slug %>"><%= n.tr.title %></a></h3>
     <p class="news-summary"><%= n.tr.summary %></p>
-    <% if (src0) { %><p class="news-source"><%= t('news.source') %> : <%= src0.name.split(' — ')[0] %></p><% } %>
+    <% if (src0) { %><p class="news-source"><%= t('news.source') %><%= colon %> <%= src0.name.split(' — ')[0] %></p><% } %>
   </div>
 </article>

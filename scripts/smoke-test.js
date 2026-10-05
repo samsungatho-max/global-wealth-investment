@@ -11,6 +11,7 @@ const assert = require('assert');
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'globacor-test-'));
 process.env.DATA_DIR = tmp;
+process.env.KEEP_LANGUAGES = 'true'; // le passage du site public en anglais est contrôlé dans english-test.js
 process.env.ADMIN_EMAIL = 'admin@example.test';
 process.env.ADMIN_PASSWORD = 'AdminTest12345';
 process.env.PORT = '0';

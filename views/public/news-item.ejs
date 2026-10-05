@@ -24,7 +24,7 @@
     <article>
       <p class="article-meta">
         <time datetime="<%= String(n.date).slice(0, 10) %>"><%= t('news.published', { date: fmtDate(n.date) }) %></time>
-        <% if (src0) { %> · <%= t('news.source') %> : <a href="<%= src0.url %>" target="_blank" rel="noopener noreferrer"><%= src0.name %></a><% if (src0.date) { %> (<%= t('news.source_published', { date: fmtDate(src0.date) }) %>)<% } %><% } %>
+        <% if (src0) { %> · <%= t('news.source') %><%= colon %> <a href="<%= src0.url %>" target="_blank" rel="noopener noreferrer"><%= src0.name %></a><% if (src0.date) { %> (<%= t('news.source_published', { date: fmtDate(src0.date) }) %>)<% } %><% } %>
       </p>
 
       <div class="prose"><%- bodyHtml %></div>

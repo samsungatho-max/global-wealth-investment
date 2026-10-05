@@ -9,6 +9,7 @@ const assert = require('assert');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'globacor-setup-'));
 const token = crypto.randomBytes(32).toString('hex');
 process.env.DATA_DIR = tmp;
+process.env.KEEP_LANGUAGES = 'true'; // le passage du site public en anglais est contrôlé dans english-test.js
 process.env.ADMIN_SEED = 'false';
 process.env.SEED_DEMO = 'false';
 process.env.ADMIN_SETUP_TOKEN_HASH = crypto.createHash('sha256').update(token).digest('hex');
@@ -62,6 +63,7 @@ delete process.env.SESSION_SECRET;
     assert.match(sheet.text, /https:\/\/projects\.worldbank\.org\/en\/projects-operations\/project-detail\/P176812/, 'lien vers la source officielle');
     assert.match(sheet.text, /CC BY 4\.0/, 'attribution de licence');
     assert.match(sheet.text, /Ministry of Shipping/);
+    assert.match(sheet.text, /World Bank — Projects &amp; Operations/);
     assert.doesNotMatch(visible(sheet.text), banned);
     assert.doesNotMatch(sheet.text, /risk-meter|name="amount"/, 'ni niveau de risque ni montant d’investissement sur un projet référencé');
   }

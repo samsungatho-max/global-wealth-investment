@@ -97,13 +97,13 @@ function projectFromBody(body) {
 
 router.post('/projects', projectUpload.single('image'), verifyCsrf, async (req, res) => {
   const d = projectFromBody(req.body);
-  if (!d.sector || !d.country || !d.target || d.ticket === null || !d.i18n.fr.title) {
+  if (!d.sector || !d.country || !d.target || d.ticket === null || !(d.i18n.en.title || d.i18n.fr.title)) {
     if (req.file) removePublicFile(req.file.filename);
-    req.flash('error', 'Secteur, pays, montant recherché et titre (FR) sont obligatoires.');
+    req.flash('error', 'Secteur, pays, montant recherché et nom du projet (onglet EN) sont obligatoires.');
     return res.redirect('/admin/projects/new');
   }
   const publish = req.body.publish === '1';
-  let slug = slugify(d.i18n.fr.title);
+  let slug = slugify(d.i18n.en.title || d.i18n.fr.title);
   if (await one('SELECT id FROM projects WHERE slug = ?', slug)) slug += '-' + Date.now().toString(36);
   const info = await run(`INSERT INTO projects (slug, sector, country, i18n, target_cents, min_ticket_cents, duration_months, risk_level, image_path, photo_key, status, is_demo)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -130,9 +130,9 @@ router.post('/projects/:id', projectUpload.single('image'), verifyCsrf, async (r
   const p = await one('SELECT * FROM projects WHERE id = ?', req.params.id);
   if (!p) return next();
   const d = projectFromBody(req.body);
-  if (!d.sector || !d.country || !d.target || d.ticket === null || !d.i18n.fr.title) {
+  if (!d.sector || !d.country || !d.target || d.ticket === null || !(d.i18n.en.title || d.i18n.fr.title)) {
     if (req.file) removePublicFile(req.file.filename);
-    req.flash('error', 'Secteur, pays, montant recherché et titre (FR) sont obligatoires.');
+    req.flash('error', 'Secteur, pays, montant recherché et nom du projet (onglet EN) sont obligatoires.');
     return res.redirect(`/admin/projects/${p.id}/edit`);
   }
   let image = p.image_path;

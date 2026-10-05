@@ -44,6 +44,7 @@
       <a href="/contact" <%- path === '/contact' ? 'aria-current="page"' : '' %>><%= t('nav.contact') %></a>
     </nav>
     <div class="header-tools">
+      <% if (languages.length > 1) { %>
       <details class="dropdown">
         <summary aria-label="<%= t('nav.language') %>"><%= lang.toUpperCase() %> ▾</summary>
         <div class="dropdown-menu">
@@ -52,6 +53,7 @@
           <% }) %>
         </div>
       </details>
+      <% } %>
       <% if (currencies.length > 1) { %>
       <details class="dropdown">
         <summary aria-label="<%= t('nav.currency') %>"><%= currency === 'XOF' ? 'FCFA' : currency %> ▾</summary>

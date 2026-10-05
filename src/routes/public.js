@@ -85,6 +85,8 @@ router.get('/opportunities/:slug', async (req, res, next) => {
     title: project.tr.title,
     project,
     descriptionHtml: markdown(project.tr.description),
+    conditionsHtml: markdown(project.tr.conditions),
+    feesHtml: markdown(project.tr.fees),
     docs,
     canSeeInvestorDocs: canSeeInvestorDocs(req.user),
     sent: req.query.sent === '1'

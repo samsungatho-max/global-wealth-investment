@@ -4,11 +4,11 @@
   <div>
     <div class="dash-head"><h1><%= t('kyc.title') %></h1>
       <% var kcls = { none: '', pending: 'chip-warning', approved: 'chip-success', rejected: 'chip-danger' }[user.kyc_status]; %>
-      <span class="chip <%= kcls %>"><%= t('kyc.status') %> : <%= t('kyc.' + user.kyc_status) %></span>
+      <span class="chip <%= kcls %>"><%= t('kyc.status') %><%= colon %> <%= t('kyc.' + user.kyc_status) %></span>
     </div>
     <div class="card">
       <p><%= t('kyc.intro') %></p>
-      <% if (last && last.review_note && user.kyc_status === 'rejected') { %><div class="alert alert-error"><strong><%= t('kyc.note') %> :</strong> <%= last.review_note %></div><% } %>
+      <% if (last && last.review_note && user.kyc_status === 'rejected') { %><div class="alert alert-error"><strong><%= t('kyc.note') %><%= colon %></strong> <%= last.review_note %></div><% } %>
       <% if (user.kyc_status === 'approved') { %>
         <div class="alert alert-success">✅ <%= t('kyc.approved') %><% if (last) { %> — <%= fmtDate(last.reviewed_at) %><% } %></div>
       <% } else if (user.kyc_status === 'pending') { %>

@@ -26,7 +26,7 @@
     <% if (!isRef && !p.is_demo && p.raised > 0) { %>
     <div>
       <div class="progress" role="progressbar" aria-valuenow="<%= p.pct %>" aria-valuemin="0" aria-valuemax="100"><span style="width:<%= p.pct %>%"></span></div>
-      <div class="progress-label"><span><%= t('project.raised') %> : <%= moneyRound(p.raised) %></span><span><%= t('project.progress', { p: num(p.pct) }) %></span></div>
+      <div class="progress-label"><span><%= t('project.raised') %><%= colon %> <%= moneyRound(p.raised) %></span><span><%= t('project.progress', { p: num(p.pct) }) %></span></div>
     </div>
     <% } %>
     <div class="project-actions">

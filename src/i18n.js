@@ -1,5 +1,8 @@
 'use strict';
-/** Traductions de l'interface. Langue choisie : ?lang= → session → préférence utilisateur → navigateur → fr. */
+/**
+ * Traductions de l'interface. Langue choisie parmi les langues activées : ?lang= → session → préférence utilisateur → navigateur.
+ * L'espace d'administration reste toujours en français, quelle que soit la langue du site public.
+ */
 const settings = require('./lib/settings');
 
 const dictionaries = {
@@ -28,19 +31,22 @@ function enabledLanguages() {
 }
 
 function middleware(req, res, next) {
-  const enabled = enabledLanguages();
-  let lang = null;
-  if (req.query.lang && enabled.includes(req.query.lang)) {
+  const admin = /^\/admin(\/|$)/.test(req.path);
+  const enabled = admin ? ['fr'] : enabledLanguages();
+  let lang = admin ? 'fr' : null;
+  if (!admin && req.query.lang && enabled.includes(req.query.lang)) {
     lang = req.query.lang;
     req.session.lang = lang;
   }
   lang = lang || req.session.lang || (req.user && req.user.lang);
+  res.locals.colon = null;
   if (!lang || !enabled.includes(lang)) {
     const accepted = (req.acceptsLanguages(...enabled) || 'fr');
     lang = enabled.includes(accepted) ? accepted : enabled[0] || 'fr';
   }
   req.lang = lang;
   res.locals.lang = lang;
+  res.locals.colon = lang === 'fr' ? ' :' : ':';
   res.locals.t = (key, vars) => t(lang, key, vars);
   res.locals.languages = enabled.map((code) => ({ code, name: dictionaries[code].lang_name }));
   next();

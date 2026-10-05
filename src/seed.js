@@ -350,6 +350,48 @@ async function seedReferencedProjects() {
   if (n) console.log(`[seed] ${n} projet(s) international(aux) référencé(s) ajouté(s) (source officielle conservée).`);
 }
 
+/**
+ * Site public en anglais (une seule fois) : seul l'anglais reste activé (modifiable dans Paramètres), les comptes clients
+ * reçoivent leurs messages en anglais, et les contenus saisis en français reçoivent leur version anglaise.
+ * Désactivé par KEEP_LANGUAGES=true (tests multilingues).
+ */
+async function englishSite() {
+  if (process.env.KEEP_LANGUAGES === 'true') return;
+  const key = 'lang:2026-10-english-site';
+  if (await one('SELECT key FROM meta WHERE key = ?', key)) return;
+  const E = require('./content/english-content');
+  const json = (s) => { try { return JSON.parse(s); } catch { return null; } };
+  await run(`INSERT INTO settings (key, value) VALUES ('languages', ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value`, JSON.stringify(['en']));
+  await run(`UPDATE users SET lang = 'en' WHERE role <> 'admin'`);
+
+  const company = await one(`SELECT value FROM settings WHERE key = 'company'`);
+  const c = company && json(company.value);
+  if (c && typeof c.regulatory_status === 'string' && E.REGULATORY.fr.test(c.regulatory_status)) {
+    c.regulatory_status = E.REGULATORY.en;
+    await run(`UPDATE settings SET value = ? WHERE key = 'company'`, JSON.stringify(c));
+  }
+
+  const about = await one(`SELECT i18n FROM pages WHERE slug = 'about'`);
+  const a = about && json(about.i18n);
+  if (a && a.fr && String(a.fr.body || '').includes(E.ABOUT.marker)) {
+    a.en = { ...(a.en || {}), body: E.ABOUT.body };
+    await run(`UPDATE pages SET i18n = ?, updated_at = datetime('now') WHERE slug = 'about'`, JSON.stringify(a));
+  }
+
+  for (const [slug, tr] of Object.entries(E.PROJECTS)) {
+    const row = await one('SELECT id, i18n FROM projects WHERE slug = ?', slug);
+    const i = row && json(row.i18n);
+    if (!i || !i.fr || !String(i.fr.title || '').toUpperCase().startsWith(tr.marker)) continue;
+    // Les anciennes versions ES / DE ne correspondaient plus au projet : elles sont retirées.
+    const next = { fr: i.fr, en: { ...tr.en } };
+    await run(`UPDATE projects SET i18n = ?, updated_at = datetime('now') WHERE id = ?`, JSON.stringify(next), row.id);
+  }
+
+  for (const [fr, en] of E.NEWS_SOURCES) await run('UPDATE news SET sources = replace(sources, ?, ?) WHERE sources LIKE ?', fr, en, `%${fr}%`);
+  await run('UPDATE projects SET source_name = ? WHERE source_name = ?', E.WB_SOURCE[1], E.WB_SOURCE[0]);
+  await run(`INSERT INTO meta (key, value) VALUES (?, datetime('now')) ON CONFLICT (key) DO NOTHING`, key);
+}
+
 async function seed() {
   await renameBrand();
   await migrateCurrency();
@@ -363,6 +405,7 @@ async function seed() {
   await seedReferencedProjects();
   await seedNews();
   await require('./lib/news').seedSources();
+  await englishSite();
 }
 
 module.exports = { seed };

@@ -19,7 +19,7 @@ const ARTICLES = [
   {
     slug: 'fao-indice-prix-alimentaires-septembre-2026', kind: 'news', region: 'world', sector: 'agriculture', inv_type: 'commodities',
     photo: 'champs', featured: 1, published_at: '2026-10-05 09:00:00',
-    sources: [['FAO — Indice FAO des prix des produits alimentaires', 'https://www.fao.org/worldfoodsituation/foodpricesindex/en/', '2026-10-02']],
+    sources: [['FAO — FAO Food Price Index', 'https://www.fao.org/worldfoodsituation/foodpricesindex/en/', '2026-10-02']],
     figures: [
       { l: L('Indice FAO des prix alimentaires', 'FAO Food Price Index', 'Índice de precios de los alimentos de la FAO', 'FAO-Nahrungsmittelpreisindex'), n: 136.0, d: 1, u: PT, p: L('septembre 2026', 'September 2026', 'septiembre de 2026', 'September 2026') },
       { l: L('Variation sur un mois', 'Month-on-month change', 'Variación mensual', 'Veränderung zum Vormonat'), n: 1.5, d: 1, u: '%', plus: true, p: L('septembre / août 2026', 'September vs August 2026', 'septiembre / agosto de 2026', 'September ggü. August 2026') },
@@ -75,7 +75,7 @@ const ARTICLES = [
   {
     slug: 'asie-developpement-croissance-2026-basd', kind: 'news', region: 'asia', sector: 'macro', inv_type: 'markets',
     photo: 'hero', featured: 1, published_at: '2026-10-05 08:50:00',
-    sources: [['Banque asiatique de développement — Asian Development Outlook, septembre 2026', 'https://www.adb.org/news/growth-developing-asia-and-pacific-slow-remain-resilient', '2026-09-23']],
+    sources: [['Asian Development Bank — Asian Development Outlook, September 2026', 'https://www.adb.org/news/growth-developing-asia-and-pacific-slow-remain-resilient', '2026-09-23']],
     report_url: 'https://www.adb.org/publications/asian-development-outlook-september-2026',
     figures: [
       { l: L('Croissance de l’Asie-Pacifique en développement', 'Growth in developing Asia and the Pacific', 'Crecimiento de Asia y el Pacífico en desarrollo', 'Wachstum im sich entwickelnden Asien-Pazifik-Raum'), n: 5.0, d: 1, u: '%', p: L('prévision 2026', '2026 forecast', 'previsión 2026', 'Prognose 2026') },
@@ -131,7 +131,7 @@ const ARTICLES = [
   {
     slug: 'zone-euro-bce-hausse-taux-septembre-2026', kind: 'news', region: 'europe', sector: 'macro', inv_type: 'monetary',
     photo: 'immeuble-2', featured: 0, published_at: '2026-10-05 08:40:00',
-    sources: [['Banque centrale européenne — Décisions de politique monétaire', 'https://www.ecb.europa.eu/press/pr/date/2026/html/ecb.mp260910~314e508016.en.html', '2026-09-10']],
+    sources: [['European Central Bank — Monetary policy decisions', 'https://www.ecb.europa.eu/press/pr/date/2026/html/ecb.mp260910~314e508016.en.html', '2026-09-10']],
     figures: [
       { l: L('Taux de la facilité de dépôt', 'Deposit facility rate', 'Tipo de la facilidad de depósito', 'Zinssatz der Einlagefazilität'), n: 2.50, d: 2, u: '%', p: L('à compter du 16 septembre 2026', 'effective 16 September 2026', 'desde el 16 de septiembre de 2026', 'ab 16. September 2026') },
       { l: L('Taux des opérations principales de refinancement', 'Main refinancing operations rate', 'Tipo de las operaciones principales de financiación', 'Zinssatz der Hauptrefinanzierungsgeschäfte'), n: 2.65, d: 2, u: '%', p: L('à compter du 16 septembre 2026', 'effective 16 September 2026', 'desde el 16 de septiembre de 2026', 'ab 16. September 2026') },
@@ -180,7 +180,7 @@ const ARTICLES = [
   {
     slug: 'omc-barometre-commerce-marchandises-septembre-2026', kind: 'news', region: 'world', sector: 'trade', inv_type: 'markets',
     photo: 'cargo', featured: 0, published_at: '2026-10-05 08:30:00',
-    sources: [['OMC — Baromètre du commerce des marchandises', 'https://www.wto.org/english/news_e/news26_e/wtoi_09sep26_481_e.htm', '2026-09-09']],
+    sources: [['WTO — Goods Trade Barometer', 'https://www.wto.org/english/news_e/news26_e/wtoi_09sep26_481_e.htm', '2026-09-09']],
     figures: [
       { l: L('Baromètre du commerce des marchandises', 'Goods Trade Barometer', 'Barómetro sobre el comercio de mercancías', 'Warenhandelsbarometer'), n: 102.0, d: 1, u: PT, p: L('septembre 2026 (101,7 en juin 2026)', 'September 2026 (101.7 in June 2026)', 'septiembre de 2026 (101,7 en junio de 2026)', 'September 2026 (101,7 im Juni 2026)') },
       { l: L('Composants électroniques', 'Electronic components', 'Componentes electrónicos', 'Elektronische Bauteile'), n: 104.9, d: 1, u: PT, p: L('septembre 2026', 'September 2026', 'septiembre de 2026', 'September 2026') },
@@ -235,7 +235,7 @@ const ARTICLES = [
   {
     slug: 'investissement-direct-etranger-2025-cnuced', kind: 'news', region: 'world', sector: 'investment', inv_type: 'fdi',
     photo: 'skyline', featured: 1, published_at: '2026-10-05 08:20:00',
-    sources: [['CNUCED — Rapport sur l’investissement dans le monde 2026', 'https://unctad.org/news/global-investment-rises-6-16-trillion-development-gains-remain-uneven', '2026-07-08']],
+    sources: [['UNCTAD — World Investment Report 2026', 'https://unctad.org/news/global-investment-rises-6-16-trillion-development-gains-remain-uneven', '2026-07-08']],
     report_url: 'https://unctad.org/publication/world-investment-report-2026',
     figures: [
       { l: L('Investissement direct étranger mondial', 'Global foreign direct investment', 'Inversión extranjera directa mundial', 'Weltweite ausländische Direktinvestitionen'), v: L('1 600 Md USD (+6 %)', 'USD 1.6 trillion (+6%)', '1,6 billones USD (+6 %)', '1,6 Billionen USD (+6 %)'), p: L('2025', '2025', '2025', '2025') },
@@ -290,7 +290,7 @@ const ARTICLES = [
   {
     slug: 'fmi-croissance-mondiale-2026-2027', kind: 'news', region: 'world', sector: 'macro', inv_type: 'markets',
     photo: 'graphiques', featured: 0, published_at: '2026-10-05 08:10:00',
-    sources: [['FMI — Mise à jour des Perspectives de l’économie mondiale, juillet 2026', 'https://www.imf.org/en/Publications/WEO/Issues/2026/07/08/world-economic-outlook-update-july-2026', '2026-07-08']],
+    sources: [['IMF — World Economic Outlook Update, July 2026', 'https://www.imf.org/en/Publications/WEO/Issues/2026/07/08/world-economic-outlook-update-july-2026', '2026-07-08']],
     figures: [
       { l: L('Croissance mondiale projetée', 'Projected global growth', 'Crecimiento mundial previsto', 'Projiziertes Weltwirtschaftswachstum'), n: 3.0, d: 1, u: '%', p: L('2026', '2026', '2026', '2026') },
       { l: L('Croissance mondiale projetée', 'Projected global growth', 'Crecimiento mundial previsto', 'Projiziertes Weltwirtschaftswachstum'), n: 3.4, d: 1, u: '%', p: L('2027', '2027', '2027', '2027') },
@@ -337,7 +337,7 @@ const ARTICLES = [
   {
     slug: 'aie-investissement-energie-2026', kind: 'news', region: 'world', sector: 'energy', inv_type: 'infrastructure',
     photo: 'eolien', featured: 1, published_at: '2026-10-05 08:00:00',
-    sources: [['Agence internationale de l’énergie — World Energy Investment 2026', 'https://www.iea.org/reports/world-energy-investment-2026/executive-summary', '2026-05-28']],
+    sources: [['International Energy Agency — World Energy Investment 2026', 'https://www.iea.org/reports/world-energy-investment-2026/executive-summary', '2026-05-28']],
     report_url: 'https://www.iea.org/reports/world-energy-investment-2026',
     figures: [
       { l: L('Investissement énergétique mondial attendu', 'Expected global energy investment', 'Inversión energética mundial prevista', 'Erwartete weltweite Energieinvestitionen'), v: L('3 400 Md USD (+5 %)', 'USD 3.4 trillion (+5%)', '3,4 billones USD (+5 %)', '3,4 Billionen USD (+5 %)'), p: L('2026 / 2025', '2026 vs 2025', '2026 / 2025', '2026 ggü. 2025') },
@@ -399,8 +399,8 @@ const ARTICLES = [
     slug: 'rapport-afrique-2026-croissance-financement', kind: 'report', region: 'africa', sector: 'macro', inv_type: 'infrastructure',
     photo: 'chantier', featured: 1, published_at: '2026-10-05 09:10:00',
     sources: [
-      ['Banque africaine de développement — Perspectives économiques en Afrique 2026', 'https://www.afdb.org/en/news-and-events/press-releases/africas-growth-holds-firm-amid-global-turbulence-says-2026-african-economic-outlook-93626', '2026-05-26'],
-      ['Banque mondiale — Africa Economic Update, avril 2026', 'https://www.worldbank.org/en/news/press-release/2026/04/08/sub-saharan-africa-s-growth-holds-but-downside-risks-mount', '2026-04-08']
+      ['African Development Bank — African Economic Outlook 2026', 'https://www.afdb.org/en/news-and-events/press-releases/africas-growth-holds-firm-amid-global-turbulence-says-2026-african-economic-outlook-93626', '2026-05-26'],
+      ['World Bank — Africa Economic Update, April 2026', 'https://www.worldbank.org/en/news/press-release/2026/04/08/sub-saharan-africa-s-growth-holds-but-downside-risks-mount', '2026-04-08']
     ],
     report_url: 'https://www.worldbank.org/en/region/afr/publication/africa-economic-update',
     figures: [
@@ -459,8 +459,8 @@ const ARTICLES = [
     slug: 'rapport-commerce-mondial-2026-omc', kind: 'report', region: 'world', sector: 'trade', inv_type: 'markets',
     photo: 'port', featured: 0, published_at: '2026-10-05 08:05:00',
     sources: [
-      ['OMC — Perspectives et statistiques du commerce mondial, mars 2026', 'https://www.wto.org/english/news_e/news26_e/stat_19mar26_329_e.htm', '2026-03-19'],
-      ['OMC — Baromètre du commerce des marchandises', 'https://www.wto.org/english/news_e/news26_e/wtoi_09sep26_481_e.htm', '2026-09-09']
+      ['WTO — Global Trade Outlook and Statistics, March 2026', 'https://www.wto.org/english/news_e/news26_e/stat_19mar26_329_e.htm', '2026-03-19'],
+      ['WTO — Goods Trade Barometer', 'https://www.wto.org/english/news_e/news26_e/wtoi_09sep26_481_e.htm', '2026-09-09']
     ],
     report_url: 'https://www.wto.org/english/res_e/booksp_e/gtos0326_e.pdf',
     figures: [

@@ -64,6 +64,7 @@
       <p class="hint">Pour un projet international référencé, l'organisme porteur, la source et la date de vérification sont affichés sur la fiche publique ; aucun investissement ne peut y être enregistré.</p>
 
       <h2 style="font-size:1.2rem" class="mt-2">Contenus multilingues</h2>
+      <p class="alert alert-info small"><strong>Le site public est en anglais.</strong> Remplissez l'onglet <strong>EN</strong> : c'est ce texte que voient les visiteurs. Si l'onglet EN est vide, le texte français s'affiche à sa place.</p>
       <%- include('../partials/lang-fields', { values: p.i18n || {}, fields: [
         ['title', 'Nom du projet', 'text'], ['location', 'Ville / région', 'text'], ['summary', 'Description courte (carte)', 'textarea', 2], ['objective', 'Objectif du projet', 'textarea', 2], ['description', 'Description détaillée', 'textarea', 8],
         ['funding_type', 'Type de financement recherché', 'textarea', 2], ['stage', 'Niveau d\'avancement', 'textarea', 2], ['potential', 'Potentiel économique (sans promesse de rendement)', 'textarea', 3],

@@ -64,15 +64,15 @@
         </dl>
         <p class="project-ref-note"><%= t('project.ref_notice', { site: site }) %></p>
       <% } else { %>
-        <h2 class="mt-4"><%= t('risk.label') %> : <%= project.risk_level %>/5 — <%= t('risk.' + project.risk_level) %></h2>
+        <h2 class="mt-4"><%= t('risk.label') %><%= colon %> <%= project.risk_level %>/5 — <%= t('risk.' + project.risk_level) %></h2>
         <p><span class="risk-meter r<%= project.risk_level %>"><% for (var i = 1; i <= 5; i++) { %><i class="<%= i <= project.risk_level ? 'on' : '' %>"></i><% } %></span></p>
         <p><%= t('risk.d' + project.risk_level) %> <span class="muted"><%= t('risk.scale') %></span></p>
 
         <h2 class="mt-4"><%= t('project.conditions') %></h2>
-        <p><%= project.tr.conditions || '—' %></p>
+        <div class="prose"><% if (project.tr.conditions) { %><%- conditionsHtml %><% } else { %><p>—</p><% } %></div>
 
         <h2 class="mt-4"><%= t('project.fees') %></h2>
-        <p><%= project.tr.fees || '—' %></p>
+        <div class="prose"><% if (project.tr.fees) { %><%- feesHtml %><% } else { %><p>—</p><% } %></div>
 
         <h2 class="mt-4" id="docs"><%= t('project.documents') %></h2>
         <% var visibleDocs = docs.filter(function (d) { return d.visibility === 'public' || canSeeInvestorDocs; }); %>

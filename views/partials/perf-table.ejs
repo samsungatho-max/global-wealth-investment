@@ -5,7 +5,7 @@
     <% if (!history.length) { %><tr><td colspan="5" class="empty"><%= t('account.perf_none') %></td></tr><% } %>
     <% history.forEach(function (v) { %>
       <tr>
-        <td><%= fmtDate(v.valuation_date) %><div class="small muted"><%= t('account.start') %> : <%= fmtDate(v.start_date) %></div></td>
+        <td><%= fmtDate(v.valuation_date) %><div class="small muted"><%= t('account.start') %><%= colon %> <%= fmtDate(v.start_date) %></div></td>
         <td><%= v.title %></td>
         <td class="num"><%= money(v.amount_cents) %></td>
         <td class="num"><%= money(v.value_cents) %></td>

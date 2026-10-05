@@ -55,7 +55,7 @@
         <div class="flex" style="align-items:flex-start">
           <div class="qr"><img src="<%= setup.qr %>" width="220" height="220" alt="QR code 2FA"></div>
           <div>
-            <p class="small"><strong><%= t('security.twofa_key') %> :</strong><br><span class="mono" style="word-break:break-all"><%= setup.secret.match(/.{1,4}/g).join(' ') %></span></p>
+            <p class="small"><strong><%= t('security.twofa_key') %><%= colon %></strong><br><span class="mono" style="word-break:break-all"><%= setup.secret.match(/.{1,4}/g).join(' ') %></span></p>
             <form class="form" method="post" action="/account/security/2fa/confirm">
               <input type="hidden" name="_csrf" value="<%= csrf %>">
               <div><label for="t-code"><%= t('auth.twofa_code') %></label><input id="t-code" class="code-input" name="code" type="text" inputmode="numeric" maxlength="7" required autocomplete="one-time-code"></div>

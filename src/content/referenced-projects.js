@@ -9,7 +9,7 @@
  * t[langue] = [objectif (résumé), description, résultats attendus, ville / région]
  */
 const VERIFIED_AT = '2026-10-05';
-const SOURCE_NAME = 'Banque mondiale — Projets et opérations (données ouvertes, CC BY 4.0)';
+const SOURCE_NAME = 'World Bank — Projects & Operations (open data, CC BY 4.0)';
 const url = (id) => `https://projects.worldbank.org/en/projects-operations/project-detail/${id}`;
 
 const PROJECTS = [

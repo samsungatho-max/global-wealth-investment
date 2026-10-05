@@ -7,7 +7,7 @@ const LANGS = ['fr', 'en', 'es', 'de'];
 function parseI18n(json, lang) {
   let obj = {};
   try { obj = typeof json === 'string' ? JSON.parse(json || '{}') : (json || {}); } catch { obj = {}; }
-  const chain = [lang, 'fr', 'en', 'es', 'de'];
+  const chain = [lang, 'en', 'fr', 'es', 'de'];
   const keys = new Set();
   for (const l of LANGS) Object.keys(obj[l] || {}).forEach((k) => keys.add(k));
   const out = {};
