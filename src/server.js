@@ -17,6 +17,9 @@ const { refreshRates } = require('./lib/rates');
 const security = require('./lib/security');
 const photos = require('./lib/photos');
 const sectorsLib = require('./lib/sectors');
+
+// Version des fichiers CSS / JS : change à chaque déploiement, pour que les navigateurs ne gardent pas une ancienne feuille de style.
+const ASSET_VERSION = (process.env.VERCEL_GIT_COMMIT_SHA || '').slice(0, 10) || Date.now().toString(36);
 const { seed } = require('./seed');
 
 // Sur Vercel (production et prévisualisations), le site est toujours servi en HTTPS.
@@ -134,6 +137,7 @@ app.use(async (req, res, next) => {
   const lang = req.lang;
 
   res.locals.site = settings.get('site_name');
+  res.locals.assetV = ASSET_VERSION;
   res.locals.baseUrl = require('./lib/notify').baseUrl();
   res.locals.company = settings.get('company');
   res.locals.rates = settings.get('rates');

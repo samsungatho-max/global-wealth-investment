@@ -44,7 +44,7 @@
 
     <nav class="cat-strip" aria-label="<%= t('project.sector') %>">
       <% sectors.forEach(function (s) { %>
-        <a class="cat-pill" href="/opportunities?sector=<%= s %>" <%- f.sector === s ? 'aria-current="true"' : '' %>><%- include('../partials/icon', { name: sectorIcon(s), size: 16 }) %> <%= t('sector.' + s) %></a>
+        <a class="cat-pill" href="/opportunities?sector=<%= s %>" <%- f.sector === s ? 'aria-current="true"' : '' %>><span class="cat-ico"><%- include('../partials/icon', { name: sectorIcon(s), size: 20 }) %></span><span class="cat-name"><%= t('sector.' + s) %></span></a>
       <% }) %>
     </nav>
 
