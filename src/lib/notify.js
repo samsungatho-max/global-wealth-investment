@@ -8,7 +8,14 @@ const { money } = require('./money');
 const settings = require('./settings');
 
 /** Adresse publique : BASE_URL, sinon domaine de production fourni par Vercel, sinon local. */
+let publicHost = null;
+/** Retient le nom de domaine public sur lequel le site est consulté (domaine personnalisé), pour les liens des e-mails. */
+function rememberHost(req) {
+  const host = String(req.get('host') || '').toLowerCase();
+  if (/^[a-z0-9.-]+.[a-z]{2,}$/.test(host) && !/.vercel.app$|^localhost|^127./.test(host)) publicHost = host;
+}
 const baseUrl = () => (process.env.BASE_URL
+  || (publicHost && `https://${publicHost}`)
   || (process.env.VERCEL_PROJECT_PRODUCTION_URL && `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`)
   || (process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`)
   || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, '');
@@ -35,4 +42,4 @@ async function notify(userId, key, vars = {}, link = '/account') {
   } catch (err) { console.error('[mail] notification', err); }
 }
 
-module.exports = { notify, baseUrl };
+module.exports = { notify, baseUrl, rememberHost };
