@@ -42,6 +42,7 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/opportunities', async (req, res) => {
+  if (process.env.VERCEL) console.log('[trafic] ' + JSON.stringify({ q: req.originalUrl.slice(0, 120), ua: String(req.get('user-agent') || '').slice(0, 110), ip: String(req.ip || '').split('.').slice(0, 2).join('.'), ref: String(req.get('referer') || '').slice(0, 80) }));
   const base = `status IN ('open','closed')`;
   const countries = (await all(`SELECT DISTINCT country FROM projects WHERE ${base} ORDER BY country`)).map((r) => r.country);
   const f = {
