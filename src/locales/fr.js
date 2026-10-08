@@ -669,6 +669,11 @@ module.exports = {
     example_amount: "Montant de l’exemple"
   },
   req: {
+    project_name: "Nom du projet",
+    attachments: "Documents joints",
+    attachments_hint: "Business plan, présentation, justificatifs : 3 fichiers au maximum, 4 Mo au total (PDF, JPG, PNG, DOCX, XLSX).",
+    err_files: "Documents joints : 3 fichiers au maximum, 4 Mo au total, aux formats PDF, JPG, PNG, DOCX ou XLSX.",
+    err_files_again: "Merci de joindre à nouveau vos documents avant de renvoyer le formulaire.",
     hero_text: "Porteurs de projets, entreprises, investisseurs et partenaires : chaque demande est lue et étudiée par notre équipe.",
     title: "Présentez-nous votre projet",
     intro: "Notre objectif est d’identifier des projets sérieux présentant un potentiel de développement et de les mettre en relation avec des partenaires financiers appropriés. Chaque proposition fait l’objet d’une analyse préalable avant toute éventuelle mise en relation ou opération de financement.",

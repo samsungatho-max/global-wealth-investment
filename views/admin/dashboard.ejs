@@ -7,6 +7,7 @@
     <% if (!fundsEnabled) { %>
       <div class="alert alert-warning"><strong>Réception de fonds désactivée.</strong> Les investisseurs ne peuvent pas déclarer de dépôt. Activez-la dans <a href="/admin/settings">Paramètres</a> uniquement après obtention des autorisations réglementaires et renseignement des informations légales.</div>
     <% } %>
+    <% if (!mailEnabled) { %><div class="alert alert-error"><strong>Aucun e-mail ne part du site.</strong> L'envoi n'est pas encore configuré : les demandes du formulaire Contact sont bien enregistrées dans « Demandes et dossiers », mais ni vous ni le demandeur ne recevez d'e-mail. Voir « E-mails / Journal d'envoi ».</div><% } %>
     <% if (stats.demo) { %>
       <div class="alert alert-warning"><strong><%= stats.demo %> fiche(s) de démonstration publiée(s).</strong> Elles sont clairement marquées comme fictives ; archivez-les avant la mise en production depuis <a href="/admin/projects">Projets</a>.</div>
     <% } %>

@@ -213,13 +213,32 @@ router.get('/contact/confirmation', (req, res) => {
   res.render('public/contact-sent', { title: res.locals.t('req.sent_title'), done });
 });
 
-router.post('/contact', formLimiter, async (req, res) => {
+// Documents joints à une demande : 3 fichiers au plus, enregistrés en base (accès réservé à l'administration).
+const { makeUploader, verifyCsrf, removeFile } = require('../lib/security');
+const requestUpload = makeUploader({ attachments: 'attachment' }).fields([{ name: 'attachments', maxCount: 3 }]);
+const requestFiles = (req, res, next) => requestUpload[0](req, res, (err) => {
+  if (err) { req.uploadError = err; return next(); }
+  requestUpload[1](req, res, next);
+});
+const MAX_ATTACH_BYTES = 4 * 1024 * 1024;
+
+router.post('/contact', formLimiter, requestFiles, verifyCsrf, async (req, res) => {
+  const files = ((req.files && req.files.attachments) || []).map((f) => ({ id: f.filename, name: String(f.originalname || 'document').slice(0, 160), size: f.size, mime: f.mimetype }));
+  const dropFiles = () => Promise.all(files.map((f) => removeFile(f.id).catch(() => {})));
   // Champ piège invisible : rempli uniquement par les robots, la demande est alors ignorée sans message d'erreur.
-  if (String(req.body.fax_number || '').trim()) return res.redirect('/contact');
+  if (String(req.body.fax_number || '').trim()) { await dropFiles(); return res.redirect('/contact'); }
   const { values, data, errors } = requestsLib.validate(req.body, req.user);
+  const filesError = req.uploadError || files.reduce((n, f) => n + f.size, 0) > MAX_ATTACH_BYTES;
+  if (filesError) errors.push('attachments');
   if (errors.length) {
-    return res.status(400).render('public/contact', await contactView(req, { values, errors, error: res.locals.t('req.err') }));
+    await dropFiles();
+    const messages = [];
+    if (errors.some((e) => e !== 'attachments')) messages.push(res.locals.t('req.err'));
+    if (filesError) messages.push(res.locals.t('req.err_files'));
+    else if (files.length) messages.push(res.locals.t('req.err_files_again'));
+    return res.status(400).render('public/contact', await contactView(req, { values, errors, error: messages.join(' ') }));
   }
+  data.attachments = JSON.stringify(files.map(({ id, name, size }) => ({ id, name, size })));
   const { id, ref } = await requestsLib.create(data, req.lang);
   const row = await one('SELECT * FROM requests WHERE id = ?', id);
   const mailed = await requestsLib.sendConfirmation(row);

@@ -9,6 +9,7 @@
       <input type="hidden" name="_csrf" value="<%= csrf %>">
       <h2 style="font-size:1.2rem">Société et informations légales</h2>
       <div><label for="s-site">Nom du site</label><input id="s-site" name="site_name" type="text" maxlength="120" value="<%= s.site_name %>"></div>
+      <div><label for="s-notify">Adresse(s) e-mail qui reçoivent les demandes du formulaire Contact</label><input id="s-notify" name="notify_emails" type="text" maxlength="400" placeholder="direction@votre-domaine.com" value="<%= s.notify_emails || '' %>"><p class="hint">Chaque demande déposée sur le site est envoyée immédiatement à cette adresse, avec toutes les informations et les documents joints. Plusieurs adresses : séparez-les par une virgule. Si le champ est vide, les administrateurs du site les reçoivent.</p></div>
       <div class="form-row form-row-2">
         <% Object.keys(labels).forEach(function (k) { if (k === 'regulatory_status') return; %>
           <div><label for="c-<%= k %>"><%= labels[k] %></label><input id="c-<%= k %>" name="company_<%= k %>" type="text" maxlength="2000" value="<%= s.company[k] %>"></div>

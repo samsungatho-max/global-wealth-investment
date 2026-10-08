@@ -45,6 +45,9 @@ const smtp = new SMTPServer({
   }
 });
 
+/** Décode le quoted-printable en UTF-8 (pour vérifier les textes accentués des e-mails). */
+const utf8 = (raw) => Buffer.from(raw.replace(/=\r?\n/g, '').replace(/=([0-9A-F]{2})/g, (m, h) => String.fromCharCode(parseInt(h, 16))), 'latin1').toString('utf8');
+
 /** Décode un message brut (quoted-printable / base64) pour y retrouver le code. */
 function decodeRaw(raw) {
   const qp = raw.replace(/=\r?\n/g, '').replace(/=([0-9A-F]{2})/g, (m, h) => String.fromCharCode(parseInt(h, 16)));
@@ -351,6 +354,53 @@ async function main() {
   assert.ok(toClient && decodeRaw(toClient.raw).includes(saved.ref), 'e-mail de confirmation avec le numéro de dossier');
   assert.ok(newMails.some((m) => m.to.includes('admin@example.test') && decodeRaw(m.raw).includes(saved.ref)), 'notification e-mail à l’administration');
   assert.ok(await one(`SELECT id FROM notifications WHERE message LIKE ? AND link = ?`, `%${saved.ref}%`, `/admin/requests/${saved.id}`), 'notification interne');
+  // E-mail reçu par l'administration : toutes les informations saisies, sans omission
+  const adminMail = utf8(newMails.find((m) => m.to.includes('admin@example.test')).raw);
+  for (const s of ['Nouvelle demande reçue via le site', saved.ref, 'Awa Koné', 'Koné Agro SARL', 'Abidjan', 'awa.kone@outlook.com', '+225 07 00 00 00 00', 'Je recherche un financement',
+    'Agriculture et agro-industrie', 'Unité de transformation de mangues', '750', '120', '36 mois', 'Dossier et business plan finalisés', 'unité de séchage et de conditionnement de mangues', 'https://kone-agro.example.org/', '(UTC)']) {
+    assert.ok(adminMail.includes(s), `e-mail de notification : « ${s} »`);
+  }
+  assert.match(newMails.find((m) => m.to.includes('admin@example.test')).raw, /^Reply-To: awa\.kone@outlook\.com/mi, 'réponse directe au demandeur');
+  // Adresse de réception configurée + documents joints transmis en pièces jointes
+  await require('../src/lib/settings').set('notify_emails', 'direction@globacor-test.fr');
+  await vis.get('/contact');
+  const withFiles = inbox.length;
+  r = await vis.post('/contact', { ...dossier, project_name: 'Mangue Export', email: 'awa.kone@outlook.com', attachments: pdf() }, { multipart: true });
+  assert.strictEqual(r.location, '/contact/confirmation', 'envoi avec document joint : ' + r.status + ' ' + ((r.text.match(/alert-error[^>]*>([^<]*)/) || [])[1] || r.text.slice(0, 200)));
+  const withDoc = await one(`SELECT * FROM requests WHERE project_name = 'Mangue Export'`);
+  const att = JSON.parse(withDoc.attachments);
+  assert.strictEqual(att.length, 1);
+  assert.strictEqual(att[0].name, 'document.pdf');
+  const toOwner = inbox.slice(withFiles).find((m) => m.to.includes('direction@globacor-test.fr'));
+  assert.ok(toOwner, 'e-mail envoyé à l’adresse de réception configurée');
+  assert.ok(!inbox.slice(withFiles).some((m) => m.to.includes('admin@example.test')), 'l’adresse configurée remplace les administrateurs');
+  assert.match(toOwner.raw, /Content-Disposition: attachment; filename="?document\.pdf"?/i, 'document transmis en pièce jointe');
+  assert.match(toOwner.raw, /Content-Type: application\/pdf/i);
+  assert.ok(utf8(toOwner.raw).includes('Mangue Export') && utf8(toOwner.raw).includes('document.pdf'));
+  const dl = await adm.get(`/admin/requests/${withDoc.id}/files/${att[0].id}`);
+  assert.strictEqual(dl.status, 200, 'document téléchargeable par l’administration');
+  assert.strictEqual((await vis.get(`/admin/requests/${withDoc.id}/files/${att[0].id}`)).status, 302, 'document inaccessible au public');
+  // Type de fichier refusé : la demande n'est pas enregistrée et l'erreur est signalée
+  await vis.get('/contact');
+  r = await vis.post('/contact', { ...dossier, project_name: 'Refus', attachments: new Blob(['<html></html>'], { type: 'text/html' }) }, { multipart: true });
+  assert.strictEqual(r.status, 400);
+  assert.match(r.text, /Documents joints : 3 fichiers au maximum/);
+  assert.ok(!(await one(`SELECT id FROM requests WHERE project_name = 'Refus'`)), 'aucune demande enregistrée avec un fichier refusé');
+  // Panne d'envoi : la demande est conservée et l'échec est signalé à l'administration
+  const smtpHost = process.env.SMTP_HOST;
+  delete process.env.SMTP_HOST;
+  require('../src/lib/mailer').reset && require('../src/lib/mailer').reset();
+  await vis.get('/contact');
+  r = await vis.post('/contact', { ...dossier, project_name: 'Sans SMTP' });
+  process.env.SMTP_HOST = smtpHost;
+  require('../src/lib/mailer').reset && require('../src/lib/mailer').reset();
+  assert.strictEqual(r.location, '/contact/confirmation', 'aucun formulaire perdu, même sans envoi d’e-mail');
+  const noMail = await one(`SELECT * FROM requests WHERE project_name = 'Sans SMTP'`);
+  assert.ok(noMail, 'demande enregistrée malgré la panne d’envoi');
+  assert.doesNotMatch((await vis.get('/contact/confirmation')).text, /Un e-mail de confirmation a été envoyé/, 'pas de fausse annonce d’e-mail');
+  assert.match((await adm.get(`/admin/requests/${noMail.id}`)).text, /n&#39;a pas été envoyé|n'a pas été envoyé/, 'échec d’envoi signalé sur le dossier');
+  await require('../src/lib/settings').set('notify_emails', '');
+  await run(`DELETE FROM requests WHERE project_name IN ('Mangue Export', 'Sans SMTP')`);
   r = await vis.post('/contact', { motive: 'other', full_name: 'Jean Martin', country: 'FR', email: 'jean.martin@gmail.com', description: 'Bonjour, je souhaite un renseignement.', certify: 'on' });
   assert.strictEqual(r.location, '/contact/confirmation', 'une autre demande n’exige pas le dossier de financement');
   const refs = (await all('SELECT ref FROM requests')).map((x) => x.ref);

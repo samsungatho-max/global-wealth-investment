@@ -111,6 +111,11 @@ const ALLOWED = {
   '.png': 'image/png', '.webp': 'image/webp'
 };
 const IMAGE_EXT = ['.jpg', '.jpeg', '.png', '.webp'];
+/** Types supplémentaires acceptés uniquement pour les documents joints à une demande (règle « attachment »). */
+const ATTACHMENT_EXTRA = {
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+};
 
 async function storeFile(file, visibility) {
   const id = randomToken(16) + path.extname(file.originalname).toLowerCase();
@@ -130,7 +135,7 @@ function makeUploader(fieldRules) {
     fileFilter: (req, file, cb) => {
       const ext = path.extname(file.originalname).toLowerCase();
       const kind = fieldRules[file.fieldname];
-      const ok = ALLOWED[ext] === file.mimetype && (kind !== 'image' || IMAGE_EXT.includes(ext));
+      const ok = (ALLOWED[ext] === file.mimetype || (kind === 'attachment' && ATTACHMENT_EXTRA[ext] === file.mimetype)) && (kind !== 'image' || IMAGE_EXT.includes(ext));
       if (!ok) { const e = new Error('File type not allowed'); e.status = 400; e.code = 'FILE_TYPE'; return cb(e); }
       cb(null, true);
     }

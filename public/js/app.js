@@ -206,3 +206,16 @@
   form.querySelectorAll('input[name="motive"]').forEach(function (r) { r.addEventListener('change', apply); });
   apply();
 })();
+
+/* Page Contact : contrôle du nombre et du poids des documents joints avant l'envoi */
+(function () {
+  var input = document.getElementById('r-files');
+  if (!input || !input.files) return;
+  input.addEventListener('change', function () {
+    var total = 0, i;
+    for (i = 0; i < input.files.length; i++) total += input.files[i].size;
+    var bad = input.files.length > Number(input.getAttribute('data-max-files')) || total > Number(input.getAttribute('data-max-bytes'));
+    input.setCustomValidity(bad ? input.getAttribute('data-msg') : '');
+    if (bad) input.reportValidity();
+  });
+})();

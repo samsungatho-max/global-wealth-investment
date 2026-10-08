@@ -108,7 +108,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  * Envoie un e-mail et retourne la ligne du journal { id, status, error, smtp_response }.
  * Ne lève pas d'exception : l'appelant décide quoi afficher selon le statut réel.
  */
-async function sendMail({ to, subject, text, html, kind = 'other', userId = null }) {
+async function sendMail({ to, subject, text, html, kind = 'other', userId = null, attachments = [], replyTo = null }) {
   const cfg = config();
   const domain = cfg.fromDomain || 'localhost';
   const messageId = `${crypto.randomBytes(12).toString('hex')}@${domain}`;
@@ -130,7 +130,8 @@ async function sendMail({ to, subject, text, html, kind = 'other', userId = null
 
   const message = {
     from: cfg.from, to, subject, text, html,
-    replyTo: cfg.replyTo || undefined,
+    replyTo: replyTo || cfg.replyTo || undefined,
+    attachments: attachments.length ? attachments : undefined,
     messageId: `<${messageId}>`,
     headers: { 'X-Entity-Ref-ID': String(logId), 'Auto-Submitted': 'auto-generated' }
   };

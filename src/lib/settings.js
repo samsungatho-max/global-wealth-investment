@@ -4,6 +4,8 @@ const { one, all, run } = require('../db');
 
 const DEFAULTS = {
   site_name: 'GLOBACOR Partners INC',
+  /** Adresse(s) qui reçoivent chaque demande déposée sur la page Contact (séparées par des virgules). Vide = administrateurs. */
+  notify_emails: '',
   company: {
     legal_name: '[Raison sociale à compléter]',
     legal_form: '[Forme juridique à compléter]',

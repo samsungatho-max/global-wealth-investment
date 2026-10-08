@@ -15,7 +15,7 @@ const { AsyncLocalStorage } = require('async_hooks');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
-const SCHEMA_VERSION = '8';
+const SCHEMA_VERSION = '9';
 
 const als = new AsyncLocalStorage();
 let driver = null; // { kind, query(text, params), exec(sql), transaction(fn), close() }
@@ -330,6 +330,8 @@ CREATE TABLE IF NOT EXISTS requests (
   updated_at TEXT NOT NULL DEFAULT datetime('now')
 );
 CREATE INDEX IF NOT EXISTS idx_requests_status ON requests(status, created_at);
+ALTER TABLE requests ADD COLUMN IF NOT EXISTS project_name TEXT;
+ALTER TABLE requests ADD COLUMN IF NOT EXISTS attachments TEXT NOT NULL DEFAULT '[]';
 
 CREATE TABLE IF NOT EXISTS news (
   id BIGSERIAL PRIMARY KEY,

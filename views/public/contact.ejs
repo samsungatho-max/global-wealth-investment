@@ -48,7 +48,7 @@
       <p class="hint"><%= t('req.required_note') %></p>
       <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error" role="alert"><%= error %></div><% } %>
 
-      <form class="form req-form" method="post" action="/contact#formulaire" data-req-form data-funding="<%= fundingMotives.join(',') %>">
+      <form class="form req-form" method="post" action="/contact#formulaire" enctype="multipart/form-data" data-req-form data-funding="<%= fundingMotives.join(',') %>">
         <input type="hidden" name="_csrf" value="<%= csrf %>">
         <div class="hp-field" aria-hidden="true"><label for="r-fax">Fax</label><input id="r-fax" name="fax_number" type="text" tabindex="-1" autocomplete="off"></div>
 
@@ -87,6 +87,7 @@
 
         <div data-funding-block <%- isFunding ? '' : 'hidden' %>>
           <h3 class="req-section"><span>2</span><%= t('req.sec_project') %></h3>
+          <div><label for="r-pname"><%= t('req.project_name') %></label><input id="r-pname" name="project_name" type="text" maxlength="160" value="<%= values.project_name || '' %>"></div>
           <div class="form-row form-row-2">
             <div>
               <label for="r-sector"><%= t('req.sector') %> *</label>
@@ -132,6 +133,12 @@
           <label for="r-desc"><span data-label-funding <%- isFunding ? '' : 'hidden' %>><%= t('req.description') %></span><span data-label-other <%- isFunding ? 'hidden' : '' %>><%= t('req.message') %></span> *</label>
           <textarea id="r-desc" name="description" required maxlength="6000" rows="7" <%- inv('description') %>><%= values.description || '' %></textarea>
           <p class="hint" data-label-funding <%- isFunding ? '' : 'hidden' %>><%= t('req.description_hint') %></p>
+        </div>
+
+        <div>
+          <label for="r-files"><%= t('req.attachments') %> <span class="hint">(<%= t('common.optional') %>)</span></label>
+          <input id="r-files" name="attachments" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx" data-max-files="3" data-max-bytes="4000000" data-msg="<%= t('req.err_files') %>" <%- inv('attachments') %>>
+          <p class="hint"><%= t('req.attachments_hint') %></p>
         </div>
 
         <label class="check certify <%= bad('certify') ? 'is-invalid' : '' %>"><input type="checkbox" name="certify" required <%= values.certify ? 'checked' : '' %>><span><%= t('req.certify') %> *</span></label>

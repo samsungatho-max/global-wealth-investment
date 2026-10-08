@@ -64,6 +64,8 @@ router.get('/', async (req, res) => {
     title: 'Tableau de bord',
     stats: s,
     fundsEnabled: settings.get('funds_enabled'),
+    mailEnabled: mailer.config().enabled,
+    notifyEmails: settings.get('notify_emails'),
     audits: await all('SELECT * FROM audit_log ORDER BY id DESC LIMIT 12')
   });
 });
@@ -500,8 +502,16 @@ router.get('/requests', async (req, res) => {
 router.get('/requests/:id', async (req, res, next) => {
   const r = await one('SELECT * FROM requests WHERE id = ?', req.params.id);
   if (!r) return next();
-  const emails = await all(`SELECT id, kind, status, created_at FROM email_log WHERE to_email = ? AND kind LIKE 'request_%' ORDER BY id DESC LIMIT 20`, r.email).catch(() => []);
+  const emails = await all(`SELECT id, kind, status, to_email, created_at FROM email_log WHERE kind LIKE 'request_%' AND (to_email = ? OR subject LIKE ?) ORDER BY id DESC LIMIT 30`, r.email, `%${r.ref}%`).catch(() => []);
   res.render('admin/request', { title: `Dossier ${r.ref}`, r, emails, statuses: requestsLib.STATUSES, ...reqLabels });
+});
+
+router.get('/requests/:id/files/:file', async (req, res, next) => {
+  const r = await one('SELECT attachments FROM requests WHERE id = ?', req.params.id);
+  let list = []; try { list = JSON.parse((r && r.attachments) || '[]'); } catch { list = []; }
+  const f = list.find((x) => x.id === req.params.file);
+  if (!f) return next();
+  await sendStoredFile(res, f.id, f.name);
 });
 
 router.post('/requests/:id', async (req, res, next) => {
@@ -747,6 +757,7 @@ router.post('/settings/general', async (req, res) => {
   }
   await settings.set('site_name', String(req.body.site_name || '').trim().slice(0, 120) || settings.DEFAULTS.site_name);
   await settings.set('company', company);
+  await settings.set('notify_emails', String(req.body.notify_emails || '').split(/[\s,;]+/).map((s) => s.trim().toLowerCase()).filter((s) => /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/.test(s)).slice(0, 5).join(', '));
   await settings.set('languages', languages.length ? languages : ['fr']);
   await settings.set('currencies', currencies);
   if (fundsEnabled !== settings.get('funds_enabled')) await audit(req, 'settings.funds_enabled', 'settings', 'funds_enabled', { value: fundsEnabled });

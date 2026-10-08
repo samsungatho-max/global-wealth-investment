@@ -669,6 +669,11 @@ module.exports = {
     example_amount: "Example amount"
   },
   req: {
+    project_name: "Project name",
+    attachments: "Attach documents",
+    attachments_hint: "Business plan, presentation, supporting documents: up to 3 files, 4 MB in total (PDF, JPG, PNG, DOCX, XLSX).",
+    err_files: "Attached documents: up to 3 files, 4 MB in total, in PDF, JPG, PNG, DOCX or XLSX format.",
+    err_files_again: "Please attach your documents again before resubmitting the form.",
     hero_text: "Project sponsors, companies, investors and partners: every request is read and reviewed by our team.",
     title: "Tell us about your project",
     intro: "Our aim is to identify serious projects with development potential and to connect them with suitable financial partners. Every proposal undergoes a prior analysis before any possible introduction or financing operation.",

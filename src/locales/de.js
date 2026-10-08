@@ -669,6 +669,11 @@ module.exports = {
     example_amount: "Beispielbetrag"
   },
   req: {
+    project_name: "Projektname",
+    attachments: "Unterlagen beifügen",
+    attachments_hint: "Businessplan, Präsentation, Belege: höchstens 3 Dateien, insgesamt 4 MB (PDF, JPG, PNG, DOCX, XLSX).",
+    err_files: "Beigefügte Unterlagen: höchstens 3 Dateien, insgesamt 4 MB, im Format PDF, JPG, PNG, DOCX oder XLSX.",
+    err_files_again: "Bitte fügen Sie Ihre Unterlagen erneut bei, bevor Sie das Formular absenden.",
     hero_text: "Projektträger, Unternehmen, Investoren und Partner: Jede Anfrage wird von unserem Team gelesen und geprüft.",
     title: "Stellen Sie uns Ihr Projekt vor",
     intro: "Unser Ziel ist es, seriöse Projekte mit Entwicklungspotenzial zu identifizieren und mit geeigneten Finanzpartnern zusammenzubringen. Jeder Vorschlag wird vorab analysiert, bevor es zu einer möglichen Kontaktvermittlung oder Finanzierung kommt.",
