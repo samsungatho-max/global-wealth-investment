@@ -136,6 +136,12 @@ app.use((req, res, next) => {
 });
 
 app.use(security.loadUser);
+// Adresses deformees par des robots (signe ¤ a la place de « &currency ») : renvoi definitif vers la page propre, pour ne pas alimenter une exploration sans fin.
+app.use((req, res, next) => {
+  if (req.method === 'GET' && /%C2%A4|¤/i.test(req.originalUrl)) return res.redirect(301, req.path);
+  next();
+});
+
 app.use(i18n.middleware);
 app.use(security.csrfToken);
 
@@ -172,8 +178,10 @@ app.use(async (req, res, next) => {
   res.locals.countryName = (name) => sectorsLib.countryName(name, lang);
   res.locals.num =(x, digits = 1) => new Intl.NumberFormat(LOCALES[lang], { maximumFractionDigits: digits }).format(x);
   res.locals.path = req.path;
-  res.locals.langUrl = (code) => { const u = new URL(req.originalUrl, 'http://x'); u.searchParams.set('lang', code); return u.pathname + u.search; };
-  res.locals.curUrl = (code) => { const u = new URL(req.originalUrl, 'http://x'); u.searchParams.set('currency', code); return u.pathname + u.search; };
+  // Le parametre choisi est place en tete de l'adresse : la suite de caracteres « &curren » (lue comme le signe ¤ par certains robots) n'apparait jamais.
+  const withParam = (name, code) => { const u = new URL(req.originalUrl, 'http://x'); u.searchParams.delete(name); const rest = u.searchParams.toString(); return u.pathname + '?' + name + '=' + encodeURIComponent(code) + (rest ? '&' + rest : ''); };
+  res.locals.langUrl = (code) => withParam('lang', code);
+  res.locals.curUrl = (code) => withParam('currency', code);
   res.locals.flash = req.session.flash || [];
   delete req.session.flash;
   req.flash = (type, msg) => { (req.session.flash = req.session.flash || []).push({ type, msg }); };

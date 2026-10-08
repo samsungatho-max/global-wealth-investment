@@ -55,7 +55,8 @@ const lines = (html) => html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\
     for (const m of page.text.matchAll(/href="(\/(?:opportunities|news)\/[a-z0-9-]+)"/g)) if (!seen.has(m[1])) queue.push(m[1]);
     const bad = lines(page.text).filter((l) => FRENCH.test(l) && !ALLOWED.test(l));
     assert.deepStrictEqual(bad.slice(0, 3), [], `texte français sur ${u}`);
-    assert.doesNotMatch(page.text, /lang=(fr|es|de)"/, `${u} : aucun sélecteur de langue`);
+    assert.doesNotMatch(page.text, /hreflang=/, `${u} : aucun sélecteur de langue`);
+    assert.doesNotMatch(page.text, /&amp;currency=|&currency=/, `${u} : le paramètre de devise doit être en tête de l'adresse`);
     checked++;
   }
   assert.ok(checked >= 45, `pages contrôlées : ${checked}`);

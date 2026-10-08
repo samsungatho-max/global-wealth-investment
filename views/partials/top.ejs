@@ -49,7 +49,7 @@
         <summary aria-label="<%= t('nav.language') %>"><%= lang.toUpperCase() %> ▾</summary>
         <div class="dropdown-menu">
           <% languages.forEach(function (l) { %>
-            <a href="<%= langUrl(l.code) %>" hreflang="<%= l.code %>" lang="<%= l.code %>" <%- l.code === lang ? 'aria-current="true"' : '' %>><%= l.name %></a>
+            <a href="<%= langUrl(l.code) %>" rel="nofollow" hreflang="<%= l.code %>" lang="<%= l.code %>" <%- l.code === lang ? 'aria-current="true"' : '' %>><%= l.name %></a>
           <% }) %>
         </div>
       </details>
@@ -59,7 +59,7 @@
         <summary aria-label="<%= t('nav.currency') %>"><%= currency === 'XOF' ? 'FCFA' : currency %> ▾</summary>
         <div class="dropdown-menu">
           <% currencies.forEach(function (c) { %>
-            <a href="<%= curUrl(c.code) %>" <%- c.code === currency ? 'aria-current="true"' : '' %>><%= c.label %></a>
+            <a href="<%= curUrl(c.code) %>" rel="nofollow" <%- c.code === currency ? 'aria-current="true"' : '' %>><%= c.label %></a>
           <% }) %>
         </div>
       </details>

@@ -42,7 +42,6 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/opportunities', async (req, res) => {
-  if (process.env.VERCEL) console.log('[trafic] ' + JSON.stringify({ q: req.originalUrl.slice(0, 120), ua: String(req.get('user-agent') || '').slice(0, 110), ip: String(req.ip || '').split('.').slice(0, 2).join('.'), ref: String(req.get('referer') || '').slice(0, 80) }));
   const base = `status IN ('open','closed')`;
   const countries = (await all(`SELECT DISTINCT country FROM projects WHERE ${base} ORDER BY country`)).map((r) => r.country);
   const f = {
@@ -259,7 +258,7 @@ router.get('/credits', (req, res) => {
 router.get('/favicon.ico', (req, res) => res.redirect(301, '/static/img/brand/globacor-icone-192.png'));
 router.get('/robots.txt', (req, res) => {
   const base = require('../lib/notify').baseUrl();
-  res.type('text/plain').send(['User-agent: *', 'Disallow: /admin', 'Disallow: /account', 'Disallow: /webhooks', 'Disallow: /cron', '', 'Sitemap: ' + base + '/sitemap.xml', ''].join('\n'));
+  res.type('text/plain').send(['User-agent: *', 'Disallow: /admin', 'Disallow: /account', 'Disallow: /webhooks', 'Disallow: /cron', 'Disallow: /*currency=', 'Disallow: /*lang=', '', 'Sitemap: ' + base + '/sitemap.xml', ''].join('\n'));
 });
 router.get('/sitemap.xml', async (req, res) => {
   const base = require('../lib/notify').baseUrl();
