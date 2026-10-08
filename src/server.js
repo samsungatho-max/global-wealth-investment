@@ -89,6 +89,16 @@ app.use(helmet({
 
 app.use('/static/img/photos', express.static(path.join(__dirname, '..', 'public', 'img', 'photos'), { maxAge: '30d', immutable: true }));
 app.use('/static', express.static(path.join(__dirname, '..', 'public'), { maxAge: PROD ? '7d' : 0 }));
+
+// Protection contre les robots qui sollicitent les pages en boucle : au-delà de 90 pages par minute depuis la même
+// adresse, le site répond « 429 » sans interroger la base. Un visiteur normal n'atteint jamais ce seuil.
+if (PROD) {
+  app.use(require('express-rate-limit')({
+    windowMs: 60 * 1000, limit: Number(process.env.PAGE_RATE_LIMIT) || 90, standardHeaders: 'draft-7', legacyHeaders: false,
+    skip: (req) => req.method !== 'GET' || req.path === '/healthz',
+    handler: (req, res) => res.status(429).set('Retry-After', '60').type('text/plain').send('Too many requests. Please try again in a minute.')
+  }));
+}
 app.get('/healthz', (req, res) => res.json({ ok: true }));
 
 // Base prête (schéma + données de départ) et paramètres à jour avant tout traitement
