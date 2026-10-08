@@ -251,6 +251,20 @@ router.get('/credits', (req, res) => {
   res.render('public/credits', { title: res.locals.t('ux.credits'), list: require('../lib/photos').credits() });
 });
 
+// Fichiers attendus par les navigateurs et les moteurs de recherche
+router.get('/favicon.ico', (req, res) => res.redirect(301, '/static/img/brand/globacor-icone-192.png'));
+router.get('/robots.txt', (req, res) => {
+  const base = require('../lib/notify').baseUrl();
+  res.type('text/plain').send(['User-agent: *', 'Disallow: /admin', 'Disallow: /account', 'Disallow: /webhooks', 'Disallow: /cron', '', 'Sitemap: ' + base + '/sitemap.xml', ''].join('\n'));
+});
+router.get('/sitemap.xml', async (req, res) => {
+  const base = require('../lib/notify').baseUrl();
+  const urls = ['/', '/opportunities', '/simulator', '/news', '/contact', '/page/about', '/page/strategies', '/page/sectors', '/page/risks', '/page/faq', '/page/legal', '/page/terms', '/page/privacy'];
+  for (const p of await all("SELECT slug FROM projects WHERE status IN ('open','closed') ORDER BY id")) urls.push('/opportunities/' + p.slug);
+  for (const n of await all('SELECT slug FROM news WHERE ' + newsLib.VISIBLE + ' ORDER BY id')) urls.push('/news/' + n.slug);
+  res.type('application/xml').send('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + urls.map((u) => '  <url><loc>' + base + u + '</loc></url>').join('\n') + '\n</urlset>\n');
+});
+
 router.get('/healthz', (req, res) => res.json({ ok: true }));
 
 module.exports = router;

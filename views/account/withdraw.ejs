@@ -14,7 +14,7 @@
         <form class="form" method="post" action="/account/withdraw" autocomplete="off">
           <input type="hidden" name="_csrf" value="<%= csrf %>">
           <div class="form-row form-row-2">
-            <div><label for="w-amount"><%= t('withdraw.amount') %></label><input id="w-amount" name="amount" type="text" inputmode="decimal" required pattern="[0-9 ]+([.,][0-9]{1,2})?" value="<%= values.amount || '' %>"></div>
+            <div><label for="w-amount"><%= t('withdraw.amount') %></label><input id="w-amount" name="amount" type="text" inputmode="decimal" required pattern="[0-9 .,$]+" value="<%= values.amount || '' %>"></div>
             <div><label for="w-holder"><%= t('withdraw.holder') %></label><input id="w-holder" name="holder" type="text" required maxlength="120" value="<%= values.holder || user.full_name %>"></div>
           </div>
           <div class="form-row form-row-3">

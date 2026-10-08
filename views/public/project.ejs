@@ -125,7 +125,7 @@
             <input type="hidden" name="_csrf" value="<%= csrf %>">
             <div><label for="i-name"><%= t('contact.name') %></label><input id="i-name" name="name" type="text" required maxlength="120" value="<%= user ? user.full_name : '' %>" autocomplete="name"></div>
             <div><label for="i-email"><%= t('auth.email') %></label><input id="i-email" name="email" type="email" required maxlength="200" value="<%= user ? user.email : '' %>" autocomplete="email"></div>
-            <% if (!isRef) { %><div><label for="i-amount"><%= t('project.interest_amount') %> <span class="hint">(<%= t('common.optional') %>)</span></label><input id="i-amount" name="amount" type="text" inputmode="decimal" pattern="[0-9 ]+([.,][0-9]{1,2})?"></div><% } %>
+            <% if (!isRef) { %><div><label for="i-amount"><%= t('project.interest_amount') %> <span class="hint">(<%= t('common.optional') %>)</span></label><input id="i-amount" name="amount" type="text" inputmode="decimal" pattern="[0-9 .,$]+"></div><% } %>
             <div><label for="i-msg"><%= t('contact.message') %> <span class="hint">(<%= t('common.optional') %>)</span></label><textarea id="i-msg" name="message" maxlength="3000" rows="3"></textarea></div>
             <button class="btn btn-gold btn-block" type="submit"><%= t('project.interest_btn') %></button>
           </form>

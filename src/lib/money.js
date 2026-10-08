@@ -27,10 +27,23 @@ function money(cents, currency, lang, digits) {
   return format((cents / 100) * rate, currency || BASE, lang, digits);
 }
 
-/** Convertit un montant saisi (ex: "1 250,50") en centimes. Retourne null si invalide. */
+/**
+ * Convertit un montant saisi en cents. Accepte les usages anglais et francais :
+ * "2,500,000", "1,250.50", "2 500 000", "1250,50", "2.500.000,50", "$ 1,000". Retourne null si invalide.
+ */
 function parseAmount(input) {
   if (input == null) return null;
-  const s = String(input).replace(/[\s  ]/g, '').replace(',', '.');
+  let s = String(input).replace(/[\s\u00a0\u202f$]/g, '');
+  if (!s) return null;
+  const comma = s.lastIndexOf(','), dot = s.lastIndexOf('.');
+  if (comma > -1 && dot > -1) {
+    // Les deux signes : le dernier est le séparateur décimal, l'autre sépare les milliers
+    s = comma > dot ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+  } else if (comma > -1) {
+    s = /^\d{1,3}(,\d{3})+$/.test(s) ? s.replace(/,/g, '') : s.replace(',', '.');
+  } else if (/^\d{1,3}(\.\d{3}){2,}$/.test(s)) {
+    s = s.replace(/\./g, '');
+  }
   if (!/^\d+(\.\d{1,2})?$/.test(s)) return null;
   const cents = Math.round(parseFloat(s) * 100);
   return cents > 0 && cents < 1e13 ? cents : null;
