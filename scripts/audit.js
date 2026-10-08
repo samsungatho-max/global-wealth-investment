@@ -258,6 +258,9 @@ async function crawl(client, area, starts, { english = true, allow = () => true 
     await pub.get('/opportunities/rift-valley-solar-park');
     r = await pub.post('/opportunities/rift-valley-solar-park/interest', { name: 'Peter Jones', email: 'peter.jones@example.org', amount: '50000', message: 'Please send me the documentation.' });
     if (!(await one(`SELECT id FROM interests WHERE email = 'peter.jones@example.org'`))) note('Fiche projet', '« Submit a request » : demande non enregistrée');
+    const im = mailTo('direction@globacor-test.com', from).find((m) => utf8(m.raw).includes('Peter Jones'));
+    if (!im) note('E-mails', 'demande déposée depuis une fiche projet non envoyée à l’adresse de réception');
+    else if (!utf8(im.raw).includes('Please send me the documentation.') || !utf8(im.raw).includes('Rift Valley Solar Park')) note('E-mails', 'e-mail de demande sur projet incomplet');
   }
 
   // Espace client avec données : portefeuille, transactions, documents, notifications

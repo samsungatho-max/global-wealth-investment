@@ -9,7 +9,8 @@ const { t } = require('../i18n');
 const { parseAmount, money } = require('./money');
 const { CODES, countryName } = require('./countries');
 const { SECTORS } = require('./sectors');
-const { sendMail } = require('./mailer');
+const mailer = require('./mailer');
+const { sendMail } = mailer;
 const { render } = require('./email-template');
 const settings = require('./settings');
 const { baseUrl } = require('./notify');
@@ -184,11 +185,17 @@ function details(reqRow) {
   ];
 }
 
-/** Adresses qui reçoivent chaque demande : celles des Paramètres, sinon les administrateurs actifs. */
+/**
+ * Adresses qui reçoivent chaque demande : celles des Paramètres ; à défaut, la boîte professionnelle du site
+ * (adresse d'expédition) et les administrateurs actifs, pour qu'aucune demande ne reste sans destinataire.
+ */
 async function recipients() {
   const admins = await all(`SELECT id, email, full_name FROM users WHERE role = 'admin' AND status = 'active'`);
   const configured = String(settings.get('notify_emails') || '').split(/[\s,;]+/).map((x) => x.trim().toLowerCase()).filter(isEmail);
-  return { admins, emails: configured.length ? [...new Set(configured)] : [...new Set(admins.map((x) => x.email))] };
+  if (configured.length) return { admins, emails: [...new Set(configured)] };
+  const site = String(mailer.config().fromAddress || '').toLowerCase();
+  const mailbox = isEmail(site) && !/@example\.(com|org|net)$/.test(site) ? [site] : [];
+  return { admins, emails: [...new Set([...mailbox, ...admins.map((x) => String(x.email).toLowerCase())])] };
 }
 
 /**
@@ -251,6 +258,58 @@ async function notifyAdmins(reqRow) {
   return { total: emails.length, sent };
 }
 
+/**
+ * Demande déposée depuis la fiche d'un projet (« Submit a request ») : notification interne et e-mail complet
+ * à l'adresse de réception. Retourne { total, sent }.
+ */
+async function notifyInterest({ project, title, name, email, amountCents, message, userId }) {
+  const { admins, emails } = await recipients();
+  const site = settings.get('site_name');
+  const summary = `Nouvelle demande sur le projet « ${title} » — ${name}`;
+  for (const adm of admins) await run('INSERT INTO notifications (user_id, message, link) VALUES (?, ?, ?)', adm.id, summary, '/admin/interests');
+  const when = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'short', timeZone: 'UTC' }).format(new Date()) + ' (UTC)';
+  const rows = [
+    ['Projet concerné', title],
+    ['Date et heure de soumission', when],
+    ['Nom', name],
+    ['Adresse e-mail', email],
+    ['Compte client', userId ? 'Oui (client connecté)' : 'Non (visiteur)'],
+    ['Montant envisagé (USD)', amountCents ? money(amountCents, 'USD', 'fr') : '—']
+  ];
+  const intro = `Une nouvelle demande vient d’être reçue via la fiche d’un projet du site ${site}.`;
+  const url = baseUrl() + '/admin/interests';
+  const text = ['NOUVELLE DEMANDE REÇUE VIA LE SITE — FICHE PROJET', '', intro, '', ...rows.map(([k, v]) => `${k} : ${v}`), '', 'Message :', message || '—', '', `Ouvrir dans l’administration : ${url}`].join('\n');
+  const font = 'font-family:Arial,Helvetica,sans-serif;';
+  const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f3f4f6;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f3f4f6;"><tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;background:#ffffff;border-radius:10px;">
+<tr><td style="background:#0a1628;padding:22px 28px;border-radius:10px 10px 0 0;">
+  <div style="${font}font-size:12px;letter-spacing:2px;color:#d7bd8a;text-transform:uppercase;">Nouvelle demande reçue via le site</div>
+  <div style="${font}font-size:20px;font-weight:bold;color:#ffffff;margin-top:6px;">${esc(title)}</div>
+</td></tr>
+<tr><td style="padding:26px 28px 8px;">
+  <p style="margin:0 0 18px;${font}font-size:15px;line-height:1.6;color:#1f2937;">${esc(intro)}</p>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+  ${rows.map(([k, v]) => `<tr><td style="padding:8px 10px 8px 0;border-bottom:1px solid #e5e7eb;${font}font-size:13px;color:#6b7280;width:44%;vertical-align:top;">${esc(k)}</td><td style="padding:8px 0;border-bottom:1px solid #e5e7eb;${font}font-size:14px;color:#0a1628;font-weight:bold;vertical-align:top;">${esc(v)}</td></tr>`).join('\n  ')}
+  </table>
+  <p style="margin:22px 0 8px;${font}font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;">Message</p>
+  <div style="${font}font-size:14px;line-height:1.6;color:#1f2937;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;white-space:pre-wrap;">${esc(message || '—')}</div>
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 10px;"><tr><td style="background:#c9a96e;border-radius:6px;"><a href="${esc(url)}" style="display:inline-block;padding:12px 24px;${font}font-size:15px;font-weight:bold;color:#0a1628;text-decoration:none;">Ouvrir dans l’administration</a></td></tr></table>
+  <p style="margin:0 0 18px;${font}font-size:12px;line-height:1.5;color:#6b7280;">Pour répondre, répondez simplement à cet e-mail : votre réponse partira vers ${esc(email)}.</p>
+</td></tr></table></td></tr></table></body></html>`;
+  let sent = 0;
+  for (const to of emails) {
+    const adm = admins.find((x) => String(x.email).toLowerCase() === to);
+    try {
+      const log = await sendMail({ to, subject: `Nouvelle demande reçue via le site — ${title} — ${name}`, text, html, kind: 'request_admin', userId: adm ? adm.id : null, replyTo: email });
+      if (log && ['relay_accepted', 'delivered'].includes(log.status)) sent++;
+    } catch (err) { console.error('[mail] notification de demande (projet)', err); }
+  }
+  if (sent < emails.length) console.error(`[demande] projet « ${project.slug} » : ${emails.length - sent} e-mail(s) de notification non envoyé(s) sur ${emails.length} — la demande reste enregistrée dans l'administration.`);
+  return { total: emails.length, sent };
+}
+
 /** E-mail au demandeur lors d'un changement de statut accompagné d'un message de l'administration. */
 async function sendUpdate(reqRow, message) {
   const lang = reqRow.lang;
@@ -261,4 +320,4 @@ async function sendUpdate(reqRow, message) {
   return sendMail({ to: reqRow.email, subject: `${t(lang, 'req.mail_update_subject', { ref: reqRow.ref })} — ${settings.get('site_name')}`, text, html, kind: 'request_update', userId: reqRow.user_id || null });
 }
 
-module.exports = { MOTIVES, ALL_MOTIVES, FUNDING_MOTIVES, STAGES, STATUSES, SECTOR_CHOICES, validate, create, sendConfirmation, notifyAdmins, sendUpdate };
+module.exports = { notifyInterest, recipients, MOTIVES, ALL_MOTIVES, FUNDING_MOTIVES, STAGES, STATUSES, SECTOR_CHOICES, validate, create, sendConfirmation, notifyAdmins, sendUpdate };

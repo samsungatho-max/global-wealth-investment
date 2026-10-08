@@ -115,6 +115,9 @@ router.post('/opportunities/:slug/interest', formLimiter, async (req, res, next)
   }
   await run('INSERT INTO interests (project_id, user_id, name, email, amount_cents, message) VALUES (?, ?, ?, ?, ?, ?)',
     project.id, req.user ? req.user.id : null, name, email, amount || 0, message);
+  const tr = parseI18n(project.i18n, 'en');
+  await requestsLib.notifyInterest({ project, title: tr.title || project.slug, name, email, amountCents: amount || 0, message, userId: req.user ? req.user.id : null })
+    .catch((err) => console.error('[demande] notification (projet)', err));
   res.redirect(`/opportunities/${project.slug}?sent=1#interest`);
 });
 
