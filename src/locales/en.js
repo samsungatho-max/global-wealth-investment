@@ -310,9 +310,28 @@ module.exports = {
     cancelled_ok: "The request has been cancelled."
   },
   deposit: {
-    title: "Deposit request",
+    err_limit: "You have already sent several requests today. Our team will reply to you shortly.",
+    err_phone: "Invalid phone number.",
+    err_amount: "Invalid amount.",
+    no_auto: "A deposit is credited to your account only once our team has actually received and verified the funds.",
+    my_requests: "My instruction requests",
+    sent_text: "Our Administration team has received your request for deposit instructions. After verification, it will send you the instructions appropriate to your transaction. This request is neither the acceptance of a deposit nor a promise of return.",
+    sent_title: "Your request has been sent",
+    default_message: "I would like to receive deposit instructions.",
+    contact_hint: "Your name and email address are attached to the request automatically.",
+    contact_btn: "Contact Administration",
+    message: "Message to Administration",
+    s3_d: "You then receive the instructions appropriate to your transaction.",
+    s3_t: "Official instructions",
+    s2_d: "Our team reviews your account and the information provided.",
+    s2_t: "Verification",
+    s1_d: "Send your request from this page; it is recorded and passed to our team.",
+    s1_t: "Contact Administration",
+    lead: "To make a deposit, please contact our Administration team to receive the appropriate payment instructions and official bank details for your transaction.",
+    heading: "Deposit Instructions",
+    title: "Deposit",
     intro: "Declare the amount you wish to deposit. A unique reference will be assigned: it must appear in your transfer description. The deposit will only be credited after actual verification that the funds have been received.",
-    amount: "Amount ($)",
+    amount: "Intended amount (USD)",
     submit: "Get payment instructions",
     instructions: "Official payment instructions",
     ref_label: "Reference to include in the transfer description",
@@ -320,7 +339,7 @@ module.exports = {
     disabled: "Receiving funds is not yet open on the platform. It will be enabled once regulatory authorisations have been obtained.",
     kyc_required: "Your identity must be verified before any financial operation.",
     min: "Minimum amount: {amount}.",
-    warning: "Never transfer funds to an account given to you by phone, messaging app or social network. Only the instructions shown in your area are official."
+    warning: "For your security, use only the instructions sent by our Administration team in response to your request. If you have any doubt about a message you receive, contact us before making any transfer."
   },
   withdraw: {
     title: "Withdrawal request",
@@ -669,6 +688,7 @@ module.exports = {
     example_amount: "Example amount"
   },
   req: {
+    m_deposit: "Deposit instructions request",
     project_name: "Project name",
     attachments: "Attach documents",
     attachments_hint: "Business plan, presentation, supporting documents: up to 3 files, 4 MB in total (PDF, JPG, PNG, DOCX, XLSX).",

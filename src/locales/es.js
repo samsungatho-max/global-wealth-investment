@@ -310,9 +310,28 @@ module.exports = {
     cancelled_ok: "La solicitud ha sido anulada."
   },
   deposit: {
-    title: "Solicitud de depósito",
+    err_limit: "Ya ha enviado varias solicitudes hoy. Nuestro equipo le responderá en breve.",
+    err_phone: "Número de teléfono no válido.",
+    err_amount: "Importe no válido.",
+    no_auto: "Un depósito solo se abona en su cuenta cuando nuestro equipo ha recibido y verificado efectivamente los fondos.",
+    my_requests: "Mis solicitudes de instrucciones",
+    sent_text: "Nuestro equipo de Administración ha recibido su solicitud de instrucciones de depósito. Tras la verificación, le comunicará las instrucciones adecuadas para su operación. Esta solicitud no constituye la aceptación de un depósito ni una promesa de rentabilidad.",
+    sent_title: "Su solicitud ha sido enviada",
+    default_message: "Deseo recibir las instrucciones de depósito.",
+    contact_hint: "Su nombre y su correo electrónico se adjuntan automáticamente a la solicitud.",
+    contact_btn: "Contactar con Administración",
+    message: "Mensaje para Administración",
+    s3_d: "Después recibe las instrucciones adecuadas para su operación.",
+    s3_t: "Instrucciones oficiales",
+    s2_d: "Nuestro equipo verifica su cuenta y la información comunicada.",
+    s2_t: "Verificación",
+    s1_d: "Envíe su solicitud desde esta página; queda registrada y se transmite a nuestro equipo.",
+    s1_t: "Contacte con Administración",
+    lead: "Para realizar un depósito, póngase en contacto con nuestro equipo de Administración para recibir las instrucciones de pago adecuadas y los datos bancarios oficiales de su operación.",
+    heading: "Instrucciones de depósito",
+    title: "Depósito",
     intro: "Declare el importe que desea depositar. Se le asignará una referencia única que deberá figurar en el concepto de su transferencia. El depósito solo se abonará tras la verificación efectiva de la recepción de los fondos.",
-    amount: "Importe ($)",
+    amount: "Importe previsto (USD)",
     submit: "Obtener las instrucciones de pago",
     instructions: "Instrucciones de pago oficiales",
     ref_label: "Referencia que debe indicar en el concepto de la transferencia",
@@ -320,7 +339,7 @@ module.exports = {
     disabled: "La recepción de fondos todavía no está abierta en la plataforma. Se activará una vez obtenidas las autorizaciones reglamentarias.",
     kyc_required: "Su identidad debe ser verificada antes de cualquier operación financiera.",
     min: "Importe mínimo: {amount}.",
-    warning: "Nunca transfiera fondos a una cuenta comunicada por teléfono, mensajería o redes sociales. Solo son oficiales las instrucciones que aparecen en su espacio."
+    warning: "Por su seguridad, utilice únicamente las instrucciones enviadas por nuestro equipo de Administración en respuesta a su solicitud. Si duda de un mensaje recibido, contáctenos antes de realizar cualquier transferencia."
   },
   withdraw: {
     title: "Solicitud de retirada",
@@ -669,6 +688,7 @@ module.exports = {
     example_amount: "Importe del ejemplo"
   },
   req: {
+    m_deposit: "Solicitud de instrucciones de depósito",
     project_name: "Nombre del proyecto",
     attachments: "Documentos adjuntos",
     attachments_hint: "Plan de negocio, presentación, justificantes: máximo 3 archivos, 4 MB en total (PDF, JPG, PNG, DOCX, XLSX).",

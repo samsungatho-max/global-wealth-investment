@@ -310,9 +310,28 @@ module.exports = {
     cancelled_ok: "La demande a été annulée."
   },
   deposit: {
-    title: "Demande de dépôt",
+    err_limit: "Vous avez déjà envoyé plusieurs demandes aujourd’hui. Notre équipe vous répondra prochainement.",
+    err_phone: "Numéro de téléphone invalide.",
+    err_amount: "Montant invalide.",
+    no_auto: "Un dépôt n’est porté à votre compte qu’après réception et vérification effectives des fonds par notre équipe.",
+    my_requests: "Mes demandes d’instructions",
+    sent_text: "Notre équipe d’administration a reçu votre demande d’instructions de dépôt. Après vérification, elle vous communiquera les instructions adaptées à votre opération. Cette demande ne constitue ni l’acceptation d’un dépôt ni une promesse de rendement.",
+    sent_title: "Votre demande a bien été transmise",
+    default_message: "Je souhaite recevoir les instructions de dépôt.",
+    contact_hint: "Votre nom et votre adresse e-mail sont joints automatiquement à la demande.",
+    contact_btn: "Contacter l’administration",
+    message: "Message à l’administration",
+    s3_d: "Vous recevez ensuite les instructions adaptées à votre opération.",
+    s3_t: "Instructions officielles",
+    s2_d: "Notre équipe vérifie votre compte et les informations communiquées.",
+    s2_t: "Vérification",
+    s1_d: "Envoyez votre demande depuis cette page ; elle est enregistrée et transmise à notre équipe.",
+    s1_t: "Contactez l’administration",
+    lead: "Pour effectuer un dépôt, veuillez contacter notre équipe d’administration afin de recevoir les instructions de paiement appropriées et les coordonnées bancaires officielles pour votre opération.",
+    heading: "Instructions de dépôt",
+    title: "Dépôt",
     intro: "Déclarez le montant que vous souhaitez déposer. Une référence unique vous sera attribuée : elle doit figurer dans le libellé de votre virement. Le dépôt ne sera crédité qu'après vérification effective de la réception des fonds.",
-    amount: "Montant ($)",
+    amount: "Montant envisagé (USD)",
     submit: "Obtenir les instructions de paiement",
     instructions: "Instructions de paiement officielles",
     ref_label: "Référence à indiquer dans le libellé du virement",
@@ -320,7 +339,7 @@ module.exports = {
     disabled: "La réception de fonds n'est pas encore ouverte sur la plateforme. Elle sera activée une fois les autorisations réglementaires obtenues.",
     kyc_required: "Votre identité doit être vérifiée avant toute opération financière.",
     min: "Montant minimum : {amount}.",
-    warning: "Ne transférez jamais de fonds vers un compte communiqué par téléphone, messagerie ou réseau social. Seules les instructions affichées dans votre espace sont officielles."
+    warning: "Pour votre sécurité, n’utilisez que les instructions transmises par notre équipe d’administration en réponse à votre demande. En cas de doute sur un message reçu, contactez-nous avant tout virement."
   },
   withdraw: {
     title: "Demande de retrait",
@@ -669,6 +688,7 @@ module.exports = {
     example_amount: "Montant de l’exemple"
   },
   req: {
+    m_deposit: "Demande d’instructions de dépôt",
     project_name: "Nom du projet",
     attachments: "Documents joints",
     attachments_hint: "Business plan, présentation, justificatifs : 3 fichiers au maximum, 4 Mo au total (PDF, JPG, PNG, DOCX, XLSX).",

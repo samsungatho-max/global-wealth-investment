@@ -51,6 +51,18 @@
       </div>
     </div>
 
+    <section class="panel" id="deposit">
+      <div class="panel-head"><h2>Enregistrer un dépôt reçu</h2></div>
+      <form class="card form" method="post" action="/admin/users/<%= u.id %>/deposits">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <p class="small muted mb-0">À utiliser lorsqu'un virement du client a été reçu selon les instructions que vous lui avez communiquées. Le dépôt est créé « en attente » ; il n'est crédité qu'après confirmation dans « Dépôts & retraits », avec la référence du relevé bancaire.</p>
+        <div class="form-row form-row-2">
+          <div><label for="dep-amount">Montant reçu ($)</label><input id="dep-amount" name="amount" type="text" inputmode="decimal" required></div>
+          <div class="actions" style="align-items:end"><button class="btn btn-navy" type="submit">Enregistrer le dépôt en attente</button></div>
+        </div>
+      </form>
+    </section>
+
     <section class="panel" id="invest">
       <div class="panel-head"><h2>Investissements</h2></div>
       <div class="table-wrap">

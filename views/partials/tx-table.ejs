@@ -17,8 +17,6 @@
         <% if (typeof withActions !== 'undefined' && withActions) { %>
         <td><% if (r.type === 'withdrawal' && r.status === 'pending') { %>
           <form method="post" action="/account/transactions/<%= r.id %>/cancel" data-confirm="<%= t('tx.cancel') %> ?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-ghost btn-sm" type="submit"><%= t('tx.cancel') %></button></form>
-        <% } else if (r.type === 'deposit' && r.status === 'pending') { %>
-          <a class="btn btn-ghost btn-sm" href="/account/deposit/<%= r.reference %>"><%= t('deposit.instructions') %></a>
         <% } %></td>
         <% } %>
       </tr>

@@ -15,7 +15,7 @@ const { AsyncLocalStorage } = require('async_hooks');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
-const SCHEMA_VERSION = '9';
+const SCHEMA_VERSION = '10';
 
 const als = new AsyncLocalStorage();
 let driver = null; // { kind, query(text, params), exec(sql), transaction(fn), close() }
@@ -304,7 +304,7 @@ CREATE TABLE IF NOT EXISTS requests (
   id BIGSERIAL PRIMARY KEY,
   ref TEXT NOT NULL UNIQUE,
   user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
-  motive TEXT NOT NULL CHECK (motive IN ('project','funding','opportunity','investor','other')),
+  motive TEXT NOT NULL CHECK (motive IN ('project','funding','opportunity','investor','other','deposit')),
   full_name TEXT NOT NULL,
   organisation TEXT,
   country TEXT NOT NULL,
@@ -331,6 +331,8 @@ CREATE TABLE IF NOT EXISTS requests (
 );
 CREATE INDEX IF NOT EXISTS idx_requests_status ON requests(status, created_at);
 ALTER TABLE requests ADD COLUMN IF NOT EXISTS project_name TEXT;
+ALTER TABLE requests DROP CONSTRAINT IF EXISTS requests_motive_check;
+ALTER TABLE requests ADD CONSTRAINT requests_motive_check CHECK (motive IN ('project','funding','opportunity','investor','other','deposit'));
 ALTER TABLE requests ADD COLUMN IF NOT EXISTS attachments TEXT NOT NULL DEFAULT '[]';
 
 CREATE TABLE IF NOT EXISTS news (

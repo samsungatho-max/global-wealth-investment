@@ -569,15 +569,39 @@ async function main() {
   step('Réception de fonds activable uniquement avec confirmation réglementaire');
 
   // ---------- Dépôt ----------
-  await inv.get('/account/deposit');
-  r = await inv.post('/account/deposit', { amount: '5 000,00' });
-  const depRef = r.location.split('/').pop();
-  assert.match(depRef, /^DEP-\d{8}-[A-Z0-9]{6}$/);
-  assert.strictEqual((await inv.get(r.location)).status, 200);
-  const dep = await one('SELECT * FROM transactions WHERE reference = ?', depRef);
+  // Le client ne voit aucune coordonnée bancaire : il demande les instructions à l'administration
+  await adm.get('/admin/settings');
+  await adm.post('/admin/settings/payment', { instructions_fr: 'IBAN FR76 3000 6000 0112 3456 7890 189 — Banque de test', instructions_en: 'IBAN FR76 3000 6000 0112 3456 7890 189' }).catch(() => {});
+  const depPage = await inv.get('/account/deposit');
+  assert.match(depPage.text, /Instructions de dépôt/);
+  assert.match(depPage.text, /veuillez contacter notre équipe d’administration/);
+  assert.match(depPage.text, /Contacter l’administration/);
+  assert.doesNotMatch(depPage.text, /IBAN|FR76|BIC|SWIFT/i, 'aucune coordonnée bancaire affichée');
+  const depMails = inbox.length;
+  r = await inv.post('/account/deposit', { amount: '5 000,00', message: 'Je souhaite effectuer un premier dépôt.' });
+  assert.strictEqual(r.location, '/account/deposit');
+  const depReq = await one(`SELECT * FROM requests WHERE motive = 'deposit'`);
+  assert.match(depReq.ref, /^GP-\d{4}-[A-Z2-9]{6}$/);
+  assert.strictEqual(Number(depReq.amount_cents), 500000);
+  assert.strictEqual(Number(depReq.user_id), Number(marie.id));
+  const depDone = await inv.get('/account/deposit');
+  assert.ok(depDone.text.includes(depReq.ref) && /Votre demande a bien été transmise/.test(depDone.text));
+  assert.doesNotMatch(depDone.text, /IBAN|FR76/i);
+  const depAdminMail = inbox.slice(depMails).find((m) => m.to.includes('admin@example.test'));
+  assert.ok(depAdminMail, 'demande de dépôt envoyée à l’administration');
+  for (const s of ['Demande d’instructions de dépôt', depReq.ref, 'Marie Dupont', 'marie.dupont@gmail.com', 'Je souhaite effectuer un premier dépôt.', 'Montant du dépôt envisagé']) assert.ok(utf8(depAdminMail.raw).includes(s), `e-mail dépôt : « ${s} »`);
+  assert.ok(inbox.slice(depMails).some((m) => m.to.includes('marie.dupont@gmail.com')), 'accusé de réception au client');
+  assert.ok((await adm.get('/admin/requests?motive=deposit')).text.includes(depReq.ref), 'demande visible dans l’administration');
+  assert.strictEqual((await inv.get('/account/deposit/DEP-20260101-AAAAAA')).location, '/account/deposit', 'anciennes pages d’instructions fermées');
+  assert.strictEqual((await one(`SELECT COUNT(*) AS n FROM transactions WHERE type = 'deposit'`)).n, 0, 'aucun dépôt créé par la simple demande');
+  // L'administration enregistre le dépôt une fois le virement reçu
+  await adm.get(`/admin/users/${marie.id}`);
+  r = await adm.post(`/admin/users/${marie.id}/deposits`, { amount: '5 000,00' });
+  const dep = await one(`SELECT * FROM transactions WHERE type = 'deposit' AND user_id = ?`, marie.id);
+  assert.match(dep.reference, /^DEP-\d{8}-[A-Z0-9]{6}$/);
   assert.strictEqual(dep.status, 'pending');
   assert.strictEqual(await require('../src/lib/ledger').cashBalance(marie.id), 0, 'dépôt non crédité avant vérification');
-  step('Demande de dépôt : référence unique, non créditée avant vérification');
+  step('Dépôt : aucune coordonnée bancaire affichée, demande transmise à l’administration, dépôt enregistré non crédité avant vérification');
 
   await adm.get('/admin/transactions');
   await adm.post(`/admin/transactions/${dep.id}/action`, { action: 'confirm', external_ref: '' });

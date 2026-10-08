@@ -5,24 +5,63 @@
     <div class="dash-head"><h1><%= t('deposit.title') %></h1></div>
     <% if (!fundsEnabled) { %>
       <div class="alert alert-warning"><%= t('deposit.disabled') %></div>
-    <% } else if (!kycOk) { %>
-      <div class="alert alert-warning flex between"><span><%= t('deposit.kyc_required') %></span><a class="btn btn-navy btn-sm" href="/account/kyc"><%= t('account.kyc_banner_cta') %></a></div>
     <% } else { %>
-      <div class="card">
-        <p><%= t('deposit.intro') %></p>
-        <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error"><%= error %></div><% } %>
-        <form class="form" method="post" action="/account/deposit" style="max-width:420px">
+      <% if (sentRef) { %>
+        <div class="card dep-sent" role="status">
+          <span class="dep-sent-icon"><%- include('../partials/icon', { name: 'check', size: 28 }) %></span>
+          <div>
+            <h2><%= t('deposit.sent_title') %></h2>
+            <p><%= t('deposit.sent_text') %></p>
+            <p class="dep-ref"><span><%= t('req.ref_label') %></span> <strong class="mono"><%= sentRef %></strong></p>
+          </div>
+        </div>
+      <% } %>
+
+      <div class="card dep-card">
+        <span class="dep-icon"><%- include('../partials/icon', { name: 'shield', size: 30 }) %></span>
+        <h2><%= t('deposit.heading') %></h2>
+        <p class="dep-lead"><%= t('deposit.lead') %></p>
+
+        <ol class="dep-steps">
+          <% [['users', 1], ['idcard', 2], ['file', 3]].forEach(function (s) { %>
+            <li><span class="dep-step-ico"><%- include('../partials/icon', { name: s[0], size: 20 }) %></span><div><strong><%= t('deposit.s' + s[1] + '_t') %></strong><p><%= t('deposit.s' + s[1] + '_d') %></p></div></li>
+          <% }) %>
+        </ol>
+
+        <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error" role="alert"><%= error %></div><% } %>
+        <form class="form dep-form" method="post" action="/account/deposit">
           <input type="hidden" name="_csrf" value="<%= csrf %>">
-          <div><label for="d-amount"><%= t('deposit.amount') %></label><input id="d-amount" name="amount" type="text" inputmode="decimal" required pattern="[0-9 ]+([.,][0-9]{1,2})?"><p class="hint"><%= t('deposit.min', { amount: usd(minCents) }) %></p></div>
-          <button class="btn btn-gold" type="submit"><%= t('deposit.submit') %></button>
+          <div class="form-row form-row-2">
+            <div><label for="d-amount"><%= t('deposit.amount') %> <span class="hint">(<%= t('common.optional') %>)</span></label><div class="input-money"><span>$</span><input id="d-amount" name="amount" type="text" inputmode="decimal" maxlength="20" pattern="[0-9 ,.]*" value="<%= values.amount || '' %>"></div></div>
+            <div><label for="d-phone"><%= t('req.phone') %> <span class="hint">(<%= t('common.optional') %>)</span></label><input id="d-phone" name="phone" type="tel" maxlength="30" autocomplete="tel" value="<%= values.phone || '' %>"></div>
+          </div>
+          <div><label for="d-msg"><%= t('deposit.message') %> <span class="hint">(<%= t('common.optional') %>)</span></label><textarea id="d-msg" name="message" rows="3" maxlength="2000"><%= values.message || '' %></textarea></div>
+          <div class="dep-actions">
+            <button class="btn btn-gold btn-lg" type="submit"><%- include('../partials/icon', { name: 'users', size: 18 }) %> <%= t('deposit.contact_btn') %></button>
+            <p class="hint mb-0"><%= t('deposit.contact_hint') %></p>
+          </div>
         </form>
       </div>
+
+      <p class="risk-banner dep-note"><%- include('../partials/icon', { name: 'lock', size: 16 }) %> <span><%= t('deposit.warning') %></span></p>
+      <p class="small muted"><%= t('deposit.no_auto') %></p>
+
+      <% if (requests.length) { %>
+      <section class="panel mt-3">
+        <div class="panel-head"><h2><%= t('deposit.my_requests') %></h2></div>
+        <ul class="req-mine card">
+          <% requests.forEach(function (m) { %><li><span class="mono"><%= m.ref %></span><span class="chip chip-gold"><%= t('req.s_' + m.status) %></span><span class="small muted"><%= fmtDate(m.created_at, true) %></span></li><% }) %>
+        </ul>
+      </section>
+      <% } %>
     <% } %>
-    <p class="alert alert-info small mt-3">⚠️ <%= t('deposit.warning') %></p>
+
+    <% if (pending.length) { %>
     <section class="panel mt-3">
       <div class="panel-head"><h2><%= t('tx.title') %> — <%= t('tx.deposit') %></h2></div>
-      <%- include('../partials/tx-table', { rows: pending, withActions: true }) %>
+      <%- include('../partials/tx-table', { rows: pending, withActions: false }) %>
     </section>
+    <% } %>
   </div>
 </div>
 <%- include('../partials/bottom') %>

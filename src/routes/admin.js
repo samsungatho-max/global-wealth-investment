@@ -299,6 +299,22 @@ router.get('/users/:id/documents/:docId', async (req, res, next) => {
 });
 
 // Enregistrement d'un investissement : débite le solde disponible du client (écriture confirmée).
+// Dépôt reçu hors ligne : l'administration l'enregistre « en attente », puis le confirme après contrôle du relevé bancaire.
+router.post('/users/:id/deposits', async (req, res, next) => {
+  try {
+    const u = await one('SELECT * FROM users WHERE id = ?', req.params.id);
+    if (!u) return next();
+    const cents = parseAmount(req.body.amount);
+    if (!cents) { req.flash('error', 'Montant du dépôt invalide.'); return res.redirect(`/admin/users/${u.id}`); }
+    if (!settings.get('funds_enabled')) { req.flash('error', 'La réception de fonds n\'est pas activée dans les Paramètres.'); return res.redirect(`/admin/users/${u.id}`); }
+    const reference = makeReference('DEP');
+    const info = await run(`INSERT INTO transactions (user_id, type, amount_cents, status, reference, method) VALUES (?, 'deposit', ?, 'pending', ?, 'bank_transfer')`, u.id, cents, reference);
+    await audit(req, 'deposit.record', 'transaction', info.lastInsertRowid, { reference, amount_cents: cents, user_id: u.id });
+    req.flash('success', `Dépôt ${reference} enregistré « en attente ». Confirmez-le dans « Dépôts & retraits » après contrôle du relevé bancaire.`);
+    res.redirect('/admin/transactions?type=deposit&status=pending');
+  } catch (e) { next(e); }
+});
+
 router.post('/users/:id/investments', async (req, res, next) => {
   const u = await one('SELECT * FROM users WHERE id = ?', req.params.id);
   if (!u) return next();
@@ -474,14 +490,14 @@ router.post('/transactions/:id/action', async (req, res, next) => {
 // ---------- Demandes (page Contact) ----------
 const requestsLib = require('../lib/requests');
 const REQ_STATUS = { new: 'Nouveau', review: 'En étude', info_requested: 'Informations complémentaires demandées', forwarded: 'Transmis pour examen', closed: 'Clôturé' };
-const REQ_MOTIVE = { project: 'Porteur de projet', funding: 'Recherche de financement', opportunity: 'Opportunité d\'affaires', investor: 'Investisseur / partenaire', other: 'Autre demande' };
+const REQ_MOTIVE = { project: 'Porteur de projet', funding: 'Recherche de financement', opportunity: 'Opportunité d\'affaires', investor: 'Investisseur / partenaire', other: 'Autre demande', deposit: 'Instructions de dépôt (client)' };
 const reqLabels = { statusLabels: REQ_STATUS, motiveLabels: REQ_MOTIVE, countryName: (c) => countryName(c, 'fr') };
 
 router.get('/requests', async (req, res) => {
   const f = {
     q: String(req.query.q || '').trim().slice(0, 100),
     status: requestsLib.STATUSES.includes(req.query.status) ? req.query.status : '',
-    motive: requestsLib.MOTIVES.includes(req.query.motive) ? req.query.motive : '',
+    motive: requestsLib.ALL_MOTIVES.includes(req.query.motive) ? req.query.motive : '',
     sector: requestsLib.SECTOR_CHOICES.includes(req.query.sector) ? req.query.sector : ''
   };
   const where = [], params = [];
@@ -496,7 +512,7 @@ router.get('/requests', async (req, res) => {
   const rows = await all(`SELECT * FROM requests ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY status = 'new' DESC, created_at DESC, id DESC LIMIT 300`, ...params);
   const counts = {};
   (await all('SELECT status, COUNT(*) AS n FROM requests GROUP BY status')).forEach((r) => { counts[r.status] = Number(r.n); });
-  res.render('admin/requests', { title: 'Demandes et dossiers', rows, f, counts, statuses: requestsLib.STATUSES, motives: requestsLib.MOTIVES, sectors: requestsLib.SECTOR_CHOICES, ...reqLabels });
+  res.render('admin/requests', { title: 'Demandes et dossiers', rows, f, counts, statuses: requestsLib.STATUSES, motives: requestsLib.ALL_MOTIVES, sectors: requestsLib.SECTOR_CHOICES, ...reqLabels });
 });
 
 router.get('/requests/:id', async (req, res, next) => {

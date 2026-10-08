@@ -15,6 +15,8 @@ const settings = require('./settings');
 const { baseUrl } = require('./notify');
 
 const MOTIVES = ['project', 'funding', 'opportunity', 'investor', 'other'];
+/** Motifs enregistrables : ceux du formulaire public, plus la demande d'instructions de dépôt faite depuis l'espace client. */
+const ALL_MOTIVES = [...MOTIVES, 'deposit'];
 /** Motifs pour lesquels le dossier de financement complet est demandé. */
 const FUNDING_MOTIVES = ['project', 'funding', 'opportunity'];
 const STAGES = ['idea', 'plan', 'launch', 'operating', 'expansion'];
@@ -138,7 +140,7 @@ async function sendConfirmation(reqRow) {
   const lang = reqRow.lang;
   const { text, html } = render({
     lang, name: reqRow.full_name,
-    paragraphs: [t(lang, 'req.mail_ref', { ref: reqRow.ref }), t(lang, 'req.sent_text')]
+    paragraphs: [t(lang, 'req.mail_ref', { ref: reqRow.ref }), reqRow.motive === 'deposit' ? t(lang, 'deposit.sent_text') : t(lang, 'req.sent_text')]
   });
   try {
     const log = await sendMail({ to: reqRow.email, subject: `${t(lang, 'req.mail_subject', { ref: reqRow.ref })} — ${settings.get('site_name')}`, text, html, kind: 'request_confirm', userId: reqRow.user_id || null });
@@ -170,7 +172,7 @@ function details(reqRow) {
     ['Secteur d’activité', reqRow.sector ? (reqRow.sector === 'other' ? 'Autre secteur' : t('fr', `sector.${reqRow.sector}`)) : '—'],
     ['Nom du projet', reqRow.project_name || '—'],
     ['Nature du projet', reqRow.nature || '—'],
-    ['Montant de financement recherché (USD)', usd(reqRow.amount_cents)],
+    [reqRow.motive === 'deposit' ? 'Montant du dépôt envisagé (USD)' : 'Montant de financement recherché (USD)', usd(reqRow.amount_cents)],
     ['Apport ou financement déjà disponible (USD)', usd(reqRow.own_funds_cents)],
     ['Durée prévisionnelle', reqRow.duration_months ? `${reqRow.duration_months} mois` : '—'],
     ['Niveau d’avancement du projet', reqRow.stage ? t('fr', `req.st_${reqRow.stage}`) : '—'],
@@ -202,7 +204,7 @@ async function notifyAdmins(reqRow) {
   for (const adm of admins) await run('INSERT INTO notifications (user_id, message, link) VALUES (?, ?, ?)', adm.id, summary, link);
 
   const rows = details(reqRow);
-  const label = reqRow.amount_cents != null ? 'Description du projet' : 'Message du demandeur';
+  const label = reqRow.motive === 'deposit' ? 'Message du client' : reqRow.amount_cents != null ? 'Description du projet' : 'Message du demandeur';
   const intro = `Une nouvelle demande vient d’être reçue via le formulaire Contact du site ${site}.`;
   const url = baseUrl() + link;
   const text = [
@@ -259,4 +261,4 @@ async function sendUpdate(reqRow, message) {
   return sendMail({ to: reqRow.email, subject: `${t(lang, 'req.mail_update_subject', { ref: reqRow.ref })} — ${settings.get('site_name')}`, text, html, kind: 'request_update', userId: reqRow.user_id || null });
 }
 
-module.exports = { MOTIVES, FUNDING_MOTIVES, STAGES, STATUSES, SECTOR_CHOICES, validate, create, sendConfirmation, notifyAdmins, sendUpdate };
+module.exports = { MOTIVES, ALL_MOTIVES, FUNDING_MOTIVES, STAGES, STATUSES, SECTOR_CHOICES, validate, create, sendConfirmation, notifyAdmins, sendUpdate };

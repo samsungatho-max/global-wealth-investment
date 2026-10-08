@@ -86,42 +86,55 @@ router.post('/transactions/:id/cancel', async (req, res) => {
 });
 
 // ---------- Dépôts ----------
-async function depositContext(req) {
+// Aucune coordonnée bancaire n'est affichée : le client demande les instructions à l'administration,
+// qui les lui communique après vérification. La demande est enregistrée et envoyée à l'adresse de réception.
+const requestsLib = require('../lib/requests');
+
+async function depositContext(req, extra = {}) {
   return {
     title: t(req.lang, 'deposit.title'),
     fundsEnabled: settings.get('funds_enabled'),
-    kycOk: req.user.kyc_status === 'approved',
-    minCents: settings.get('deposit').min_cents,
-    pending: await all(`SELECT * FROM transactions WHERE user_id = ? AND type = 'deposit' ORDER BY created_at DESC LIMIT 10`, req.user.id)
+    pending: await all(`SELECT * FROM transactions WHERE user_id = ? AND type = 'deposit' ORDER BY created_at DESC LIMIT 10`, req.user.id),
+    requests: await all(`SELECT ref, status, created_at FROM requests WHERE user_id = ? AND motive = 'deposit' ORDER BY created_at DESC LIMIT 10`, req.user.id),
+    values: { phone: req.user.phone || '' }, sentRef: null, ...extra
   };
 }
 
-router.get('/deposit', async (req, res) => res.render('account/deposit', await depositContext(req)));
+router.get('/deposit', async (req, res) => {
+  const sentRef = req.session.depositRequestRef || null;
+  delete req.session.depositRequestRef;
+  res.render('account/deposit', await depositContext(req, { sentRef }));
+});
 
 router.post('/deposit', async (req, res) => {
-  const ctx = await depositContext(req);
-  if (!ctx.fundsEnabled || !ctx.kycOk) return res.status(403).render('account/deposit', ctx);
-  const cents = parseAmount(req.body.amount);
-  if (!cents || cents < ctx.minCents) {
-    return res.status(400).render('account/deposit', { ...ctx, error: t(req.lang, 'deposit.min', { amount: money(ctx.minCents, 'USD', req.lang) }) });
-  }
-  const reference = makeReference('DEP');
-  const info = await run(`INSERT INTO transactions (user_id, type, amount_cents, status, reference, method) VALUES (?, 'deposit', ?, 'pending', ?, 'bank_transfer')`,
-    req.user.id, cents, reference);
-  await audit(req, 'deposit.request', 'transaction', info.lastInsertRowid, { reference, amount_cents: cents });
-  await notify(req.user.id, 'deposit_created', { ref: reference, amount_cents: cents }, `/account/deposit/${reference}`);
-  req.flash('success', t(req.lang, 'deposit.created', { ref: reference }));
-  res.redirect(`/account/deposit/${reference}`);
+  if (!settings.get('funds_enabled')) return res.status(403).render('account/deposit', await depositContext(req));
+  const values = {
+    amount: String(req.body.amount || '').trim().slice(0, 30),
+    phone: String(req.body.phone || '').replace(/\s+/g, ' ').trim().slice(0, 30),
+    message: String(req.body.message || '').trim().slice(0, 2000)
+  };
+  const fail = async (key) => res.status(400).render('account/deposit', await depositContext(req, { values, error: t(req.lang, key) }));
+  const cents = values.amount ? parseAmount(values.amount) : null;
+  if (values.amount && !cents) return fail('deposit.err_amount');
+  if (values.phone && !/^\+?[\d\s().-]{6,28}$/.test(values.phone)) return fail('deposit.err_phone');
+  const recent = await one(`SELECT COUNT(*) AS n FROM requests WHERE user_id = ? AND motive = 'deposit' AND created_at > datetime('now', '-1 day')`, req.user.id);
+  if (Number(recent.n) >= 3) return fail('deposit.err_limit');
+
+  const { id, ref } = await requestsLib.create({
+    user_id: req.user.id, motive: 'deposit', full_name: req.user.full_name, country: req.user.country, email: req.user.email,
+    phone: values.phone || req.user.phone || null, amount_cents: cents,
+    description: values.message || t(req.lang, 'deposit.default_message')
+  }, req.user.lang || req.lang);
+  const row = await one('SELECT * FROM requests WHERE id = ?', id);
+  await requestsLib.sendConfirmation(row);
+  await requestsLib.notifyAdmins(row).catch((err) => console.error('[dépôt] notification', err));
+  await audit(req, 'deposit.instructions_request', 'request', id, { ref, amount_cents: cents });
+  req.session.depositRequestRef = ref;
+  res.redirect('/account/deposit');
 });
 
-router.get('/deposit/:ref', async (req, res, next) => {
-  const row = await one(`SELECT * FROM transactions WHERE reference = ? AND user_id = ? AND type = 'deposit'`, req.params.ref, req.user.id);
-  if (!row) return next();
-  const instr = settings.get('payment_instructions');
-  res.render('account/deposit-instructions', {
-    title: t(req.lang, 'deposit.instructions'), row, instructions: instr[req.lang] || instr.fr
-  });
-});
+// Les anciennes pages d'instructions ne sont plus consultables : elles renvoient vers la page Dépôt.
+router.get('/deposit/:ref', (req, res) => res.redirect('/account/deposit'));
 
 // ---------- Retraits ----------
 async function withdrawContext(req) {

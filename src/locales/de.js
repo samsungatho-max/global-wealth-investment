@@ -310,9 +310,28 @@ module.exports = {
     cancelled_ok: "Der Antrag wurde storniert."
   },
   deposit: {
-    title: "Einzahlungsantrag",
+    err_limit: "Sie haben heute bereits mehrere Anfragen gesendet. Unser Team antwortet Ihnen in Kürze.",
+    err_phone: "Ungültige Telefonnummer.",
+    err_amount: "Ungültiger Betrag.",
+    no_auto: "Eine Einzahlung wird Ihrem Konto erst gutgeschrieben, nachdem unser Team den Geldeingang tatsächlich festgestellt und geprüft hat.",
+    my_requests: "Meine Anfragen",
+    sent_text: "Unser Verwaltungsteam hat Ihre Anfrage nach Einzahlungsanweisungen erhalten. Nach der Prüfung teilt es Ihnen die für Ihre Transaktion passenden Anweisungen mit. Diese Anfrage ist weder die Annahme einer Einzahlung noch ein Renditeversprechen.",
+    sent_title: "Ihre Anfrage wurde übermittelt",
+    default_message: "Ich möchte die Einzahlungsanweisungen erhalten.",
+    contact_hint: "Ihr Name und Ihre E-Mail-Adresse werden der Anfrage automatisch beigefügt.",
+    contact_btn: "Verwaltung kontaktieren",
+    message: "Nachricht an die Verwaltung",
+    s3_d: "Anschließend erhalten Sie die für Ihre Transaktion passenden Anweisungen.",
+    s3_t: "Offizielle Anweisungen",
+    s2_d: "Unser Team prüft Ihr Konto und die übermittelten Angaben.",
+    s2_t: "Prüfung",
+    s1_d: "Senden Sie Ihre Anfrage über diese Seite; sie wird erfasst und an unser Team weitergeleitet.",
+    s1_t: "Verwaltung kontaktieren",
+    lead: "Um eine Einzahlung vorzunehmen, wenden Sie sich bitte an unser Verwaltungsteam, um die passenden Zahlungsanweisungen und die offiziellen Bankdaten für Ihre Transaktion zu erhalten.",
+    heading: "Einzahlungsanweisungen",
+    title: "Einzahlung",
     intro: "Geben Sie den Betrag an, den Sie einzahlen möchten. Ihnen wird eine eindeutige Referenz zugewiesen, die im Verwendungszweck Ihrer Überweisung stehen muss. Die Einzahlung wird erst nach tatsächlicher Prüfung des Zahlungseingangs gutgeschrieben.",
-    amount: "Betrag ($)",
+    amount: "Vorgesehener Betrag (USD)",
     submit: "Zahlungsanweisungen erhalten",
     instructions: "Offizielle Zahlungsanweisungen",
     ref_label: "Im Verwendungszweck anzugebende Referenz",
@@ -320,7 +339,7 @@ module.exports = {
     disabled: "Die Annahme von Geldern ist auf der Plattform noch nicht freigeschaltet. Sie wird nach Erhalt der aufsichtsrechtlichen Genehmigungen aktiviert.",
     kyc_required: "Ihre Identität muss vor jeder Finanztransaktion bestätigt werden.",
     min: "Mindestbetrag: {amount}.",
-    warning: "Überweisen Sie niemals Geld auf ein Konto, das Ihnen per Telefon, Messenger oder sozialem Netzwerk mitgeteilt wurde. Nur die in Ihrem Bereich angezeigten Anweisungen sind offiziell."
+    warning: "Verwenden Sie zu Ihrer Sicherheit nur die Anweisungen, die Ihnen unser Verwaltungsteam auf Ihre Anfrage hin sendet. Wenn Sie Zweifel an einer Nachricht haben, kontaktieren Sie uns vor jeder Überweisung."
   },
   withdraw: {
     title: "Auszahlungsantrag",
@@ -669,6 +688,7 @@ module.exports = {
     example_amount: "Beispielbetrag"
   },
   req: {
+    m_deposit: "Anfrage nach Einzahlungsanweisungen",
     project_name: "Projektname",
     attachments: "Unterlagen beifügen",
     attachments_hint: "Businessplan, Präsentation, Belege: höchstens 3 Dateien, insgesamt 4 MB (PDF, JPG, PNG, DOCX, XLSX).",
