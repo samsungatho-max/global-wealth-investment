@@ -91,6 +91,7 @@ const FUND = {
     change: L('Gain or loss', 'Gain ou perte'),
     final: L('Total', 'Total'),
     apply: L('Show on the chart', 'Afficher sur le graphique'),
+    short: L('Hypothetical figures: neither a forecast nor a guaranteed return. Investing involves a risk of capital loss.', 'Chiffres hypothétiques : ni prévision ni rendement garanti. Investir comporte un risque de perte en capital.'),
     noticeTitle: L('This is an illustrative simulation, not an offer', 'Ceci est une simulation illustrative, pas une offre'),
     notice: [
       L('The figures are the result of a simple calculation on percentages that you choose. They are not forecasts, and no amount shown here is promised, guaranteed or paid.',

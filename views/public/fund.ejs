@@ -67,6 +67,7 @@
           </svg>
         </div>
         <p class="fsim-cap"><%= pick(S.chartCap) %></p>
+        <p class="fsim-cap"><%= pick(S.short) %></p>
       </div>
     </div>
 
@@ -85,11 +86,6 @@
         <button class="fsim-apply" type="button" data-scn-apply><%= pick(S.apply) %></button>
       </div>
       <% }) %>
-    </div>
-
-    <div class="fsim-notice" role="note">
-      <%- include('../partials/icon', { name: 'alert', size: 22 }) %>
-      <div><strong><%= pick(S.noticeTitle) %></strong><% S.notice.forEach(function (n) { %><p><%= pick(n) %></p><% }) %></div>
     </div>
   </div>
 </section>
