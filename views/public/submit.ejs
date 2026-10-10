@@ -1,0 +1,197 @@
+<%- include('../partials/top') %>
+<%
+  var hp = photo('reunion');
+  var bad = function (f) { return errors.indexOf(f) !== -1; };
+  var inv = function (f) { return bad(f) ? 'aria-invalid="true"' : ''; };
+  var isFunding = fundingMotives.indexOf(values.motive) !== -1;
+%>
+
+<!-- ============ EN-TÊTE ============ -->
+<section class="page-hero has-photo contact-hero">
+  <img class="page-hero-bg" src="<%= hp.large %>" srcset="<%= hp.small %> 800w, <%= hp.large %> 1600w" sizes="100vw" alt="<%= hp.alt %>" fetchpriority="high" decoding="async">
+  <div class="container page-hero-inner">
+    <div class="eyebrow"><%= t('site.cta_submit') %></div>
+    <h1><%= t('site.submit_title') %></h1>
+    <p><%= t('site.submit_lead') %></p>
+    <div class="contact-hero-actions">
+      <a class="btn btn-emerald" href="#formulaire"><%= t('req.btn_submit') %> <%- include('../partials/icon', { name: 'arrow', size: 16 }) %></a>
+      <a class="btn btn-outline" href="/contact"><%= t('site.cta_contact') %></a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PRÉSENTATION ============ -->
+<section class="section contact-intro">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow eyebrow-dark eyebrow-center"><%= t('site.cta_submit') %></div>
+      <h2><%= t('req.title') %></h2>
+      <p><%= t('req.intro') %></p>
+    </div>
+    <div class="pillar-grid">
+      <% [['search', 1], ['check', 2], ['users', 3]].forEach(function (p) { %>
+        <div class="pillar">
+          <span class="pillar-icon"><%- include('../partials/icon', { name: p[0], size: 24 }) %></span>
+          <h3><%= t('req.p' + p[1] + '_t') %></h3>
+          <p><%= t('req.p' + p[1] + '_d') %></p>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FORMULAIRE ============ -->
+<section class="section section-gray contact-main" id="formulaire">
+  <div class="container contact-layout">
+    <div class="card contact-card">
+      <h2 class="contact-card-title"><%= t('req.form_title') %></h2>
+      <p class="hint"><%= t('req.required_note') %></p>
+      <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error" role="alert"><%= error %></div><% } %>
+
+      <form class="form req-form" method="post" action="/submit-project#formulaire" enctype="multipart/form-data" data-req-form data-funding="<%= fundingMotives.join(',') %>">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <div class="hp-field" aria-hidden="true"><label for="r-fax">Fax</label><input id="r-fax" name="fax_number" type="text" tabindex="-1" autocomplete="off"></div>
+
+        <fieldset class="motive-set <%= bad('motive') ? 'is-invalid' : '' %>">
+          <legend><%= t('req.motive') %> *</legend>
+          <div class="motive-grid">
+            <% var mIcons = { project: 'building', funding: 'wallet', opportunity: 'growth' }; %>
+            <% motives.forEach(function (m) { %>
+              <label class="motive-option">
+                <input type="radio" name="motive" value="<%= m %>" <%= values.motive === m ? 'checked' : '' %> required>
+                <span class="motive-box"><span class="motive-ico"><%- include('../partials/icon', { name: mIcons[m], size: 18 }) %></span><span><%= t('req.m_' + m) %></span></span>
+              </label>
+            <% }) %>
+          </div>
+        </fieldset>
+
+        <h3 class="req-section"><span>1</span><%= t('req.sec_contact') %></h3>
+        <div class="form-row form-row-2">
+          <div><label for="r-name"><%= t('req.full_name') %> *</label><input id="r-name" name="full_name" type="text" required maxlength="120" autocomplete="name" value="<%= values.full_name || '' %>" <%- inv('full_name') %>></div>
+          <div><label for="r-org"><%= t('req.organisation') %></label><input id="r-org" name="organisation" type="text" maxlength="160" autocomplete="organization" value="<%= values.organisation || '' %>"></div>
+        </div>
+        <div><label for="r-pos"><%= t('site.position') %></label><input id="r-pos" name="position" type="text" maxlength="120" autocomplete="organization-title" value="<%= values.position || '' %>"></div>
+        <div class="form-row form-row-2">
+          <div>
+            <label for="r-country"><%= t('site.residence') %> *</label>
+            <select id="r-country" name="country" required autocomplete="country" <%- inv('country') %>>
+              <option value=""><%= t('req.choose') %></option>
+              <% countries.forEach(function (c) { %><option value="<%= c.code %>" <%= values.country === c.code ? 'selected' : '' %>><%= c.name %></option><% }) %>
+            </select>
+          </div>
+          <div><label for="r-city"><%= t('req.city') %> <span data-req-star>*</span></label><input id="r-city" name="city" type="text" maxlength="100" autocomplete="address-level2" value="<%= values.city || '' %>" data-funding-required <%- inv('city') %>></div>
+        </div>
+        <div class="form-row form-row-2">
+          <div><label for="r-email"><%= t('req.email') %> *</label><input id="r-email" name="email" type="email" required maxlength="200" autocomplete="email" value="<%= values.email || '' %>" <%- inv('email') %>></div>
+          <div><label for="r-phone"><%= t('req.phone') %> <span data-req-star>*</span></label><input id="r-phone" name="phone" type="tel" maxlength="30" autocomplete="tel" value="<%= values.phone || '' %>" data-funding-required <%- inv('phone') %>><p class="hint"><%= t('req.phone_hint') %></p></div>
+        </div>
+
+        <div data-funding-block <%- isFunding ? '' : 'hidden' %>>
+          <h3 class="req-section"><span>2</span><%= t('req.sec_project') %></h3>
+          <div>
+            <label for="r-pcountry"><%= t('site.project_country') %> *</label>
+            <select id="r-pcountry" name="project_country" data-funding-required <%- inv('project_country') %>>
+              <option value=""><%= t('req.choose') %></option>
+              <% countries.forEach(function (c) { %><option value="<%= c.code %>" <%= values.project_country === c.code ? 'selected' : '' %>><%= c.name %></option><% }) %>
+            </select>
+          </div>
+          <div><label for="r-pname"><%= t('req.project_name') %></label><input id="r-pname" name="project_name" type="text" maxlength="160" value="<%= values.project_name || '' %>"></div>
+          <div class="form-row form-row-2">
+            <div>
+              <label for="r-sector"><%= t('req.sector') %> *</label>
+              <select id="r-sector" name="sector" data-funding-required <%- inv('sector') %>>
+                <option value=""><%= t('req.choose') %></option>
+                <% sectorChoices.forEach(function (s) { %><option value="<%= s %>" <%= values.sector === s ? 'selected' : '' %>><%= s === 'other' ? t('req.sector_other') : t('sector.' + s) %></option><% }) %>
+              </select>
+            </div>
+            <div><label for="r-nature"><%= t('req.nature') %> *</label><input id="r-nature" name="nature" type="text" maxlength="200" placeholder="<%= t('req.nature_ph') %>" value="<%= values.nature || '' %>" data-funding-required <%- inv('nature') %>></div>
+          </div>
+          <div class="form-row form-row-2">
+            <div>
+              <label for="r-stage"><%= t('req.stage') %> *</label>
+              <select id="r-stage" name="stage" data-funding-required <%- inv('stage') %>>
+                <option value=""><%= t('req.choose') %></option>
+                <% stages.forEach(function (s) { %><option value="<%= s %>" <%= values.stage === s ? 'selected' : '' %>><%= t('req.st_' + s) %></option><% }) %>
+              </select>
+            </div>
+            <div><label for="r-duration"><%= t('req.duration') %> *</label><input id="r-duration" name="duration" type="number" min="1" max="600" step="1" inputmode="numeric" value="<%= values.duration || '' %>" data-funding-required <%- inv('duration') %>></div>
+          </div>
+
+          <h3 class="req-section"><span>3</span><%= t('req.sec_funding') %></h3>
+          <div class="form-row form-row-2">
+            <div><label for="r-amount"><%= t('req.amount') %> *</label><div class="input-money"><span>$</span><input id="r-amount" name="amount" type="text" inputmode="decimal" maxlength="20" value="<%= values.amount || '' %>" data-funding-required <%- inv('amount') %>></div></div>
+            <div><label for="r-own"><%= t('req.own_funds') %></label><div class="input-money"><span>$</span><input id="r-own" name="own_funds" type="text" inputmode="decimal" maxlength="20" value="<%= values.own_funds || '' %>" <%- inv('own_funds') %>></div><p class="hint"><%= t('req.own_funds_hint') %></p></div>
+          </div>
+          <div class="form-row form-row-2">
+            <fieldset class="yn <%= bad('business_plan') ? 'is-invalid' : '' %>">
+              <legend><%= t('req.bp') %> *</legend>
+              <label class="yn-option"><input type="radio" name="business_plan" value="yes" <%= values.business_plan === 'yes' ? 'checked' : '' %> data-funding-required><span><%= t('req.yes') %></span></label>
+              <label class="yn-option"><input type="radio" name="business_plan" value="no" <%= values.business_plan === 'no' ? 'checked' : '' %>><span><%= t('req.no') %></span></label>
+            </fieldset>
+            <fieldset class="yn <%= bad('documents') ? 'is-invalid' : '' %>">
+              <legend><%= t('req.docs') %> *</legend>
+              <label class="yn-option"><input type="radio" name="documents" value="yes" <%= values.documents === 'yes' ? 'checked' : '' %> data-funding-required><span><%= t('req.yes') %></span></label>
+              <label class="yn-option"><input type="radio" name="documents" value="no" <%= values.documents === 'no' ? 'checked' : '' %>><span><%= t('req.no') %></span></label>
+            </fieldset>
+          </div>
+          <div><label for="r-rev"><%= t('site.revenue') %> <span class="hint">(<%= t('common.optional') %>)</span></label><input id="r-rev" name="revenue" type="text" maxlength="120" value="<%= values.revenue || '' %>"></div>
+          <div><label for="r-fc"><%= t('site.forecasts') %> <span class="hint">(<%= t('common.optional') %>)</span></label><textarea id="r-fc" name="forecasts" rows="3" maxlength="3000"><%= values.forecasts || '' %></textarea></div>
+          <div><label for="r-web"><%= t('req.website') %> <span class="hint">(<%= t('common.optional') %>)</span></label><input id="r-web" name="website" type="text" inputmode="url" maxlength="200" placeholder="www.votre-entreprise.com" autocomplete="url" value="<%= values.website || '' %>" <%- inv('website') %>></div>
+        </div>
+
+        <div>
+          <label for="r-desc"><span data-label-funding <%- isFunding ? '' : 'hidden' %>><%= t('req.description') %></span><span data-label-other <%- isFunding ? 'hidden' : '' %>><%= t('req.message') %></span> *</label>
+          <textarea id="r-desc" name="description" required maxlength="6000" rows="7" <%- inv('description') %>><%= values.description || '' %></textarea>
+          <p class="hint" data-label-funding <%- isFunding ? '' : 'hidden' %>><%= t('req.description_hint') %></p>
+        </div>
+
+        <div>
+          <label for="r-files"><%= t('req.attachments') %> <span class="hint">(<%= t('common.optional') %>)</span></label>
+          <input id="r-files" name="attachments" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx" data-max-files="3" data-max-bytes="4000000" data-msg="<%= t('req.err_files') %>" <%- inv('attachments') %>>
+          <p class="hint"><%= t('req.attachments_hint') %></p>
+        </div>
+
+        <label class="check certify <%= bad('certify') ? 'is-invalid' : '' %>"><input type="checkbox" name="certify" required <%= values.certify ? 'checked' : '' %>><span><%= t('req.certify') %> <%= t('site.consent') %> * <a href="/page/privacy"><%= t('footer.privacy') %></a></span></label>
+
+        <div class="req-submit">
+          <button class="btn btn-emerald btn-lg" type="submit"><span data-label-funding <%- isFunding ? '' : 'hidden' %>><%= t('req.btn_submit') %></span><span data-label-other <%- isFunding ? 'hidden' : '' %>><%= t('req.btn_support') %></span> <%- include('../partials/icon', { name: 'arrow', size: 16 }) %></button>
+          <p class="hint mb-0"><%- include('../partials/icon', { name: 'lock', size: 14 }) %> <%= t('req.privacy') %> <a href="/page/privacy"><%= t('footer.privacy') %></a></p>
+        </div>
+        <p class="risk-banner req-disclaimer"><%- include('../partials/icon', { name: 'alert', size: 16 }) %> <span><%= t('req.disclaimer') %></span></p>
+      </form>
+    </div>
+
+    <aside class="contact-side">
+      <div class="card contact-steps">
+        <h3><%= t('req.steps_title') %></h3>
+        <ol class="req-steps">
+          <% [1, 2, 3, 4].forEach(function (n) { %>
+            <li><span class="req-step-num"><%= n %></span><div><strong><%= t('req.s' + n + '_t') %></strong><p><%= t('req.s' + n + '_d') %></p></div></li>
+          <% }) %>
+        </ol>
+      </div>
+      <% if (company.legal_name || company.address || company.email || company.phone) { %>
+      <div class="card card-muted">
+        <h3><%= t('req.direct') %></h3>
+        <dl class="contact-direct">
+          <% if (company.legal_name || company.address) { %><div><dt><%- include('../partials/icon', { name: 'building', size: 18 }) %></dt><dd><%= company.legal_name %><% if (company.legal_name && company.address) { %><br><% } %><span class="muted"><%= company.address %></span></dd></div><% } %>
+          <% if (company.email) { %><div><dt><%- include('../partials/icon', { name: 'file', size: 18 }) %></dt><dd><a href="mailto:<%= company.email %>"><%= company.email %></a></dd></div><% } %>
+          <% if (company.phone) { %><div><dt><%- include('../partials/icon', { name: 'user', size: 18 }) %></dt><dd><%= company.phone %></dd></div><% } %>
+        </dl>
+      </div>
+      <% } %>
+      <% if (mine.length) { %>
+      <div class="card">
+        <h3><%= t('req.mine_title') %></h3>
+        <ul class="req-mine">
+          <% mine.forEach(function (m) { %>
+            <li><span class="mono"><%= m.ref %></span><span class="chip chip-gold"><%= t('req.s_' + m.status) %></span><span class="small muted"><%= t('req.m_' + m.motive) %> · <%= fmtDate(m.created_at) %></span></li>
+          <% }) %>
+        </ul>
+      </div>
+      <% } %>
+    </aside>
+  </div>
+</section>
+
+<%- include('../partials/bottom') %>

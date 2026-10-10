@@ -2,9 +2,10 @@
 <article class="card project-card">
   <a class="project-media" href="/opportunities/<%= p.slug %>" tabindex="-1" aria-hidden="true">
     <% if (p.image_path) { %><img src="/media/<%= p.image_path %>" alt="" loading="lazy" decoding="async"><% } else { var sp = projectPhoto(p); %><img src="<%= sp.small %>" srcset="<%= sp.small %> 800w, <%= sp.large %> 1600w" sizes="(min-width: 1000px) 33vw, (min-width: 640px) 50vw, 100vw" alt="<%= sp.alt %>" loading="lazy" decoding="async" width="800" height="600"><% } %>
-    <% if (p.is_demo) { %><span class="chip chip-demo"><%= t('project.demo_badge') %></span><% } else if (p.status !== 'open') { %><span class="chip chip-navy"><%= t('project.status_' + p.status) %></span><% } %>
+    <% if (p.is_demo) { %><span class="chip chip-demo"><%= t('project.demo_badge') %></span><% } else { var vv = p.status === 'closed' ? 'closed' : (p.validation || 'analysis'); %><span class="chip chip-<%= vv %>"><%= t('site.v_' + vv) %></span><% } %>
   </a>
   <div class="project-body">
+    <span class="opp-ref mono"><%= oppRef(p) %></span>
     <h3><a href="/opportunities/<%= p.slug %>"><%= p.tr.title %></a></h3>
     <div class="project-meta">
       <span class="project-country"><%- include('icon', { name: 'globe', size: 15 }) %> <%= countryName(p.country) %><% if (p.tr.location) { %> · <%= p.tr.location %><% } %></span>
@@ -19,7 +20,7 @@
       <% } else { %>
         <div><dt><%= t('project.duration') %></dt><dd><%= t('project.months', { n: p.duration_months }) %></dd></div>
         <div><dt><%= t('project.min_ticket') %></dt><dd><%= p.min_ticket_cents ? moneyRound(p.min_ticket_cents) : '—' %></dd></div>
-        <% if (p.tr.stage) { %><div class="project-fact-wide"><dt><%= t('project.stage') %></dt><dd><%= p.tr.stage %></dd></div><% } %>
+        <% if (p.stage_code || p.tr.stage) { %><div class="project-fact-wide"><dt><%= t('site.opp_stage') %></dt><dd><%= p.stage_code ? t('req.st_' + p.stage_code) : p.tr.stage %></dd></div><% } %>
         <div class="project-fact-wide"><dt><%= t('risk.label') %></dt><dd><span class="risk-meter r<%= p.risk_level %>"><% for (var i = 1; i <= 5; i++) { %><i class="<%= i <= p.risk_level ? 'on' : '' %>"></i><% } %></span> <%= p.risk_level %>/5 · <%= t('risk.' + p.risk_level) %></dd></div>
       <% } %>
     </dl>

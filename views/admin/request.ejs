@@ -76,6 +76,14 @@
         </form>
 
         <div class="card panel">
+          <h2>Échanges avec le demandeur</h2>
+          <% if (!thread.length) { %><p class="muted mb-0">Aucun message échangé.</p><% } %>
+          <ul class="thread">
+            <% thread.forEach(function (m) { %><li class="<%= m.author === 'admin' ? 'from-team' : 'from-client' %>"><div class="thread-meta"><strong><%= m.author === 'admin' ? 'Administration' : 'Demandeur' %></strong> · <%= fmtDate(m.created_at, true) %></div><p><%= m.body %></p></li><% }) %>
+          </ul>
+        </div>
+
+        <div class="card panel">
           <h2>E-mails liés à ce dossier</h2>
           <% if (!emails.length) { %><p class="muted mb-0">Aucun e-mail enregistré.</p><% } %>
           <ul class="req-mine">

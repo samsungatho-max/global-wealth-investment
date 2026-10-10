@@ -1,0 +1,20 @@
+<% if (!rows.length) { %>
+  <p class="empty card card-muted"><%= t('site.acc_none') %></p>
+<% } else { %>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th><%= t('req.ref_label') %></th><th><%= t('req.motive') %></th><th><%= t('site.acc_sent') %></th><th><%= t('site.acc_status') %></th><th></th></tr></thead>
+      <tbody>
+        <% rows.forEach(function (r) { %>
+          <tr>
+            <td class="mono"><%= r.ref %></td>
+            <td><%= t('req.m_' + r.motive) %><% if (r.project_name) { %><div class="small muted"><%= r.project_name %></div><% } %></td>
+            <td><%= fmtDate(r.created_at) %></td>
+            <td><span class="chip chip-gold"><%= t('req.s_' + r.status) %></span></td>
+            <td><a class="btn btn-ghost btn-sm" href="/account/requests/<%= r.ref %>"><%= t('site.acc_open') %></a></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+<% } %>

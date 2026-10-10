@@ -6,6 +6,8 @@ const DEFAULTS = {
   site_name: 'GLOBACOR Partners INC',
   /** Adresse(s) qui reçoivent chaque demande déposée sur la page Contact (séparées par des virgules). Vide = administrateurs. */
   notify_emails: '',
+  /** Dirigeants présentés sur la page « Notre société » : [{ name, role, bio }] — uniquement des informations professionnelles vérifiées. */
+  leaders: [],
   company: {
     legal_name: '[Raison sociale à compléter]',
     legal_form: '[Forme juridique à compléter]',
@@ -13,6 +15,7 @@ const DEFAULTS = {
     address: '[Adresse du siège à compléter]',
     email: 'contact@example.com',
     phone: '[Téléphone à compléter]',
+    hours: '',
     regulatory_status: "[Statut réglementaire et autorisations à compléter. Tant que ce champ n'est pas renseigné et que la réception de fonds n'est pas activée, la plateforme ne reçoit aucun fonds du public.]",
     director: '[Directeur de la publication à compléter]',
     host: '[Hébergeur à compléter]'

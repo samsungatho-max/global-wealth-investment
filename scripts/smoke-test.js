@@ -11,6 +11,7 @@ const assert = require('assert');
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'globacor-test-'));
 process.env.DATA_DIR = tmp;
+process.env.MARKETS_OFFLINE = 'true'; // aucune requête vers les sources de données de marché pendant les tests
 process.env.KEEP_LANGUAGES = 'true'; // le passage du site public en anglais est contrôlé dans english-test.js
 process.env.ADMIN_EMAIL = 'admin@example.test';
 process.env.ADMIN_PASSWORD = 'AdminTest12345';
@@ -315,28 +316,28 @@ async function main() {
 
   // ---------- Page Contact : dépôt d'un dossier, numéro unique, e-mails, traitement par l'administration ----------
   const vis = new Client();
-  let cp = await vis.get('/contact');
+  let cp = await vis.get('/submit-project');
   assert.match(cp.text, /Présentez-nous votre projet/);
   assert.match(cp.text, /Chaque proposition fait l’objet d’une analyse préalable/);
-  for (const s of ['Analyse des projets', 'Sélection des opportunités', 'Mise en relation', 'Je suis porteur d’un projet', 'Je recherche un financement', 'Je souhaite présenter une opportunité d’affaires', 'Je suis investisseur \\/ partenaire', 'Autre demande', 'Soumettre mon projet', 'Demander un accompagnement', 'Je certifie que les informations communiquées sont exactes']) {
+  for (const s of ['Analyse des projets', 'Sélection des opportunités', 'Mise en relation', 'Je suis porteur d’un projet', 'Je recherche un financement', 'Je souhaite présenter une opportunité d’affaires', 'Soumettre mon projet', 'Je certifie que les informations communiquées sont exactes']) {
     assert.match(cp.text, new RegExp(s), s);
   }
   const dossier = {
-    motive: 'funding', full_name: 'Awa Koné', organisation: 'Koné Agro SARL', country: 'CI', city: 'Abidjan', email: 'awa.kone@outlook.com', phone: '+225 07 00 00 00 00',
+    motive: 'funding', full_name: 'Awa Koné', organisation: 'Koné Agro SARL', country: 'CI', project_country: 'CI', position: 'Gérante', city: 'Abidjan', email: 'awa.kone@outlook.com', phone: '+225 07 00 00 00 00',
     sector: 'agriculture', nature: 'Unité de transformation de mangues', amount: '750 000', own_funds: '120000', duration: '36',
     description: 'Construction d’une unité de séchage et de conditionnement de mangues destinée à l’export, avec 40 emplois prévus.',
     stage: 'plan', business_plan: 'yes', documents: 'no', website: 'kone-agro.example.org', certify: 'on'
   };
-  r = await vis.post('/contact', { ...dossier, certify: '', amount: 'beaucoup', email: 'pas-un-email', phone: '' });
+  r = await vis.post('/submit-project', { ...dossier, certify: '', amount: 'beaucoup', email: 'pas-un-email', phone: '' });
   assert.strictEqual(r.status, 400);
   assert.match(r.text, /Merci de vérifier les champs signalés/);
   assert.match(r.text, /value="Koné Agro SARL"/, 'saisie conservée après une erreur');
   assert.strictEqual(Number((await one('SELECT COUNT(*) AS n FROM requests')).n), 0);
-  r = await vis.post('/contact', { ...dossier, fax_number: 'robot' });
+  r = await vis.post('/submit-project', { ...dossier, fax_number: 'robot' });
   assert.strictEqual(Number((await one('SELECT COUNT(*) AS n FROM requests')).n), 0, 'envoi automatisé ignoré');
-  await vis.get('/contact');
+  await vis.get('/submit-project');
   const mailsBefore = inbox.length;
-  r = await vis.post('/contact', dossier);
+  r = await vis.post('/submit-project', dossier);
   assert.strictEqual(r.location, '/contact/confirmation');
   const saved = await one('SELECT * FROM requests');
   assert.match(saved.ref, /^GP-\d{4}-[A-Z2-9]{6}$/, 'numéro de dossier attribué');
@@ -363,9 +364,9 @@ async function main() {
   assert.match(newMails.find((m) => m.to.includes('admin@example.test')).raw, /^Reply-To: awa\.kone@outlook\.com/mi, 'réponse directe au demandeur');
   // Adresse de réception configurée + documents joints transmis en pièces jointes
   await require('../src/lib/settings').set('notify_emails', 'direction@globacor-test.fr');
-  await vis.get('/contact');
+  await vis.get('/submit-project');
   const withFiles = inbox.length;
-  r = await vis.post('/contact', { ...dossier, project_name: 'Mangue Export', email: 'awa.kone@outlook.com', attachments: pdf() }, { multipart: true });
+  r = await vis.post('/submit-project', { ...dossier, project_name: 'Mangue Export', email: 'awa.kone@outlook.com', attachments: pdf() }, { multipart: true });
   assert.strictEqual(r.location, '/contact/confirmation', 'envoi avec document joint : ' + r.status + ' ' + ((r.text.match(/alert-error[^>]*>([^<]*)/) || [])[1] || r.text.slice(0, 200)));
   const withDoc = await one(`SELECT * FROM requests WHERE project_name = 'Mangue Export'`);
   const att = JSON.parse(withDoc.attachments);
@@ -381,8 +382,8 @@ async function main() {
   assert.strictEqual(dl.status, 200, 'document téléchargeable par l’administration');
   assert.strictEqual((await vis.get(`/admin/requests/${withDoc.id}/files/${att[0].id}`)).status, 302, 'document inaccessible au public');
   // Type de fichier refusé : la demande n'est pas enregistrée et l'erreur est signalée
-  await vis.get('/contact');
-  r = await vis.post('/contact', { ...dossier, project_name: 'Refus', attachments: new Blob(['<html></html>'], { type: 'text/html' }) }, { multipart: true });
+  await vis.get('/submit-project');
+  r = await vis.post('/submit-project', { ...dossier, project_name: 'Refus', attachments: new Blob(['<html></html>'], { type: 'text/html' }) }, { multipart: true });
   assert.strictEqual(r.status, 400);
   assert.match(r.text, /Documents joints : 3 fichiers au maximum/);
   assert.ok(!(await one(`SELECT id FROM requests WHERE project_name = 'Refus'`)), 'aucune demande enregistrée avec un fichier refusé');
@@ -390,8 +391,8 @@ async function main() {
   const smtpHost = process.env.SMTP_HOST;
   delete process.env.SMTP_HOST;
   require('../src/lib/mailer').reset && require('../src/lib/mailer').reset();
-  await vis.get('/contact');
-  r = await vis.post('/contact', { ...dossier, project_name: 'Sans SMTP' });
+  await vis.get('/submit-project');
+  r = await vis.post('/submit-project', { ...dossier, project_name: 'Sans SMTP' });
   process.env.SMTP_HOST = smtpHost;
   require('../src/lib/mailer').reset && require('../src/lib/mailer').reset();
   assert.strictEqual(r.location, '/contact/confirmation', 'aucun formulaire perdu, même sans envoi d’e-mail');

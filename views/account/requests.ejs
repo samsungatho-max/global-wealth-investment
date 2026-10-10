@@ -1,0 +1,9 @@
+<%- include('../partials/top') %>
+<div class="container dash">
+  <%- include('../partials/account-nav') %>
+  <div>
+    <div class="dash-head"><h1><%= t('site.acc_requests') %></h1><div class="actions"><a class="btn btn-emerald btn-sm" href="/submit-project"><%= t('site.acc_new') %></a></div></div>
+    <%- include('../partials/request-list', { rows: requests }) %>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

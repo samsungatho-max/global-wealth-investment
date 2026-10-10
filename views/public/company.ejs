@@ -1,0 +1,49 @@
+<%- include('../partials/top') %>
+<%- include("../partials/page-hero", { heroPhoto: "reunion", heroEyebrow: t("site.nav_company"), heroTitle: t("site.company_title"), heroText: t("site.company_lead") }) %>
+
+<% if (overviewHtml) { %>
+<section class="section">
+  <div class="container">
+    <div class="section-head"><div class="eyebrow eyebrow-dark eyebrow-center"><%= t('site.overview_t') %></div></div>
+    <div class="prose company-overview"><%- overviewHtml %></div>
+  </div>
+</section>
+<% } %>
+
+<section class="section section-gray">
+  <div class="container">
+    <div class="company-grid">
+      <% sections.forEach(function (s) { %>
+        <article class="card company-card" id="<%= s.id %>">
+          <span class="pillar-icon"><%- include('../partials/icon', { name: s.icon, size: 24 }) %></span>
+          <h2><%= pick(s.title) %></h2>
+          <p><%= pick(s.body) %></p>
+        </article>
+      <% }) %>
+    </div>
+  </div>
+</section>
+
+<% if (leaders.length) { %>
+<section class="section">
+  <div class="container">
+    <div class="section-head"><div class="eyebrow eyebrow-dark eyebrow-center"><%= t('site.leaders_t') %></div><h2><%= t('site.leaders_h') %></h2></div>
+    <div class="company-grid">
+      <% leaders.forEach(function (l) { %>
+        <article class="card company-card"><h2><%= l.name %></h2><p class="leader-role"><%= l.role %></p><% if (l.bio) { %><p><%= l.bio %></p><% } %></article>
+      <% }) %>
+    </div>
+  </div>
+</section>
+<% } %>
+
+<section class="section">
+  <div class="container">
+    <p class="risk-banner"><%- include('../partials/icon', { name: 'alert', size: 16 }) %> <%= pick(notice) %> <a href="/page/legal"><%= t('footer.legal') %></a></p>
+    <div class="cta-row mt-3">
+      <a class="btn btn-emerald" href="/solutions"><%= t('site.cta_solutions') %> <%- include('../partials/icon', { name: 'arrow', size: 16 }) %></a>
+      <a class="btn btn-ghost" href="/contact"><%= t('site.cta_contact') %></a>
+    </div>
+  </div>
+</section>
+<%- include('../partials/bottom') %>

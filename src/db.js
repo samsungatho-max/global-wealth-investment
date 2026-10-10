@@ -15,7 +15,7 @@ const { AsyncLocalStorage } = require('async_hooks');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
-const SCHEMA_VERSION = '10';
+const SCHEMA_VERSION = '11';
 
 const als = new AsyncLocalStorage();
 let driver = null; // { kind, query(text, params), exec(sql), transaction(fn), close() }
@@ -304,7 +304,7 @@ CREATE TABLE IF NOT EXISTS requests (
   id BIGSERIAL PRIMARY KEY,
   ref TEXT NOT NULL UNIQUE,
   user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
-  motive TEXT NOT NULL CHECK (motive IN ('project','funding','opportunity','investor','other','deposit')),
+  motive TEXT NOT NULL CHECK (motive IN ('project','funding','opportunity','investor','other','deposit','information','solution','support')),
   full_name TEXT NOT NULL,
   organisation TEXT,
   country TEXT NOT NULL,
@@ -331,8 +331,29 @@ CREATE TABLE IF NOT EXISTS requests (
 );
 CREATE INDEX IF NOT EXISTS idx_requests_status ON requests(status, created_at);
 ALTER TABLE requests ADD COLUMN IF NOT EXISTS project_name TEXT;
+ALTER TABLE requests ALTER COLUMN country DROP NOT NULL;
+ALTER TABLE requests ADD COLUMN IF NOT EXISTS position TEXT;
+ALTER TABLE requests ADD COLUMN IF NOT EXISTS project_country TEXT;
+ALTER TABLE requests ADD COLUMN IF NOT EXISTS revenue TEXT;
+ALTER TABLE requests ADD COLUMN IF NOT EXISTS forecasts TEXT;
+CREATE TABLE IF NOT EXISTS request_messages (
+  id BIGSERIAL PRIMARY KEY,
+  request_id BIGINT NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
+  author TEXT NOT NULL CHECK (author IN ('admin','client')),
+  user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  body TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT datetime('now')
+);
+CREATE INDEX IF NOT EXISTS idx_request_messages ON request_messages(request_id, id);
+CREATE TABLE IF NOT EXISTS market_cache (
+  id TEXT PRIMARY KEY,
+  payload TEXT NOT NULL,
+  fetched_at TEXT NOT NULL
+);
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS validation TEXT NOT NULL DEFAULT 'analysis';
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS stage_code TEXT;
 ALTER TABLE requests DROP CONSTRAINT IF EXISTS requests_motive_check;
-ALTER TABLE requests ADD CONSTRAINT requests_motive_check CHECK (motive IN ('project','funding','opportunity','investor','other','deposit'));
+ALTER TABLE requests ADD CONSTRAINT requests_motive_check CHECK (motive IN ('project','funding','opportunity','investor','other','deposit','information','solution','support'));
 ALTER TABLE requests ADD COLUMN IF NOT EXISTS attachments TEXT NOT NULL DEFAULT '[]';
 
 CREATE TABLE IF NOT EXISTS news (

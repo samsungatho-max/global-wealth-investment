@@ -1,0 +1,33 @@
+<%- include('../partials/top') %>
+<%- include("../partials/page-hero", { heroPhoto: "graphiques", heroEyebrow: t("site.nav_markets"), heroTitle: t("site.markets_title"), heroText: t("site.markets_lead") }) %>
+<% var nf = function (v, d) { return new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: d, minimumFractionDigits: d }).format(v); }; %>
+
+<section class="section">
+  <div class="container">
+    <% if (overview.length) { %>
+    <div class="mk-strip">
+      <% overview.forEach(function (s) { var g = spark(s.points.slice(-40), 120, 36, 3); var up = s.change == null || s.change >= 0; %>
+        <a class="mk-tile" href="/markets/<%= s.cat %>">
+          <span class="mk-tile-name"><%= s.name %></span>
+          <strong><%= nf(s.value, s.digits) %> <small><%= s.unit %></small></strong>
+          <svg viewBox="0 0 120 36" aria-hidden="true" preserveAspectRatio="none"><path d="<%= g.d %>" class="mk-line <%= up ? 'up' : 'down' %>"/></svg>
+          <span class="mk-tile-date"><%= s.date %></span>
+        </a>
+      <% }) %>
+    </div>
+    <p class="mk-disclaimer"><%= t('site.mk_disclaimer') %></p>
+    <% } %>
+
+    <div class="mk-cats">
+      <% categories.forEach(function (c) { %>
+        <a class="mk-cat" href="/markets/<%= c %>">
+          <span class="cat-ico"><%- include('../partials/icon', { name: icons[c], size: 22 }) %></span>
+          <div><h2><%= pick(info[c].title) %></h2><p><%= pick(info[c].intro) %></p><span class="mk-cat-link"><%= t('site.mk_view') %> <%- include('../partials/icon', { name: 'arrow', size: 15 }) %></span></div>
+        </a>
+      <% }) %>
+    </div>
+
+    <div class="risk-banner mt-4"><strong><%= t('risk.label') %> —</strong> <%= t('site.mk_risk_general') %> <a href="/page/risks"><%= t('common.learn_more') %></a></div>
+  </div>
+</section>
+<%- include('../partials/bottom') %>

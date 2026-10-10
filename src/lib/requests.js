@@ -17,7 +17,8 @@ const { baseUrl } = require('./notify');
 
 const MOTIVES = ['project', 'funding', 'opportunity', 'investor', 'other'];
 /** Motifs enregistrables : ceux du formulaire public, plus la demande d'instructions de dépôt faite depuis l'espace client. */
-const ALL_MOTIVES = [...MOTIVES, 'deposit'];
+const CONTACT_MOTIVES = ['information', 'solution', 'investor', 'support', 'other'];
+const ALL_MOTIVES = [...MOTIVES, 'deposit', 'information', 'solution', 'support'];
 /** Motifs pour lesquels le dossier de financement complet est demandé. */
 const FUNDING_MOTIVES = ['project', 'funding', 'opportunity'];
 const STAGES = ['idea', 'plan', 'launch', 'operating', 'expansion'];
@@ -45,6 +46,10 @@ function validate(body, user) {
     sector: SECTOR_CHOICES.includes(b.sector) ? b.sector : '',
     nature: clean(b.nature, 200),
     project_name: clean(b.project_name, 160),
+    position: clean(b.position, 120),
+    project_country: CODES.includes(b.project_country) ? b.project_country : '',
+    revenue: clean(b.revenue, 120),
+    forecasts: String(b.forecasts == null ? '' : b.forecasts).trim().slice(0, 3000),
     amount: clean(b.amount, 30),
     own_funds: clean(b.own_funds, 30),
     duration: clean(b.duration, 4),
@@ -76,6 +81,7 @@ function validate(body, user) {
   let amount = null, own = null, duration = null;
   if (funding) {
     need('city', values.city);
+    need('project_country', values.project_country);
     need('sector', values.sector);
     need('nature', values.nature.length >= 3);
     amount = parseAmount(values.amount);
@@ -101,6 +107,10 @@ function validate(body, user) {
     sector: funding ? values.sector : (values.sector || null),
     nature: funding ? values.nature : (values.nature || null),
     project_name: values.project_name || null,
+    position: values.position || null,
+    project_country: values.project_country || null,
+    revenue: values.revenue || null,
+    forecasts: values.forecasts || null,
     amount_cents: funding ? amount : null,
     own_funds_cents: funding ? own : null,
     duration_months: funding ? duration : null,
@@ -110,6 +120,29 @@ function validate(body, user) {
     has_documents: funding ? yesNo(values.documents) : null,
     website
   };
+  return { values, data, errors };
+}
+
+/** Valide le formulaire de contact simple (et les demandes d'information sur une solution). */
+function validateContact(body, user) {
+  const b = body || {};
+  const values = {
+    motive: ALL_MOTIVES.includes(b.motive) ? b.motive : '',
+    solution: clean(b.solution, 40),
+    full_name: clean(b.full_name, 120),
+    email: clean(b.email, 200).toLowerCase(),
+    phone: clean(b.phone, 30),
+    description: String(b.description == null ? '' : b.description).trim().slice(0, 6000),
+    certify: b.certify === 'on'
+  };
+  const errors = [];
+  if (!values.motive) errors.push('motive');
+  if (values.full_name.length < 3) errors.push('full_name');
+  if (!isEmail(values.email)) errors.push('email');
+  if (values.phone && !(/^\+?[\d\s().-]{6,28}$/.test(values.phone) && values.phone.replace(/\D/g, '').length >= 6)) errors.push('phone');
+  if (values.description.length < 10) errors.push('description');
+  if (!values.certify) errors.push('certify');
+  const data = { user_id: user ? user.id : null, motive: values.motive, full_name: values.full_name, country: (user && user.country) || null, email: values.email, phone: values.phone || null, description: values.description };
   return { values, data, errors };
 }
 
@@ -166,7 +199,9 @@ function details(reqRow) {
     ['Type de demande', t('fr', `req.m_${reqRow.motive}`)],
     ['Nom et prénom', reqRow.full_name],
     ['Entreprise / organisation', reqRow.organisation || '—'],
-    ['Pays', countryName(reqRow.country, 'fr')],
+    ['Fonction du demandeur', reqRow.position || '—'],
+    ['Pays de résidence', reqRow.country ? countryName(reqRow.country, 'fr') : '—'],
+    ['Pays d’implantation du projet', reqRow.project_country ? countryName(reqRow.project_country, 'fr') : '—'],
     ['Ville', reqRow.city || '—'],
     ['Adresse e-mail', reqRow.email],
     ['Téléphone / WhatsApp', reqRow.phone || '—'],
@@ -179,6 +214,8 @@ function details(reqRow) {
     ['Niveau d’avancement du projet', reqRow.stage ? t('fr', `req.st_${reqRow.stage}`) : '—'],
     ['Business plan disponible', yn(reqRow.has_business_plan)],
     ['Documents justificatifs disponibles', yn(reqRow.has_documents)],
+    ['Chiffre d’affaires déclaré', reqRow.revenue || '—'],
+    ['Prévisions financières', reqRow.forecasts || '—'],
     ['Site internet', reqRow.website || '—'],
     ['Documents joints', files.length ? files.map((f) => `${f.name} (${Math.max(1, Math.round(f.size / 1024))} Ko)`).join(', ') : 'Aucun'],
     ['Langue du formulaire', String(reqRow.lang || '').toUpperCase()]
@@ -207,7 +244,7 @@ async function notifyAdmins(reqRow) {
   const link = `/admin/requests/${reqRow.id}`;
   const site = settings.get('site_name');
   const motive = t('fr', `req.m_${reqRow.motive}`);
-  const summary = `Nouvelle demande ${reqRow.ref} — ${motive} — ${reqRow.full_name}${reqRow.organisation ? ` (${reqRow.organisation})` : ''}, ${countryName(reqRow.country, 'fr')}`;
+  const summary = `Nouvelle demande ${reqRow.ref} — ${motive} — ${reqRow.full_name}${reqRow.organisation ? ` (${reqRow.organisation})` : ''}${reqRow.country ? ', ' + countryName(reqRow.country, 'fr') : ''}`;
   for (const adm of admins) await run('INSERT INTO notifications (user_id, message, link) VALUES (?, ?, ?)', adm.id, summary, link);
 
   const rows = details(reqRow);
@@ -310,6 +347,18 @@ async function notifyInterest({ project, title, name, email, amountCents, messag
   return { total: emails.length, sent };
 }
 
+/** Message écrit par un client depuis son espace : e-mail à l'adresse de réception, avec réponse directe au client. */
+async function notifyClientMessage(reqRow, user, body) {
+  const { admins, emails } = await recipients();
+  const link = `/admin/requests/${reqRow.id}`;
+  const summary = `Nouveau message de ${user.full_name} sur le dossier ${reqRow.ref}`;
+  for (const adm of admins) await run('INSERT INTO notifications (user_id, message, link) VALUES (?, ?, ?)', adm.id, summary, link);
+  const { text, html } = render({ lang: 'fr', name: '', paragraphs: [summary + ' :', body], cta: { label: 'Ouvrir le dossier', url: baseUrl() + link } });
+  for (const to of emails) {
+    try { await sendMail({ to, subject: `${summary} — ${settings.get('site_name')}`, text, html, kind: 'request_admin', replyTo: user.email }); } catch (err) { console.error('[mail] message client', err); }
+  }
+}
+
 /** E-mail au demandeur lors d'un changement de statut accompagné d'un message de l'administration. */
 async function sendUpdate(reqRow, message) {
   const lang = reqRow.lang;
@@ -320,4 +369,4 @@ async function sendUpdate(reqRow, message) {
   return sendMail({ to: reqRow.email, subject: `${t(lang, 'req.mail_update_subject', { ref: reqRow.ref })} — ${settings.get('site_name')}`, text, html, kind: 'request_update', userId: reqRow.user_id || null });
 }
 
-module.exports = { notifyInterest, recipients, MOTIVES, ALL_MOTIVES, FUNDING_MOTIVES, STAGES, STATUSES, SECTOR_CHOICES, validate, create, sendConfirmation, notifyAdmins, sendUpdate };
+module.exports = { notifyClientMessage, notifyInterest, recipients, validateContact, CONTACT_MOTIVES, MOTIVES, ALL_MOTIVES, FUNDING_MOTIVES, STAGES, STATUSES, SECTOR_CHOICES, validate, create, sendConfirmation, notifyAdmins, sendUpdate };

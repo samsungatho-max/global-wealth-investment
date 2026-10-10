@@ -1,5 +1,5 @@
 <%- include('../partials/top', { bodyClass: 'admin-body' }) %>
-<% var labels = { legal_name: 'Raison sociale', legal_form: 'Forme juridique', registration: 'Immatriculation (RCS, n° d\'entreprise…)', address: 'Adresse du siège', email: 'E-mail de contact', phone: 'Téléphone', director: 'Directeur de la publication', host: 'Hébergeur du site', regulatory_status: 'Statut réglementaire et autorisations (affiché dans le pied de page)' }; %>
+<% var labels = { legal_name: 'Raison sociale', legal_form: 'Forme juridique', registration: 'Immatriculation (RCS, n° d\'entreprise…)', address: 'Adresse du siège', email: 'E-mail de contact', phone: 'Téléphone', hours: 'Horaires (affichés seulement s\'ils sont renseignés)', director: 'Directeur de la publication', host: 'Hébergeur du site', regulatory_status: 'Statut réglementaire et autorisations (affiché dans le pied de page)' }; %>
 <div class="container dash">
   <%- include('../partials/admin-nav') %>
   <div>
@@ -9,10 +9,11 @@
       <input type="hidden" name="_csrf" value="<%= csrf %>">
       <h2 style="font-size:1.2rem">Société et informations légales</h2>
       <div><label for="s-site">Nom du site</label><input id="s-site" name="site_name" type="text" maxlength="120" value="<%= s.site_name %>"></div>
+      <div><label for="s-leaders">Dirigeants présentés sur la page « Notre société »</label><textarea id="s-leaders" name="leaders" rows="4" placeholder="Nom Prénom | Fonction | Parcours professionnel (facultatif)"><%= (s.leaders || []).map(function (l) { return [l.name, l.role, l.bio].filter(Boolean).join(' | '); }).join('\n') %></textarea><p class="hint">Une ligne par personne : Nom | Fonction | Présentation. N'indiquez que des informations professionnelles vérifiées. Laissez vide pour ne pas afficher la rubrique.</p></div>
       <div><label for="s-notify">Adresse(s) e-mail qui reçoivent les demandes du formulaire Contact</label><input id="s-notify" name="notify_emails" type="text" maxlength="400" placeholder="direction@votre-domaine.com" value="<%= s.notify_emails || '' %>"><p class="hint">Chaque demande déposée sur le site est envoyée immédiatement à cette adresse, avec toutes les informations et les documents joints. Plusieurs adresses : séparez-les par une virgule. Si le champ est vide, elles sont envoyées à la boîte du site (adresse d'expédition) et aux administrateurs.</p></div>
       <div class="form-row form-row-2">
         <% Object.keys(labels).forEach(function (k) { if (k === 'regulatory_status') return; %>
-          <div><label for="c-<%= k %>"><%= labels[k] %></label><input id="c-<%= k %>" name="company_<%= k %>" type="text" maxlength="2000" value="<%= s.company[k] %>"></div>
+          <div><label for="c-<%= k %>"><%= labels[k] %></label><input id="c-<%= k %>" name="company_<%= k %>" type="text" maxlength="2000" value="<%= s.company[k] || '' %>"></div>
         <% }) %>
       </div>
       <div><label for="c-reg"><%= labels.regulatory_status %></label><textarea id="c-reg" name="company_regulatory_status" rows="3"><%= s.company.regulatory_status %></textarea>

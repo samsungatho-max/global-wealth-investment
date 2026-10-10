@@ -11,6 +11,7 @@ const path = require('path');
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'globacor-audit-'));
 process.env.DATA_DIR = tmp;
+process.env.MARKETS_OFFLINE = 'true'; // aucune requête vers les sources de données de marché pendant les tests
 process.env.ADMIN_EMAIL = 'admin@example.test';
 process.env.ADMIN_PASSWORD = 'AdminTest12345';
 process.env.PORT = '0';
@@ -113,7 +114,7 @@ async function crawl(client, area, starts, { english = true, allow = () => true 
 
   // ================= 1. Visiteur =================
   const pub = new Client('visiteur');
-  report.public = await crawl(pub, 'Site public', ['/', '/opportunities', '/simulator', '/news', '/contact', '/page/about', '/page/faq', '/page/legal', '/page/terms', '/page/privacy', '/page/strategies', '/page/sectors', '/page/risks', '/login', '/register', '/forgot-password'],
+  report.public = await crawl(pub, 'Site public', ['/', '/company', '/markets', '/solutions', '/fund-management', '/submit-project', '/cookies', '/opportunities', '/simulator', '/news', '/contact', '/page/about', '/page/faq', '/page/legal', '/page/terms', '/page/privacy', '/page/strategies', '/page/sectors', '/page/risks', '/login', '/register', '/forgot-password'],
     { allow: (l) => !/^\/(account|admin)/.test(l) });
   const home = await pub.get('/');
   for (const h of ['content-security-policy', 'x-content-type-options', 'x-frame-options', 'referrer-policy']) if (!home.headers.get(h)) note('Sécurité', `en-tête ${h} absent`);
@@ -127,11 +128,33 @@ async function crawl(client, area, starts, { english = true, allow = () => true 
   }
 
   // Formulaire de contact
+  // Contact simple
   await pub.get('/contact');
-  let r = await pub.post('/contact', { motive: 'funding', full_name: 'A' });
+  let r = await pub.post('/contact', { motive: 'information', full_name: 'A' });
+  if (r.status !== 400) note('Contact', 'message incomplet accepté'); inspect('Contact', '/contact (erreur)', r);
+  let fromC = inbox.length;
+  r = await pub.post('/contact', { motive: 'information', full_name: 'Emma Clarke', email: 'emma.clarke@example.org', description: 'Could you tell me more about your services?', certify: 'on' });
+  if (r.location !== '/contact/confirmation') note('Contact', `message valide refusé (${r.status})`);
+  else { if (!mailTo('emma.clarke@example.org', fromC).length) note('E-mails', 'pas d’accusé de réception pour le formulaire de contact'); if (!mailTo('admin@example.test', fromC).length) note('E-mails', 'message de contact non transmis à l’équipe'); }
+  r = await pub.post('/contact', { motive: 'information', full_name: 'Multi Part', email: 'm@example.org', description: 'Sent as multipart form data.', certify: 'on' }, { multipart: true });
+  if (r.status >= 500) note('Contact', 'erreur serveur sur un formulaire envoyé en multipart');
+  // Demande d'information sur une solution
+  await pub.get('/solutions'); fromC = inbox.length;
+  r = await pub.post('/solutions/request', { solution: 'allocation', full_name: 'Liam Wright', email: 'liam.wright@example.org', description: 'Please send me details on capital allocation.', certify: 'on' });
+  if (r.location !== '/contact/confirmation') note('Solutions', `demande d’information refusée (${r.status})`);
+  else if (!mailTo('admin@example.test', fromC).length) note('E-mails', 'demande d’information sur une solution non transmise');
+  // Marchés : chaque catégorie répond, avec des données datées ou un message d'indisponibilité
+  for (const c of ['indices', 'equities', 'bonds', 'currencies', 'commodities', 'metals', 'energy', 'indicators']) {
+    const mp = await pub.get('/markets/' + c); inspect('Marchés', '/markets/' + c, mp);
+    if (mp.status !== 200 || !/Associated risks/.test(mp.text)) note('Marchés', `/markets/${c} : page incomplète`);
+    if (!/Data not available at the moment|Date of the value/.test(mp.text)) note('Marchés', `/markets/${c} : ni données datées ni message d'indisponibilité`);
+  }
+  // Soumettre un projet
+  await pub.get('/submit-project');
+  r = await pub.post('/submit-project', { motive: 'funding', full_name: 'A' });
   if (r.status !== 400) note('Contact', 'formulaire incomplet accepté'); inspect('Contact', '/contact (erreur)', r);
   let from = inbox.length;
-  r = await pub.post('/contact', { motive: 'funding', full_name: 'Sarah Miller', organisation: 'Miller Foods Ltd', country: 'GB', city: 'London', email: 'sarah.miller@example.org', phone: '+44 20 7946 0958',
+  r = await pub.post('/submit-project', { motive: 'funding', full_name: 'Sarah Miller', organisation: 'Miller Foods Ltd', position: 'Managing Director', country: 'GB', project_country: 'KE', revenue: 'USD 1.2 million', forecasts: 'Break-even expected in year three.', city: 'London', email: 'sarah.miller@example.org', phone: '+44 20 7946 0958',
     sector: 'agriculture', project_name: 'Miller Processing Plant', nature: 'Food processing unit', amount: '2,500,000', own_funds: '400000', duration: '30', stage: 'plan', business_plan: 'yes', documents: 'yes',
     description: 'Construction of a food processing plant serving regional retailers, with 60 jobs planned over three years.', website: 'www.millerfoods.example.org', certify: 'on', attachments: pdf() }, { multipart: true });
   if (r.location !== '/contact/confirmation') note('Contact', `demande valide refusée (${r.status}) : ${(lines(r.text).find((l) => /check|invalid|Please/i.test(l)) || '').slice(0, 100)}`);
@@ -261,6 +284,24 @@ async function crawl(client, area, starts, { english = true, allow = () => true 
     const im = mailTo('direction@globacor-test.com', from).find((m) => utf8(m.raw).includes('Peter Jones'));
     if (!im) note('E-mails', 'demande déposée depuis une fiche projet non envoyée à l’adresse de réception');
     else if (!utf8(im.raw).includes('Please send me the documentation.') || !utf8(im.raw).includes('Rift Valley Solar Park')) note('E-mails', 'e-mail de demande sur projet incomplet');
+  }
+
+  // Échanges sur un dossier : message de l'équipe visible par le client, réponse du client transmise à l'équipe
+  if (depReq) {
+    await adm.get(`/admin/requests/${depReq.id}`);
+    await adm.post(`/admin/requests/${depReq.id}`, { status: 'review', admin_note: 'Internal note, never shown.', message: 'Thank you. Could you confirm the origin of the funds?' });
+    const list = await cli.get('/account/requests'); inspect('Espace client', '/account/requests', list);
+    if (!list.text.includes(depReq.ref)) note('Espace client', 'la demande du client n’apparaît pas dans « My requests »');
+    const thread = await cli.get(`/account/requests/${depReq.ref}`); inspect('Espace client', '/account/requests/:ref', thread);
+    if (!/Could you confirm the origin of the funds/.test(thread.text)) note('Espace client', 'message de l’équipe absent de l’historique des échanges');
+    if (/Internal note, never shown/.test(thread.text)) note('Droits', 'note interne visible par le client');
+    if (!/Under review/.test(thread.text)) note('Espace client', 'statut du dossier non affiché');
+    from = inbox.length;
+    await cli.post(`/account/requests/${depReq.ref}/messages`, { body: 'The funds come from the sale of a property.' });
+    if (!(await adm.get(`/admin/requests/${depReq.id}`)).text.includes('The funds come from the sale of a property.')) note('Administration', 'réponse du client absente du dossier');
+    if (!mailTo('direction@globacor-test.com', from).length) note('E-mails', 'réponse du client non transmise à l’adresse de réception');
+    const stranger = new Client('autre');
+    if ((await stranger.get(`/account/requests/${depReq.ref}`)).status === 200) note('Droits', 'dossier d’un client lisible sans connexion');
   }
 
   // Espace client avec données : portefeuille, transactions, documents, notifications

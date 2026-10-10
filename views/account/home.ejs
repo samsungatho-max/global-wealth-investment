@@ -1,0 +1,31 @@
+<%- include('../partials/top') %>
+<div class="container dash">
+  <%- include('../partials/account-nav') %>
+  <div>
+    <div class="dash-head">
+      <div><p class="muted mb-0"><%= t('account.title') %></p><h1><%= t('account.welcome', { name: user.full_name }) %></h1></div>
+    </div>
+    <p class="lead"><%= t('site.acc_home_p') %></p>
+
+    <div class="acc-actions">
+      <a class="acc-action" href="/submit-project"><span class="cat-ico"><%- include('../partials/icon', { name: 'building', size: 20 }) %></span><%= t('site.acc_new') %></a>
+      <a class="acc-action" href="/contact?motif=support"><span class="cat-ico"><%- include('../partials/icon', { name: 'users', size: 20 }) %></span><%= t('site.acc_support') %></a>
+      <a class="acc-action" href="/account/documents"><span class="cat-ico"><%- include('../partials/icon', { name: 'file', size: 20 }) %></span><%= t('site.acc_docs') %></a>
+    </div>
+
+    <section class="panel">
+      <div class="panel-head"><h2><%= t('site.acc_requests') %></h2><a class="small" href="/account/requests"><%= t('account.see_all') %> →</a></div>
+      <%- include('../partials/request-list', { rows: requests }) %>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2><%= t('site.acc_profile') %></h2><a class="small" href="/account/security"><%= t('common.view') %> →</a></div>
+      <dl class="kv card">
+        <dt><%= t('req.full_name') %></dt><dd><%= user.full_name %></dd>
+        <dt><%= t('req.email') %></dt><dd><%= user.email %></dd>
+        <dt><%= t('req.phone') %></dt><dd><%= user.phone || '—' %></dd>
+      </dl>
+    </section>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

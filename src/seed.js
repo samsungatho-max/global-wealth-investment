@@ -392,6 +392,14 @@ async function englishSite() {
   await run(`INSERT INTO meta (key, value) VALUES (?, datetime('now')) ON CONFLICT (key) DO NOTHING`, key);
 }
 
+/** Projets référencés : leurs informations sont vérifiées à la source et ils sont en cours d'exécution (une seule fois). */
+async function markReferencedValidated() {
+  const key = 'projects:2026-10-validation';
+  if (await one('SELECT key FROM meta WHERE key = ?', key)) return;
+  await run(`UPDATE projects SET validation = 'validated', stage_code = 'operating' WHERE kind = 'referenced'`);
+  await run(`INSERT INTO meta (key, value) VALUES (?, datetime('now')) ON CONFLICT (key) DO NOTHING`, key);
+}
+
 async function seed() {
   await renameBrand();
   await migrateCurrency();
@@ -403,6 +411,7 @@ async function seed() {
   await fixExampleProjects();
   await setProjectPhotos();
   await seedReferencedProjects();
+  await markReferencedValidated();
   await seedNews();
   await require('./lib/news').seedSources();
   await englishSite();

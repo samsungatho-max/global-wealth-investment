@@ -1,0 +1,59 @@
+<%- include('../partials/top') %>
+<%- include("../partials/page-hero", { heroPhoto: "graphiques", heroEyebrow: t("site.nav_markets"), heroTitle: pick(info.title), heroText: pick(info.intro), heroBack: ["/markets", t("site.markets_title")] }) %>
+<%
+  var nf = function (v, d) { return new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: d, minimumFractionDigits: d }).format(v); };
+  var pf = function (v) { return new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-GB', { style: 'percent', maximumFractionDigits: 2, minimumFractionDigits: 2, signDisplay: 'exceptZero' }).format(v); };
+  var live = series.filter(function (s) { return s.available; });
+  var freqLabel = { D: t('site.mk_daily'), M: t('site.mk_monthly'), A: t('site.mk_annual') };
+%>
+
+<section class="section">
+  <div class="container">
+    <nav class="mk-tabs" aria-label="<%= t('site.markets_title') %>">
+      <% categories.forEach(function (c) { %><a href="/markets/<%= c %>" <%- c === cat ? 'aria-current="true"' : '' %>><%= pick(allInfo[c].title) %></a><% }) %>
+    </nav>
+
+    <% if (live.length) { %>
+      <div class="table-wrap mk-table">
+        <table>
+          <thead><tr><th><%= t('site.mk_series') %></th><th class="num"><%= t('site.mk_latest') %></th><th class="num"><%= t('site.mk_change') %></th><th><%= t('site.mk_date') %></th><th><%= t('site.mk_freq') %></th></tr></thead>
+          <tbody>
+          <% live.forEach(function (s) { %>
+            <tr>
+              <td><a href="#s-<%= s.id %>"><%= s.name %></a></td>
+              <td class="num"><strong><%= nf(s.value, s.digits) %></strong> <%= s.unit %></td>
+              <td class="num"><% if (s.change == null) { %>—<% } else { %><span class="mk-delta <%= s.change >= 0 ? 'up' : 'down' %>"><%= s.changePct != null ? pf(s.changePct) : (s.change >= 0 ? '+' : '') + nf(s.change, 2) + ' pt' %></span><% } %></td>
+              <td><%= s.date %></td>
+              <td><%= freqLabel[s.freq] %></td>
+            </tr>
+          <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <p class="mk-disclaimer"><%= t('site.mk_disclaimer') %></p>
+
+      <div class="mk-grid-charts">
+        <% live.forEach(function (s) { %>
+          <article class="card mk-card" id="s-<%= s.id %>">
+            <h2><%= s.name %></h2>
+            <p class="mk-value"><strong><%= nf(s.value, s.digits) %></strong> <%= s.unit %> <span class="muted">· <%= s.date %></span></p>
+            <%- include('../partials/line-chart', { s: s, spark: spark }) %>
+            <p class="mk-source"><%= t('site.mk_source') %><%= colon %> <a href="<%= s.source.url %>" target="_blank" rel="noopener noreferrer"><%= s.source.name %></a> · <%= t('site.mk_updated', { date: fmtDate(s.fetchedAt, true) }) %></p>
+          </article>
+        <% }) %>
+      </div>
+    <% } else { %>
+      <div class="opp-empty mk-empty">
+        <span class="opp-empty-icon"><%- include('../partials/icon', { name: 'clock', size: 26 }) %></span>
+        <h3><%= t('site.mk_unavailable_t') %></h3>
+        <p><%= t('site.mk_unavailable') %></p>
+      </div>
+    <% } %>
+
+    <div class="mk-explain">
+      <div class="card"><h2><%= t('site.mk_about') %></h2><p><%= pick(info.intro) %></p></div>
+      <div class="card mk-risks"><h2><%- include('../partials/icon', { name: 'alert', size: 18 }) %> <%= t('site.mk_risks') %></h2><p><%= pick(info.risks) %></p></div>
+    </div>
+  </div>
+</section>
+<%- include('../partials/bottom') %>

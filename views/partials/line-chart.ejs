@@ -1,0 +1,16 @@
+<%# Graphique en ligne d'une série de marché. Paramètres : s (série chargée), spark (fonction de tracé), w, h %>
+<%
+  var cw = typeof w !== 'undefined' ? w : 640, ch = typeof h !== 'undefined' ? h : 220;
+  var g = spark(s.points, cw, ch, 14);
+  var up = s.points[s.points.length - 1][1] >= s.points[0][1];
+  var fmtV = function (v) { return new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: s.digits, minimumFractionDigits: s.digits }).format(v); };
+%>
+<figure class="mk-chart">
+  <svg viewBox="0 0 <%= cw %> <%= ch %>" role="img" aria-label="<%= s.name %> — <%= s.periodFrom %> → <%= s.date %>" preserveAspectRatio="none">
+    <line x1="14" x2="<%= cw - 14 %>" y1="<%= g.y(g.max).toFixed(1) %>" y2="<%= g.y(g.max).toFixed(1) %>" class="mk-grid"/>
+    <line x1="14" x2="<%= cw - 14 %>" y1="<%= g.y(g.min).toFixed(1) %>" y2="<%= g.y(g.min).toFixed(1) %>" class="mk-grid"/>
+    <path d="<%= g.d %>L<%= cw - 14 %> <%= ch - 6 %>L14 <%= ch - 6 %>Z" class="mk-area <%= up ? 'up' : 'down' %>"/>
+    <path d="<%= g.d %>" class="mk-line <%= up ? 'up' : 'down' %>"/>
+  </svg>
+  <figcaption><span><%= s.periodFrom %> → <%= s.date %></span><span><%= t('site.mk_range') %><%= colon %> <%= fmtV(g.min) %> – <%= fmtV(g.max) %> <%= s.unit %></span></figcaption>
+</figure>

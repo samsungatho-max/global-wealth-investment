@@ -12,7 +12,9 @@
     <div class="flex" style="margin-bottom:12px">
       <span class="chip chip-gold"><%= t('sector.' + project.sector) %></span>
       <span class="chip chip-navy">📍 <%= countryName(project.country) %><% if (project.tr.location) { %> · <%= project.tr.location %><% } %></span>
-      <% if (!isRef) { %><span class="chip chip-navy"><%= t('project.status_' + project.status) %></span><% } %>
+      <% var vv = project.status === 'closed' ? 'closed' : (project.validation || 'analysis'); %>
+      <% if (!project.is_demo) { %><span class="chip chip-<%= vv %>"><%= t('site.v_' + vv) %></span><% } %>
+      <span class="chip chip-navy mono"><%= oppRef(project) %></span>
       <% if (project.is_demo) { %><span class="chip chip-demo"><%= t('project.demo_badge') %></span><% } %>
     </div>
     <h1><%= project.tr.title %></h1>
@@ -53,6 +55,11 @@
         <% if (project.tr.stage) { %><div class="project-key"><span class="project-key-ico"><%- include('../partials/icon', { name: 'clock', size: 20 }) %></span><div><h3><%= t('project.stage') %></h3><p><%= project.tr.stage %></p></div></div><% } %>
         <% if (project.tr.potential) { %><div class="project-key"><span class="project-key-ico"><%- include('../partials/icon', { name: 'growth', size: 20 }) %></span><div><h3><%= t('project.potential') %></h3><p><%= project.tr.potential %></p></div></div><% } %>
       </div>
+      <% } %>
+
+      <% if (project.tr.risks) { %>
+        <h2 class="mt-4"><%= t('site.opp_risks') %></h2>
+        <div class="prose"><%- risksHtml %></div>
       <% } %>
 
       <% if (isRef) { %>
@@ -105,6 +112,9 @@
         </div>
         <% } %>
         <dl class="kv mt-2">
+          <dt><%= t('site.opp_ref') %></dt><dd class="mono"><%= oppRef(project) %></dd>
+          <dt><%= t('site.opp_validation') %></dt><dd><%= t('site.v_' + vv) %></dd>
+          <% if (project.stage_code) { %><dt><%= t('site.opp_stage') %></dt><dd><%= t('req.st_' + project.stage_code) %></dd><% } %>
           <dt><%= t('project.duration') %></dt><dd><%= t('project.months', { n: project.duration_months }) %></dd>
           <% if (!isRef) { %><dt><%= t('project.min_ticket') %></dt><dd><%= project.min_ticket_cents ? money(project.min_ticket_cents) : '—' %></dd><% } %>
           <dt><%= t('project.country') %></dt><dd><%= countryName(project.country) %></dd>

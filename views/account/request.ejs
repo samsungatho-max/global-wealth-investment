@@ -1,0 +1,40 @@
+<%- include('../partials/top') %>
+<div class="container dash">
+  <%- include('../partials/account-nav') %>
+  <div>
+    <div class="dash-head">
+      <div><a class="small" href="/account/requests">← <%= t('site.acc_requests') %></a><h1><span class="mono"><%= r.ref %></span></h1></div>
+      <span class="chip chip-gold"><%= t('req.s_' + r.status) %></span>
+    </div>
+
+    <section class="panel">
+      <div class="panel-head"><h2><%= t('site.acc_summary') %></h2></div>
+      <dl class="kv card">
+        <dt><%= t('req.motive') %></dt><dd><%= t('req.m_' + r.motive) %></dd>
+        <dt><%= t('site.acc_sent') %></dt><dd><%= fmtDate(r.created_at, true) %></dd>
+        <% if (r.project_name) { %><dt><%= t('req.project_name') %></dt><dd><%= r.project_name %></dd><% } %>
+        <% if (r.amount_cents) { %><dt><%= t('req.amount') %></dt><dd><%= usd(r.amount_cents) %></dd><% } %>
+        <dt><%= t('site.acc_status') %></dt><dd><%= t('req.s_' + r.status) %></dd>
+      </dl>
+      <p class="req-desc mt-2"><%= r.description %></p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2><%= t('site.acc_history') %></h2></div>
+      <% if (!messages.length) { %><p class="muted"><%= t('site.acc_no_msg') %></p><% } %>
+      <ul class="thread">
+        <% messages.forEach(function (m) { %>
+          <li class="<%= m.author === 'admin' ? 'from-team' : 'from-client' %>"><div class="thread-meta"><strong><%= m.author === 'admin' ? t('site.acc_from_team') : t('site.acc_from_you') %></strong> · <%= fmtDate(m.created_at, true) %></div><p><%= m.body %></p></li>
+        <% }) %>
+      </ul>
+      <% if (r.status !== 'closed') { %>
+      <form class="card form" method="post" action="/account/requests/<%= r.ref %>/messages">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <div><label for="m-body"><%= t('site.acc_reply') %></label><textarea id="m-body" name="body" rows="4" required maxlength="4000"></textarea></div>
+        <div><button class="btn btn-emerald" type="submit"><%= t('site.acc_reply_btn') %></button></div>
+      </form>
+      <% } %>
+    </section>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

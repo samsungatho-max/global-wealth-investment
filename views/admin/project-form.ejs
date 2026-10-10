@@ -49,6 +49,18 @@
         </div>
       </div>
 
+      <h2 style="font-size:1.2rem" class="mt-2">Statut de validation et stade</h2>
+      <div class="form-row form-row-2">
+        <div><label for="p-validation">Statut de validation (affiché sur le site)</label><select id="p-validation" name="validation">
+          <option value="analysis" <%= (p.validation || 'analysis') === 'analysis' ? 'selected' : '' %>>En cours d'analyse</option>
+          <option value="validated" <%= p.validation === 'validated' ? 'selected' : '' %>>Opportunité validée pour présentation</option>
+          <option value="closed" <%= p.validation === 'closed' ? 'selected' : '' %>>Financement clôturé</option>
+        </select><p class="hint">Ne choisissez « validée » que si les informations du projet ont été vérifiées.</p></div>
+        <div><label for="p-stage">Stade de développement</label><select id="p-stage" name="stage_code"><option value="">Non précisé</option>
+          <% [['idea', 'Idée ou étude préalable'], ['plan', 'Dossier et business plan finalisés'], ['launch', 'Démarrage en cours'], ['operating', 'Activité déjà en exploitation'], ['expansion', 'Développement ou expansion']].forEach(function (s) { %><option value="<%= s[0] %>" <%= p.stage_code === s[0] ? 'selected' : '' %>><%= s[1] %></option><% }) %>
+        </select></div>
+      </div>
+
       <h2 style="font-size:1.2rem" class="mt-2">Origine et traçabilité <span class="hint">(informations internes de contrôle)</span></h2>
       <div class="form-row form-row-3">
         <div><label for="p-kind">Origine du projet</label><select id="p-kind" name="kind"><option value="own" <%= p.kind !== 'referenced' ? 'selected' : '' %>>Projet présenté par la plateforme</option><option value="referenced" <%= p.kind === 'referenced' ? 'selected' : '' %>>Projet international référencé (porté par un tiers)</option></select></div>
@@ -67,7 +79,7 @@
       <p class="alert alert-info small"><strong>Le site public est en anglais.</strong> Remplissez l'onglet <strong>EN</strong> : c'est ce texte que voient les visiteurs. Si l'onglet EN est vide, le texte français s'affiche à sa place.</p>
       <%- include('../partials/lang-fields', { values: p.i18n || {}, fields: [
         ['title', 'Nom du projet', 'text'], ['location', 'Ville / région', 'text'], ['summary', 'Description courte (carte)', 'textarea', 2], ['objective', 'Objectif du projet', 'textarea', 2], ['description', 'Description détaillée', 'textarea', 8],
-        ['funding_type', 'Type de financement recherché', 'textarea', 2], ['stage', 'Niveau d\'avancement', 'textarea', 2], ['potential', 'Potentiel économique (sans promesse de rendement)', 'textarea', 3],
+        ['funding_type', 'Type de financement recherché', 'textarea', 2], ['stage', 'Niveau d\'avancement', 'textarea', 2], ['potential', 'Potentiel économique (sans promesse de rendement)', 'textarea', 3], ['risks', 'Principaux risques identifiés', 'textarea', 3],
         ['conditions', 'Conditions de participation', 'textarea', 3], ['fees', 'Frais applicables', 'textarea', 3]
       ] }) %>
       <p class="alert alert-warning small">N'indiquez jamais de rendement garanti ni de chiffre de performance non vérifié. Les informations doivent correspondre à un projet réel et documenté (sauf fiche de démonstration).</p>

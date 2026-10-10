@@ -27,16 +27,18 @@ const router = express.Router();
 router.use(requireAdmin);
 router.use(async (req, res, next) => { res.locals.section = 'admin'; res.locals.countryName = (c) => countryName(c, 'fr'); next(); });
 
-const PROJECT_FIELDS = ['title', 'summary', 'location', 'objective', 'description', 'funding_type', 'stage', 'potential', 'conditions', 'fees'];
+const PROJECT_FIELDS = ['title', 'summary', 'location', 'objective', 'description', 'funding_type', 'stage', 'potential', 'risks', 'conditions', 'fees'];
 /** Origine et traçabilité d'un projet (informations internes : source, référence, date de vérification, note de contrôle). */
 async function saveProjectOrigin(id, body) {
   const text = (v, max) => String(v || '').trim().slice(0, max) || null;
   let src = text(body.source_url, 500);
   if (src && !/^https?:\/\//i.test(src)) src = null;
-  await run(`UPDATE projects SET kind = ?, promoter = ?, source_name = ?, source_url = ?, source_ref = ?, verified_at = ?, internal_note = ? WHERE id = ?`,
+  await run(`UPDATE projects SET validation = ?, stage_code = ?, kind = ?, promoter = ?, source_name = ?, source_url = ?, source_ref = ?, verified_at = ?, internal_note = ? WHERE id = ?`,
+    ['analysis', 'validated', 'closed'].includes(body.validation) ? body.validation : 'analysis', requestsLibStages().includes(body.stage_code) ? body.stage_code : null,
     body.kind === 'referenced' ? 'referenced' : 'own', text(body.promoter, 300), text(body.source_name, 200), src, text(body.source_ref, 80),
     isDateStr(body.verified_at) ? body.verified_at : null, text(body.internal_note, 4000), id);
 }
+const requestsLibStages = () => require('../lib/requests').STAGES;
 const isDateStr = (s) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) && !Number.isNaN(Date.parse(s));
 const NEWS_FIELDS = ['title', 'summary', 'body', 'figures', 'chart_title', 'chart_unit', 'chart', 'takeaways', 'risks'];
 const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) && !Number.isNaN(Date.parse(s));
@@ -490,7 +492,7 @@ router.post('/transactions/:id/action', async (req, res, next) => {
 // ---------- Demandes (page Contact) ----------
 const requestsLib = require('../lib/requests');
 const REQ_STATUS = { new: 'Nouveau', review: 'En étude', info_requested: 'Informations complémentaires demandées', forwarded: 'Transmis pour examen', closed: 'Clôturé' };
-const REQ_MOTIVE = { project: 'Porteur de projet', funding: 'Recherche de financement', opportunity: 'Opportunité d\'affaires', investor: 'Investisseur / partenaire', other: 'Autre demande', deposit: 'Instructions de dépôt (client)' };
+const REQ_MOTIVE = { project: 'Porteur de projet', funding: 'Recherche de financement', opportunity: 'Opportunité d\'affaires', investor: 'Investisseur / partenaire', other: 'Autre demande', deposit: 'Instructions de dépôt (client)', information: 'Renseignement général', solution: 'Information sur une solution', support: 'Service client' };
 const reqLabels = { statusLabels: REQ_STATUS, motiveLabels: REQ_MOTIVE, countryName: (c) => countryName(c, 'fr') };
 
 router.get('/requests', async (req, res) => {
@@ -519,7 +521,8 @@ router.get('/requests/:id', async (req, res, next) => {
   const r = await one('SELECT * FROM requests WHERE id = ?', req.params.id);
   if (!r) return next();
   const emails = await all(`SELECT id, kind, status, to_email, created_at FROM email_log WHERE kind LIKE 'request_%' AND (to_email = ? OR subject LIKE ?) ORDER BY id DESC LIMIT 30`, r.email, `%${r.ref}%`).catch(() => []);
-  res.render('admin/request', { title: `Dossier ${r.ref}`, r, emails, statuses: requestsLib.STATUSES, ...reqLabels });
+  const thread = await all('SELECT * FROM request_messages WHERE request_id = ? ORDER BY id', r.id);
+  res.render('admin/request', { title: `Dossier ${r.ref}`, r, emails, thread, statuses: requestsLib.STATUSES, ...reqLabels });
 });
 
 router.get('/requests/:id/files/:file', async (req, res, next) => {
@@ -540,6 +543,7 @@ router.post('/requests/:id', async (req, res, next) => {
     await run(`UPDATE requests SET status = ?, admin_note = ?, handled_by = ?, updated_at = datetime('now') WHERE id = ?`, status, note || null, req.user.id, r.id);
     await audit(req, 'request.update', 'request', r.id, { ref: r.ref, from: r.status, to: status, message: !!message });
     if (message) {
+      await run(`INSERT INTO request_messages (request_id, author, user_id, body) VALUES (?, 'admin', ?, ?)`, r.id, req.user.id, message);
       const log = await requestsLib.sendUpdate({ ...r, status }, message).catch((err) => { console.error('[mail] dossier', err); return null; });
       const ok = log && ['relay_accepted', 'delivered'].includes(log.status);
       req.flash(ok ? 'success' : 'error', ok ? 'Dossier mis à jour et message envoyé au demandeur.' : 'Dossier mis à jour, mais le message n\'a pas pu être envoyé (voir E-mails / Journal d\'envoi).');
@@ -773,6 +777,7 @@ router.post('/settings/general', async (req, res) => {
   }
   await settings.set('site_name', String(req.body.site_name || '').trim().slice(0, 120) || settings.DEFAULTS.site_name);
   await settings.set('company', company);
+  await settings.set('leaders', String(req.body.leaders || '').split(/\r?\n/).map((l) => l.split('|').map((x) => x.trim())).filter((p) => p[0] && p[1]).slice(0, 12).map(([name, role, bio]) => ({ name: name.slice(0, 120), role: role.slice(0, 160), bio: (bio || '').slice(0, 600) })));
   await settings.set('notify_emails', String(req.body.notify_emails || '').split(/[\s,;]+/).map((s) => s.trim().toLowerCase()).filter((s) => /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/.test(s)).slice(0, 5).join(', '));
   await settings.set('languages', languages.length ? languages : ['fr']);
   await settings.set('currencies', currencies);

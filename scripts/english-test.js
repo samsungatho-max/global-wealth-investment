@@ -7,6 +7,7 @@ const assert = require('assert');
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'globacor-english-'));
 process.env.DATA_DIR = tmp;
+process.env.MARKETS_OFFLINE = 'true'; // aucune requête vers les sources de données de marché pendant les tests
 process.env.ADMIN_EMAIL = 'admin@example.test';
 process.env.ADMIN_PASSWORD = 'AdminTest12345';
 process.env.PORT = '0';
@@ -43,7 +44,7 @@ const lines = (html) => html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\
   assert.deepStrictEqual(JSON.parse((await one(`SELECT value FROM settings WHERE key = 'languages'`)).value), ['en']);
 
   const seen = new Set();
-  const queue = ['/', '/opportunities', '/simulator', '/news', '/contact', '/page/about', '/page/faq', '/page/legal', '/page/terms', '/page/privacy', '/page/strategies', '/page/sectors', '/page/risks',
+  const queue = ['/', '/company', '/markets', '/markets/indices', '/markets/equities', '/markets/bonds', '/markets/currencies', '/markets/commodities', '/markets/metals', '/markets/energy', '/markets/indicators', '/solutions', '/fund-management', '/submit-project', '/cookies', '/opportunities', '/simulator', '/news', '/contact', '/page/about', '/page/faq', '/page/legal', '/page/terms', '/page/privacy', '/page/strategies', '/page/sectors', '/page/risks',
     '/login', '/register', '/forgot-password', '/page-inexistante', '/?lang=fr', '/opportunities?sector=energy&lang=fr', '/contact?motif=other'];
   let checked = 0;
   while (queue.length) {

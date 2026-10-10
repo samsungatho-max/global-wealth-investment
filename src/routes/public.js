@@ -38,7 +38,9 @@ router.get('/', async (req, res) => {
     .map((p) => decorateProject(p, req.lang)));
   const news = (await all(`SELECT * FROM news WHERE ${newsLib.VISIBLE} ORDER BY featured DESC, ${newsLib.ORDER} LIMIT 3`))
     .map((n) => newsLib.decorate(n, req.lang));
-  res.render('public/home', { projects, news, sectors: SECTORS, featuredSectors: require('../lib/sectors').FEATURED_SECTORS, sim: settings.get('simulator') });
+  const marketsLib = require('../lib/markets');
+  const marketTiles = await marketsLib.home(req.lang).catch(() => []);
+  res.render('public/home', { marketTiles, spark: marketsLib.sparkPath, projects, news, sectors: SECTORS, featuredSectors: require('../lib/sectors').FEATURED_SECTORS, sim: settings.get('simulator') });
 });
 
 router.get('/opportunities', async (req, res) => {
@@ -48,12 +50,14 @@ router.get('/opportunities', async (req, res) => {
     sector: SECTORS.includes(req.query.sector) ? req.query.sector : '',
     country: countries.includes(req.query.country) ? req.query.country : '',
     amount: AMOUNT_RANGES.some((r) => r[0] === req.query.amount) ? req.query.amount : '',
-    risk: /^[1-5]$/.test(req.query.risk || '') ? Number(req.query.risk) : ''
+    risk: /^[1-5]$/.test(req.query.risk || '') ? Number(req.query.risk) : '',
+    stage: requestsLib.STAGES.includes(req.query.stage) ? req.query.stage : ''
   };
   const where = [base], params = [];
   if (f.sector) { where.push('sector = ?'); params.push(f.sector); }
   if (f.country) { where.push('country = ?'); params.push(f.country); }
   if (f.risk) { where.push('risk_level = ?'); params.push(f.risk); }
+  if (f.stage) { where.push('stage_code = ?'); params.push(f.stage); }
   if (f.amount) {
     const [, min, max] = AMOUNT_RANGES.find((r) => r[0] === f.amount);
     where.push('target_cents >= ?'); params.push(min);
@@ -65,7 +69,8 @@ router.get('/opportunities', async (req, res) => {
     title: res.locals.t('opp.title'),
     projects: await Promise.all(rows.map((p) => decorateProject(p, req.lang))),
     sectors: SECTORS, countries, amounts: AMOUNT_RANGES.map((r) => r[0]), f, total,
-    filtered: Boolean(f.sector || f.country || f.amount || f.risk), sector: f.sector
+    stages: requestsLib.STAGES,
+    filtered: Boolean(f.sector || f.country || f.amount || f.risk || f.stage), sector: f.sector
   });
 });
 
@@ -85,6 +90,7 @@ router.get('/opportunities/:slug', async (req, res, next) => {
     title: project.tr.title,
     project,
     descriptionHtml: markdown(project.tr.description),
+    risksHtml: markdown(project.tr.risks),
     conditionsHtml: markdown(project.tr.conditions),
     feesHtml: markdown(project.tr.fees),
     docs,
@@ -173,6 +179,7 @@ router.get('/news/:slug', async (req, res, next) => {
 // (elle ne fait qu'alimenter la file de suggestions à vérifier) et limitée à une exécution toutes les 6 h.
 router.get('/cron/news-watch', async (req, res) => {
   const r = await newsLib.runWatchThrottled(6);
+  await require('../lib/markets').refreshAll().catch((e) => console.warn('[marchés] mise à jour planifiée :', e.message));
   res.json({ ok: true, skipped: r.skipped, sources: r.report ? r.report.length : 0, added: r.report ? r.report.reduce((s, x) => s + x.added, 0) : 0 });
 });
 
@@ -262,7 +269,7 @@ router.get('/robots.txt', (req, res) => {
 });
 router.get('/sitemap.xml', async (req, res) => {
   const base = require('../lib/notify').baseUrl();
-  const urls = ['/', '/opportunities', '/simulator', '/news', '/contact', '/page/about', '/page/strategies', '/page/sectors', '/page/risks', '/page/faq', '/page/legal', '/page/terms', '/page/privacy'];
+  const urls = ['/', '/company', '/markets', ...require('../lib/markets').CATEGORIES.map((c) => '/markets/' + c), '/solutions', '/fund-management', '/submit-project', '/cookies', '/opportunities', '/simulator', '/news', '/contact', '/page/strategies', '/page/sectors', '/page/risks', '/page/faq', '/page/legal', '/page/terms', '/page/privacy'];
   for (const p of await all("SELECT slug FROM projects WHERE status IN ('open','closed') ORDER BY id")) urls.push('/opportunities/' + p.slug);
   for (const n of await all('SELECT slug FROM news WHERE ' + newsLib.VISIBLE + ' ORDER BY id')) urls.push('/news/' + n.slug);
   res.type('application/xml').send('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + urls.map((u) => '  <url><loc>' + base + u + '</loc></url>').join('\n') + '\n</urlset>\n');

@@ -30,10 +30,10 @@
           </select>
         </div>
         <div>
-          <label for="f-risk"><%= t('risk.label') %></label>
-          <select id="f-risk" name="risk">
-            <option value=""><%= t('opp.any_risk') %></option>
-            <% [1,2,3,4,5].forEach(function (r) { %><option value="<%= r %>" <%= f.risk === r ? 'selected' : '' %>><%= r %>/5 — <%= t('risk.' + r) %></option><% }) %>
+          <label for="f-stage"><%= t('site.opp_stage') %></label>
+          <select id="f-stage" name="stage">
+            <option value=""><%= t('site.any_stage') %></option>
+            <% stages.forEach(function (s) { %><option value="<%= s %>" <%= f.stage === s ? 'selected' : '' %>><%= t('req.st_' + s) %></option><% }) %>
           </select>
         </div>
         <div class="opp-filters-actions">

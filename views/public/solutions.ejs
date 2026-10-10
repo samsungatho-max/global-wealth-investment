@@ -1,0 +1,53 @@
+<%- include('../partials/top') %>
+<%- include("../partials/page-hero", { heroPhoto: "skyline", heroEyebrow: t("site.nav_solutions"), heroTitle: t("site.solutions_title"), heroText: t("site.solutions_lead") }) %>
+<% var bad = function (f) { return errors.indexOf(f) !== -1; }; var inv = function (f) { return bad(f) ? 'aria-invalid="true"' : ''; }; %>
+
+<section class="section">
+  <div class="container">
+    <div class="sol-list">
+      <% solutions.forEach(function (s, i) { %>
+        <article class="card sol-card" id="<%= s.id %>">
+          <div class="sol-head"><span class="pillar-icon"><%- include('../partials/icon', { name: s.icon, size: 24 }) %></span><div><span class="sol-letter"><%= String.fromCharCode(65 + i) %></span><h2><%= pick(s.title) %></h2></div></div>
+          <p class="sol-intro"><%= pick(s.intro) %></p>
+          <ul class="sol-items"><% s.items.forEach(function (it) { %><li><%- include('../partials/icon', { name: 'check', size: 16 }) %> <%= pick(it) %></li><% }) %></ul>
+          <div class="sol-meta">
+            <div><h3><%= t('site.sol_conditions') %></h3><p><%= pick(s.conditions) %></p></div>
+            <div><h3><%= t('site.sol_risks') %></h3><p><%= pick(s.risks) %></p></div>
+          </div>
+          <a class="btn btn-ghost btn-sm" href="/solutions?s=<%= s.id %>#request"><%= t('site.sol_btn') %> <%- include('../partials/icon', { name: 'arrow', size: 14 }) %></a>
+        </article>
+      <% }) %>
+    </div>
+    <p class="risk-banner mt-4"><%- include('../partials/icon', { name: 'alert', size: 16 }) %> <%= pick(notice) %></p>
+  </div>
+</section>
+
+<section class="section section-gray" id="request">
+  <div class="container">
+    <div class="card contact-card sol-form">
+      <h2 class="contact-card-title"><%= t('site.sol_request_t') %></h2>
+      <p class="hint"><%= t('req.required_note') %></p>
+      <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error" role="alert"><%= error %></div><% } %>
+      <form class="form req-form" method="post" action="/solutions/request#request">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <div class="hp-field" aria-hidden="true"><label for="s-fax">Fax</label><input id="s-fax" name="fax_number" type="text" tabindex="-1" autocomplete="off"></div>
+        <div>
+          <label for="s-sol"><%= t('site.sol_choose') %> *</label>
+          <select id="s-sol" name="solution" required <%- inv('solution') %>>
+            <option value=""><%= t('req.choose') %></option>
+            <% solutions.forEach(function (s) { %><option value="<%= s.id %>" <%= values.solution === s.id ? 'selected' : '' %>><%= pick(s.title) %></option><% }) %>
+          </select>
+        </div>
+        <div class="form-row form-row-2">
+          <div><label for="s-name"><%= t('req.full_name') %> *</label><input id="s-name" name="full_name" type="text" required maxlength="120" autocomplete="name" value="<%= values.full_name || (user ? user.full_name : '') %>" <%- inv('full_name') %>></div>
+          <div><label for="s-email"><%= t('req.email') %> *</label><input id="s-email" name="email" type="email" required maxlength="200" autocomplete="email" value="<%= values.email || (user ? user.email : '') %>" <%- inv('email') %>></div>
+        </div>
+        <div><label for="s-phone"><%= t('req.phone') %> <span class="hint">(<%= t('common.optional') %>)</span></label><input id="s-phone" name="phone" type="tel" maxlength="30" autocomplete="tel" value="<%= values.phone || '' %>" <%- inv('phone') %>></div>
+        <div><label for="s-msg"><%= t('site.message') %> *</label><textarea id="s-msg" name="description" required maxlength="6000" rows="5" <%- inv('description') %>><%= values.description || '' %></textarea></div>
+        <label class="check certify <%= bad('certify') ? 'is-invalid' : '' %>"><input type="checkbox" name="certify" required <%= values.certify ? 'checked' : '' %>><span><%= t('site.consent') %> * <a href="/page/privacy"><%= t('footer.privacy') %></a></span></label>
+        <div class="req-submit"><button class="btn btn-emerald btn-lg" type="submit"><%= t('site.sol_btn') %> <%- include('../partials/icon', { name: 'arrow', size: 16 }) %></button></div>
+      </form>
+    </div>
+  </div>
+</section>
+<%- include('../partials/bottom') %>

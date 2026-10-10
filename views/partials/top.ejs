@@ -4,14 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= title ? title + ' — ' + site : site + ' — ' + t('slogan') %></title>
-  <meta name="description" content="<%= t('hero.subtitle') %>">
+  <meta name="description" content="<%= typeof metaDescription !== 'undefined' && metaDescription ? metaDescription : t('site.hero_sub') %>">
+  <link rel="canonical" href="<%= baseUrl %><%= path === '/' ? '' : path %>">
   <meta name="theme-color" content="#0a1628">
   <meta name="application-name" content="<%= site %>">
   <meta name="apple-mobile-web-app-title" content="Globacor">
   <meta property="og:site_name" content="<%= site %>">
   <meta property="og:type" content="website">
   <meta property="og:title" content="<%= title ? title + ' — ' + site : site + ' — ' + t('slogan') %>">
-  <meta property="og:description" content="<%= t('hero.subtitle') %>">
+  <meta property="og:description" content="<%= typeof metaDescription !== 'undefined' && metaDescription ? metaDescription : t('site.hero_sub') %>">
   <meta property="og:image" content="<%= baseUrl %>/static/img/brand/globacor-partage-1200x630.png">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
@@ -35,13 +36,9 @@
       <%- include('logo') %>
       <span class="brand-name">Globacor<small>Partners Inc</small></span>
     </a>
+    <% var NAV = [['/', 'nav.home'], ['/company', 'site.nav_company'], ['/markets', 'site.nav_markets'], ['/solutions', 'site.nav_solutions'], ['/opportunities', 'site.nav_opps'], ['/fund-management', 'site.nav_fund'], ['/news', 'site.nav_news'], ['/contact', 'nav.contact']]; %>
     <nav class="main-nav" aria-label="Main">
-      <a href="/" <%- path === '/' ? 'aria-current="page"' : '' %>><%= t('nav.home') %></a>
-      <a href="/opportunities" <%- path.startsWith('/opportunities') ? 'aria-current="page"' : '' %>><%= t('nav.opportunities') %></a>
-      <a href="/simulator" <%- path === '/simulator' ? 'aria-current="page"' : '' %>><%= t('nav.simulator') %></a>
-      <a href="/news" <%- path.startsWith('/news') ? 'aria-current="page"' : '' %>><%= t('nav.news') %></a>
-      <a href="/page/about" <%- path === '/page/about' ? 'aria-current="page"' : '' %>><%= t('nav.about') %></a>
-      <a href="/contact" <%- path === '/contact' ? 'aria-current="page"' : '' %>><%= t('nav.contact') %></a>
+      <% NAV.forEach(function (n) { var cur = n[0] === '/' ? path === '/' : path.indexOf(n[0]) === 0; %><a href="<%= n[0] %>" <%- cur ? 'aria-current="page"' : '' %>><%= t(n[1]) %></a><% }) %>
     </nav>
     <div class="header-tools">
       <% if (languages.length > 1) { %>
@@ -68,11 +65,10 @@
         <% if (user) { %>
           <% if (user.role === 'admin') { %><a class="header-link" href="/admin"><%= t('nav.admin') %></a><% } %>
           <a class="header-link" href="/account/notifications" aria-label="<%= t('nav.notifications') %>">🔔 <% if (unread) { %><span class="badge-dot"><%= unread %></span><% } %></a>
-          <a class="btn btn-gold" href="/account"><%= t('nav.account') %></a>
+          <a class="btn btn-emerald" href="/account"><%= t('site.nav_client') %></a>
           <form method="post" action="/logout" class="inline-form"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="icon-btn" type="submit" title="<%= t('nav.logout') %>" aria-label="<%= t('nav.logout') %>"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button></form>
         <% } else { %>
-          <a class="header-link" href="/login"><%= t('nav.login') %></a>
-          <a class="btn btn-gold" href="/register"><%= t('nav.register') %></a>
+          <a class="btn btn-emerald" href="/login"><%= t('site.nav_client') %></a>
         <% } %>
       </div>
       <button class="menu-toggle" type="button" data-menu-toggle aria-controls="mobile-nav" aria-expanded="false" aria-label="<%= t('nav.menu') %>">
@@ -81,20 +77,16 @@
     </div>
   </div>
   <nav id="mobile-nav" class="mobile-nav" aria-label="Mobile">
-    <a href="/"><%= t('nav.home') %></a>
-    <a href="/opportunities"><%= t('nav.opportunities') %></a>
-    <a href="/simulator"><%= t('nav.simulator') %></a>
-    <a href="/news"><%= t('nav.news') %></a>
-    <a href="/page/about"><%= t('nav.about') %></a>
-    <a href="/contact"><%= t('nav.contact') %></a>
+    <% NAV.forEach(function (n) { %><a href="<%= n[0] %>"><%= t(n[1]) %></a><% }) %>
+    <a href="/submit-project"><%= t('site.cta_submit') %></a>
     <% if (user) { %>
       <% if (user.role === 'admin') { %><a href="/admin"><%= t('nav.admin') %></a><% } %>
       <a href="/account/notifications"><%= t('nav.notifications') %> <% if (unread) { %><span class="badge-dot"><%= unread %></span><% } %></a>
       <form method="post" action="/logout"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="link-btn" type="submit"><%= t('nav.logout') %></button></form>
-      <a class="btn btn-gold btn-block" href="/account"><%= t('nav.account') %></a>
+      <a class="btn btn-emerald btn-block" href="/account"><%= t('site.nav_client') %></a>
     <% } else { %>
       <a href="/login"><%= t('nav.login') %></a>
-      <a class="btn btn-gold btn-block" href="/register"><%= t('nav.register') %></a>
+      <a class="btn btn-emerald btn-block" href="/register"><%= t('nav.register') %></a>
     <% } %>
   </nav>
 </header>

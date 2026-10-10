@@ -9,6 +9,7 @@ const assert = require('assert');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'globacor-setup-'));
 const token = crypto.randomBytes(32).toString('hex');
 process.env.DATA_DIR = tmp;
+process.env.MARKETS_OFFLINE = 'true'; // aucune requête vers les sources de données de marché pendant les tests
 process.env.KEEP_LANGUAGES = 'true'; // le passage du site public en anglais est contrôlé dans english-test.js
 process.env.ADMIN_SEED = 'false';
 process.env.SEED_DEMO = 'false';
@@ -51,7 +52,8 @@ delete process.env.SESSION_SECRET;
   const cards = (html) => (html.match(/class="card project-card"/g) || []).length;
   assert.strictEqual(cards(opp.text), 18, '18 projets référencés');
   assert.match(opp.text, /Voir l’opportunité/);
-  assert.match(opp.text, /Soumettre une demande/);
+  assert.match(opp.text, /Demander plus d’informations/);
+  assert.match(opp.text, /Opportunité validée pour présentation/);
   assert.match(opp.text, /Financement engagé/);
   const { SECTORS } = require('../src/lib/sectors');
   assert.strictEqual(SECTORS.length, 18);

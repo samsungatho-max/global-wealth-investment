@@ -7,12 +7,13 @@
   <div class="hero-shade" aria-hidden="true"></div>
   <div class="container hero-inner">
     <div class="hero-copy">
-      <div class="eyebrow fade-up"><%= t('hero.eyebrow') %></div>
-      <h1 class="fade-up d1"><%= t('hero.title') %></h1>
-      <p class="hero-sub fade-up d2"><%= t('hero.subtitle') %></p>
+      <div class="eyebrow fade-up"><%= t('site.hero_eyebrow') %></div>
+      <h1 class="fade-up d1"><%= t('site.hero_title') %></h1>
+      <p class="hero-sub fade-up d2"><%= t('site.hero_sub') %></p>
       <div class="hero-cta fade-up d3">
-        <a class="btn btn-gold btn-lg" href="/opportunities"><%= t('hero.cta_discover') %> <%- include('../partials/icon', { name: 'arrow', size: 18 }) %></a>
-        <a class="btn btn-glass btn-lg" href="<%= user ? '/account' : '/register' %>"><%= t('hero.cta_open') %></a>
+        <a class="btn btn-emerald btn-lg" href="/solutions"><%= t('site.cta_solutions') %> <%- include('../partials/icon', { name: 'arrow', size: 18 }) %></a>
+        <a class="btn btn-gold btn-lg" href="/submit-project"><%= t('site.cta_submit') %></a>
+        <a class="btn btn-glass btn-lg" href="/contact"><%= t('site.cta_contact') %></a>
       </div>
       <ul class="hero-trust fade-up d4">
         <% [['shield','trust1'],['clock','trust2'],['eye','trust3'],['globe','trust4']].forEach(function (x) { %>
@@ -22,6 +23,26 @@
     </div>
   </div>
 </section>
+
+<% if (marketTiles.length) { var nfm = function (v, d) { return new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: d, minimumFractionDigits: d }).format(v); }; %>
+<!-- ============ INDICATEURS DE MARCHÉ ============ -->
+<section class="mk-home">
+  <div class="container">
+    <div class="mk-home-head"><div><h2><%= t('site.mk_home_t') %></h2><p><%= t('site.mk_home_sub') %></p></div><a class="btn btn-ghost btn-sm" href="/markets"><%= t('site.mk_all') %> <%- include('../partials/icon', { name: 'arrow', size: 14 }) %></a></div>
+    <div class="mk-strip">
+      <% marketTiles.forEach(function (s) { var g = spark(s.points.slice(-40), 120, 36, 3); var up = s.change == null || s.change >= 0; %>
+        <a class="mk-tile" href="/markets/<%= s.cat %>">
+          <span class="mk-tile-name"><%= s.name %></span>
+          <strong><%= nfm(s.value, s.digits) %> <small><%= s.unit %></small></strong>
+          <svg viewBox="0 0 120 36" aria-hidden="true" preserveAspectRatio="none"><path d="<%= g.d %>" class="mk-line <%= up ? 'up' : 'down' %>"/></svg>
+          <span class="mk-tile-date"><%= s.date %></span>
+        </a>
+      <% }) %>
+    </div>
+    <p class="mk-disclaimer"><%= t('site.mk_disclaimer') %></p>
+  </div>
+</section>
+<% } %>
 
 <!-- ============ ENGAGEMENTS ============ -->
 <section class="commit-strip">

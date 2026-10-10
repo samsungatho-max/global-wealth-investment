@@ -47,7 +47,34 @@ function withdrawalFee(amountCents) {
 }
 
 // ---------- Tableau de bord ----------
+// Demandes du client : celles déposées depuis son compte, ou avec son adresse e-mail (vérifiée).
+const myRequests = (req, limit) => all(`SELECT * FROM requests WHERE user_id = ? OR lower(email) = lower(?) ORDER BY created_at DESC, id DESC LIMIT ${Number(limit) || 50}`, req.user.id, req.user.email);
+const myRequest = (req) => one('SELECT * FROM requests WHERE ref = ? AND (user_id = ? OR lower(email) = lower(?))', String(req.params.ref || ''), req.user.id, req.user.email);
+// Sans service financier ouvert, aucun solde ni portefeuille n'est affiché : l'espace client est centré sur les demandes.
+const fundsOnly = (req, res, next) => (settings.get('funds_enabled') ? next() : res.redirect('/account'));
+
+router.get('/requests', async (req, res) => res.render('account/requests', { title: t(req.lang, 'site.acc_requests'), requests: await myRequests(req) }));
+router.get('/requests/:ref', async (req, res, next) => {
+  const r = await myRequest(req);
+  if (!r) return next();
+  res.render('account/request', { title: r.ref, r, messages: await all('SELECT * FROM request_messages WHERE request_id = ? ORDER BY id', r.id) });
+});
+router.post('/requests/:ref/messages', async (req, res, next) => {
+  const r = await myRequest(req);
+  if (!r) return next();
+  const body = String(req.body.body || '').trim().slice(0, 4000);
+  if (body.length < 2 || r.status === 'closed') return res.redirect(`/account/requests/${r.ref}`);
+  const recent = await one(`SELECT COUNT(*) AS n FROM request_messages WHERE request_id = ? AND author = 'client' AND created_at > datetime('now', '-1 hour')`, r.id);
+  if (Number(recent.n) < 10) {
+    await run(`INSERT INTO request_messages (request_id, author, user_id, body) VALUES (?, 'client', ?, ?)`, r.id, req.user.id, body);
+    await require('../lib/requests').notifyClientMessage(r, req.user, body).catch((err) => console.error('[demande] message client', err));
+    req.flash('success', t(req.lang, 'site.acc_reply_ok'));
+  }
+  res.redirect(`/account/requests/${r.ref}`);
+});
+
 router.get('/', async (req, res) => {
+  if (!settings.get('funds_enabled')) return res.render('account/home', { title: t(req.lang, 'account.title'), requests: await myRequests(req, 5) });
   const s = await ledger.summary(req.user.id, req.lang);
   res.render('account/overview', {
     title: t(req.lang, 'account.title'),
@@ -58,7 +85,7 @@ router.get('/', async (req, res) => {
   });
 });
 
-router.get('/investments', async (req, res) => {
+router.get('/investments', fundsOnly, async (req, res) => {
   res.render('account/investments', {
     title: t(req.lang, 'account.nav_investments'),
     s: await ledger.summary(req.user.id, req.lang),
@@ -66,7 +93,7 @@ router.get('/investments', async (req, res) => {
   });
 });
 
-router.get('/transactions', async (req, res) => {
+router.get('/transactions', fundsOnly, async (req, res) => {
   res.render('account/transactions', {
     title: t(req.lang, 'tx.title'),
     rows: await all('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC, id DESC', req.user.id),
@@ -148,7 +175,7 @@ async function withdrawContext(req) {
   };
 }
 
-router.get('/withdraw', async (req, res) => res.render('account/withdraw', await withdrawContext(req)));
+router.get('/withdraw', fundsOnly, async (req, res) => res.render('account/withdraw', await withdrawContext(req)));
 
 router.post('/withdraw', async (req, res, next) => {
   const ctx = await withdrawContext(req);
@@ -206,7 +233,7 @@ router.get('/documents/:id', async (req, res, next) => {
 // ---------- KYC ----------
 const kycUpload = makeUploader({ id_file: 'doc', address_file: 'doc' });
 
-router.get('/kyc', async (req, res) => {
+router.get('/kyc', fundsOnly, async (req, res) => {
   res.render('account/kyc', {
     title: t(req.lang, 'kyc.title'),
     last: await one('SELECT * FROM kyc_submissions WHERE user_id = ? ORDER BY id DESC LIMIT 1', req.user.id)

@@ -1,0 +1,18 @@
+<%- include('../partials/top') %>
+<%- include("../partials/page-hero", { heroPhoto: "bureaux", heroEyebrow: t("site.nav_fund"), heroTitle: t("site.fund_title"), heroText: t("site.fund_lead") }) %>
+<section class="section">
+  <div class="container">
+    <p class="lead fund-intro"><%= pick(fund.intro) %></p>
+    <ol class="fund-steps">
+      <% fund.steps.forEach(function (s, i) { %>
+        <li class="card"><span class="req-step-num"><%= i + 1 %></span><span class="pillar-icon"><%- include('../partials/icon', { name: s.icon, size: 22 }) %></span><h2><%= pick(s.title) %></h2><p><%= pick(s.body) %></p></li>
+      <% }) %>
+    </ol>
+    <p class="risk-banner mt-4"><%- include('../partials/icon', { name: 'alert', size: 16 }) %> <%= pick(notice) %></p>
+    <div class="cta-row mt-3">
+      <a class="btn btn-emerald" href="/solutions?s=allocation#request"><%= t('site.sol_btn') %> <%- include('../partials/icon', { name: 'arrow', size: 16 }) %></a>
+      <a class="btn btn-ghost" href="/page/risks"><%= t('footer.risks') %></a>
+    </div>
+  </div>
+</section>
+<%- include('../partials/bottom') %>

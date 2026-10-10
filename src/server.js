@@ -116,6 +116,8 @@ app.use(async (req, res, next) => {
 });
 
 app.use(express.urlencoded({ extended: false, limit: '300kb' }));
+// Un formulaire envoyé dans un format non pris en charge par la page visée est traité comme un formulaire vide (refusé à la validation).
+app.use((req, res, next) => { if (!req.body) req.body = {}; next(); });
 
 // Intergiciel de session créé après l'initialisation (la clé secrète peut venir de la base).
 let sessionMiddleware = null;
@@ -154,6 +156,7 @@ app.use(async (req, res, next) => {
 
   res.locals.site = settings.get('site_name');
   res.locals.assetV = ASSET_VERSION;
+  res.locals.fundsEnabled = !!settings.get('funds_enabled');
   require('./lib/notify').rememberHost(req);
   res.locals.baseUrl = require('./lib/notify').baseUrl();
   // Les informations de société non encore renseignées (valeurs d'origine entre crochets) ne sont pas affichées.
@@ -174,6 +177,7 @@ app.use(async (req, res, next) => {
   res.locals.photo = (key) => photos.photo(key, lang);
   res.locals.sectorPhoto = (sector) => photos.photo(photos.SECTOR_PHOTO[sector] || 'hero', lang);
   res.locals.projectPhoto = (p) => photos.photo(photos.projectPhotoKey(p), lang);
+  res.locals.oppRef = (p) => 'OPP-' + String(p.id).padStart(4, '0');
   res.locals.sectorIcon = (sector) => sectorsLib.SECTOR_ICON[sector] || 'globe';
   res.locals.countryName = (name) => sectorsLib.countryName(name, lang);
   res.locals.num =(x, digits = 1) => new Intl.NumberFormat(LOCALES[lang], { maximumFractionDigits: digits }).format(x);
@@ -197,6 +201,7 @@ app.use('/webhooks', require('./routes/webhooks'));
 app.use(security.csrfGuard);
 app.use(security.enforcePasswordChange);
 
+app.use('/', require('./routes/site'));
 app.use('/', require('./routes/public'));
 app.use('/', require('./routes/auth'));
 app.use('/account', require('./routes/account'));

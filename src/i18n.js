@@ -19,6 +19,7 @@ function lookup(dict, key) {
 
 function t(lang, key, vars) {
   let s = lookup(dictionaries[lang] || dictionaries.fr, key);
+  if (s === undefined) s = lookup(dictionaries.en, key);
   if (s === undefined) s = lookup(dictionaries.fr, key);
   if (s === undefined) return key;
   if (vars) s = String(s).replace(/\{(\w+)\}/g, (m, k) => (vars[k] !== undefined ? vars[k] : m));
