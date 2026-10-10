@@ -90,7 +90,6 @@
 
 @media (min-width: 620px) {
   .fsim-card { padding: 30px; }
-  .fsim-kpis { grid-template-columns: repeat(4, 1fr); }
   .fsim-scn { grid-template-columns: repeat(2, 1fr); }
 }
 @media (min-width: 1000px) {
@@ -98,6 +97,23 @@
   .fsim-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: start; }
   .fsim-scn { grid-template-columns: repeat(5, 1fr); }
 }
-@media (min-width: 1000px) and (max-width: 1240px) { .fsim-kpis { grid-template-columns: 1fr 1fr; } }
 @media (prefers-reduced-motion: reduce) { .fsim-tag i, .fsim-halo { animation: none; } }
 @media (max-width: 619px) { .fsim-chart text { font-size: 22px; } .fsim-chart .ax { font-size: 20px; } .fsim-chart [data-x-mid] { display: none; } }
+
+/* Capitalisation jour par jour */
+.fsim input[type="range"].is-days { background: linear-gradient(90deg, rgba(255, 255, 255, .22), var(--emerald-500)); }
+.fsim-pct-box span { font-size: .9rem; }
+.fsim-kpi b span { white-space: nowrap; }
+.fsim-table { max-height: 420px; overflow: auto; border-radius: 18px; border: 1px solid rgba(255, 255, 255, .09); background: rgba(255, 255, 255, .03); -webkit-overflow-scrolling: touch; }
+.fsim-table table { width: 100%; min-width: 620px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.fsim-table th, .fsim-table td { padding: 13px 18px; text-align: right; white-space: nowrap; border-bottom: 1px solid rgba(255, 255, 255, .06); font-size: .92rem; color: rgba(255, 255, 255, .8); background: transparent; }
+.fsim-table th:first-child { text-align: left; }
+.fsim-table thead th { position: sticky; top: 0; z-index: 1; background: #0b1730; font-size: .68rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: rgba(255, 255, 255, .55); }
+.fsim-table tbody th { font-weight: 600; color: var(--white); }
+.fsim-table td.end { font: 700 .98rem/1.2 var(--font-head); color: var(--white); }
+.fsim-table tbody tr:hover td, .fsim-table tbody tr:hover th { background: rgba(255, 255, 255, .04); }
+.fsim-table tr.is-last td, .fsim-table tr.is-last th { background: rgba(18, 163, 122, .10); border-bottom: 0; }
+.fsim-table .chg { color: #7fe0c0; }
+.fsim[data-tone="down"] .fsim-table .chg { color: #ffa397; }
+.fsim[data-tone="down"] .fsim-table tr.is-last td, .fsim[data-tone="down"] .fsim-table tr.is-last th { background: rgba(255, 138, 122, .09); }
+.fsim-kpi b { overflow-wrap: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: clamp(.92rem, 3.6vw, 1.12rem); }

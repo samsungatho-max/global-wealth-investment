@@ -3,7 +3,7 @@
 <%- include("../partials/page-hero", { heroPhoto: "bureaux", heroEyebrow: t("site.nav_fund"), heroTitle: t("site.fund_title"), heroText: t("site.fund_lead") }) %>
 <% var S = fund.sim; var SCN = [-30, -10, 5, 10, 30]; var CUR = [['EUR', 'EUR €'], ['USD', 'USD $'], ['GBP', 'GBP £'], ['CAD', 'CAD $'], ['CHF', 'CHF'], ['XOF', 'FCFA']]; %>
 <% var nf = function (n) { return new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-US', { style: 'currency', currency: 'EUR' }).format(n); }; var sg = function (n) { return (n > 0 ? '+' : n < 0 ? '−' : '') + nf(Math.abs(n)); }; %>
-<section class="fsim" id="scenarios" data-fsim data-locale="<%= lang === 'fr' ? 'fr-FR' : 'en-US' %>" data-duration="24h">
+<section class="fsim" id="scenarios" data-fsim data-locale="<%= lang === 'fr' ? 'fr-FR' : 'en-US' %>" data-day="<%= pick(S.day) %>" data-days-word="<%= pick(S.days) %>" data-day-cap="<%= pick(S.dayCap) %>">
   <div class="container">
     <div class="fsim-head">
       <span class="fsim-tag"><i></i><%= pick(S.tag) %></span>
@@ -24,7 +24,7 @@
           <label for="fs-pct"><%= pick(S.pct) %></label>
           <div class="fsim-pct">
             <input type="range" min="-100" max="100" step="1" value="30" aria-label="<%= pick(S.pct) %>" data-range>
-            <div class="fsim-pct-box"><input id="fs-pct" type="number" min="-100" max="1000" step="0.1" value="30" inputmode="decimal" data-pct><span>%</span></div>
+            <div class="fsim-pct-box"><input id="fs-pct" type="number" min="-100" max="100" step="0.1" value="30" inputmode="decimal" data-pct><span>%</span></div>
           </div>
           <div class="fsim-chips">
             <% SCN.forEach(function (p) { %><button class="fsim-chip" type="button" data-preset="<%= p %>" aria-pressed="<%= p === 30 %>"><%= (p > 0 ? '+' : '−') + Math.abs(p) %> %</button><% }) %>
@@ -32,43 +32,57 @@
           <p class="fsim-hint"><%= pick(S.pctHint) %></p>
         </div>
         <div class="fsim-field" style="margin-bottom:0">
-          <span class="fsim-lab"><%= pick(S.duration) %></span>
-          <div class="fsim-chips" style="margin-top:0">
-            <% S.durations.forEach(function (d, i) { %><button class="fsim-chip" type="button" data-duration-btn="<%= d.k %>" data-mid="<%= pick(d.mid) %>" aria-pressed="<%= i === 0 %>"><%= pick(d.label) %></button><% }) %>
+          <label for="fs-days"><%= pick(S.duration) %></label>
+          <div class="fsim-pct">
+            <input type="range" class="is-days" min="1" max="60" step="1" value="1" aria-label="<%= pick(S.duration) %>" data-days-range>
+            <div class="fsim-pct-box"><input id="fs-days" type="number" min="1" max="60" step="1" value="1" inputmode="numeric" data-days><span><%= pick(S.dayCap).charAt(0).toLowerCase() %></span></div>
           </div>
+          <div class="fsim-chips">
+            <% S.dayOptions.forEach(function (d) { %><button class="fsim-chip" type="button" data-day-btn="<%= d %>" aria-pressed="<%= d === 1 %>"><%= d %> <%= pick(d > 1 ? S.days : S.day) %></button><% }) %>
+          </div>
+          <p class="fsim-hint"><%= pick(S.daysHint) %></p>
         </div>
       </div>
 
       <div class="fsim-card fsim-result" data-result data-tone="up" aria-live="polite">
         <div class="fsim-total">
           <div><span class="fsim-lab"><%= pick(S.total) %></span><strong data-out="total"><%= nf(1300) %></strong></div>
-          <span class="fsim-badge" data-out="pct">+30 %</span>
+          <span class="fsim-badge" data-out="cum">+30 %</span>
         </div>
         <div class="fsim-kpis">
           <div class="fsim-kpi"><span class="fsim-lab"><%= pick(S.initial) %></span><b data-out="initial"><%= nf(1000) %></b></div>
           <div class="fsim-kpi"><span class="fsim-lab" data-gain-label data-gain="<%= pick(S.gain) %>" data-loss="<%= pick(S.loss) %>"><%= pick(S.gain) %></span><b data-out="gain"><%= sg(300) %></b></div>
-          <div class="fsim-kpi"><span class="fsim-lab"><%= pick(S.variation) %></span><b data-out="pct">+30 %</b></div>
-          <div class="fsim-kpi"><span class="fsim-lab"><%= pick(S.span) %></span><b data-out="duration"><%= pick(S.durations[0].label) %></b></div>
+          <div class="fsim-kpi"><span class="fsim-lab"><%= pick(S.cum) %></span><b data-out="cum">+30 %</b></div>
+          <div class="fsim-kpi"><span class="fsim-lab"><%= pick(S.rate) %> · <%= pick(S.span) %></span><b><span data-out="rate">+30 %</span> · <span data-out="days">1 <%= pick(S.day) %></span></b></div>
         </div>
         <div class="fsim-chart">
           <svg viewBox="0 0 600 250" role="img" aria-label="<%= pick(S.chart) %>">
             <line class="grid" x1="40" x2="560" y1="30" y2="30"/><line class="grid" x1="40" x2="560" y1="115" y2="115"/><line class="grid" x1="40" x2="560" y1="200" y2="200"/>
-            <line class="base" x1="40" x2="560" y1="171.7" y2="171.7" data-base/>
-            <path class="fsim-area" d="M40 171.7 L560 58.3 L560 171.7 Z" data-area/>
-            <path class="fsim-line" d="M40 171.7 L560 58.3" data-line/>
-            <circle class="fsim-halo" cx="560" cy="58.3" r="13" data-halo/>
-            <circle class="fsim-dot" cx="40" cy="171.7" r="4" data-start-dot style="stroke-width:2.5"/>
-            <circle class="fsim-dot" cx="560" cy="58.3" r="6.5" data-dot/>
-            <text x="40" y="190" data-y-start><%= nf(1000) %></text>
-            <text x="560" y="46" text-anchor="end" data-y-end><%= nf(1300) %></text>
-            <text class="ax" x="40" y="240"><%= pick(S.start) %></text>
-            <text class="ax" x="300" y="240" text-anchor="middle" data-x-mid><%= pick(S.durations[0].mid) %></text>
-            <text class="ax" x="560" y="240" text-anchor="end" data-x-end><%= pick(S.durations[0].label) %></text>
+            <line class="base" x1="40" x2="560" y1="183.5" y2="183.5" data-base/>
+            <path class="fsim-area" d="M40 183.5 L560 46.5 L560 183.5 Z" data-area/>
+            <path class="fsim-line" d="M40 183.5 L560 46.5" data-line/>
+            <circle class="fsim-halo" cx="560" cy="46.5" r="13" data-halo/>
+            <circle class="fsim-dot" cx="40" cy="183.5" r="4" data-start-dot style="stroke-width:2.5"/>
+            <circle class="fsim-dot" cx="560" cy="46.5" r="6.5" data-dot/>
+            <text x="40" y="201" data-y-start><%= nf(1000) %></text>
+            <text x="560" y="34" text-anchor="end" data-y-end><%= nf(1300) %></text>
+            <text class="ax" x="40" y="240"><%= pick(S.dayCap) %> 0</text>
+            <text class="ax" x="300" y="240" text-anchor="middle" data-x-mid></text>
+            <text class="ax" x="560" y="240" text-anchor="end" data-x-end><%= pick(S.dayCap) %> 1</text>
           </svg>
         </div>
         <p class="fsim-cap"><%= pick(S.chartCap) %></p>
         <p class="fsim-cap"><%= pick(S.short) %></p>
       </div>
+    </div>
+
+    <h3 class="fsim-sub"><%= pick(S.table) %></h3>
+    <p><%= pick(S.tableLead) %></p>
+    <div class="fsim-table" tabindex="0">
+      <table>
+        <thead><tr><th scope="col"><%= pick(S.thDay) %></th><th scope="col"><%= pick(S.thStart) %></th><th scope="col"><%= pick(S.thChange) %></th><th scope="col"><%= pick(S.thEnd) %></th><th scope="col"><%= pick(S.thCum) %></th></tr></thead>
+        <tbody data-rows><tr class="is-last"><th scope="row"><%= pick(S.dayCap) %> 1</th><td><%= nf(1000) %></td><td class="chg"><%= sg(300) %></td><td class="end"><%= nf(1300) %></td><td class="chg">+30 %</td></tr></tbody>
+      </table>
     </div>
 
     <h3 class="fsim-sub"><%= pick(S.compare) %></h3>
@@ -78,7 +92,7 @@
       <div class="fsim-scn-card<%= p === 30 ? ' is-active' : '' %>" data-scn data-tone="<%= p > 0 ? 'up' : 'down' %>">
         <div class="fsim-scn-top">
           <label class="fsim-lab" for="fs-scn-<%= i %>"><%= pick(S.scenario) %> <%= i + 1 %></label>
-          <div class="fsim-pct-box"><input id="fs-scn-<%= i %>" type="number" min="-100" max="1000" step="0.1" value="<%= p %>" inputmode="decimal" data-scn-pct><span>%</span></div>
+          <div class="fsim-pct-box"><input id="fs-scn-<%= i %>" type="number" min="-100" max="100" step="0.1" value="<%= p %>" inputmode="decimal" data-scn-pct><span>%</span></div>
         </div>
         <div class="fsim-track"><i data-scn-bar style="width:<%= Math.abs(p) / 30 * 100 %>%"></i></div>
         <div class="fsim-scn-row"><span><%= pick(S.change) %></span><b data-scn-gain><%= sg(g) %></b></div>
