@@ -16,6 +16,10 @@ const DEFAULTS = {
     email: 'contact@example.com',
     phone: '[Téléphone à compléter]',
     hours: '',
+    linkedin: '',
+    twitter: '',
+    facebook: '',
+    instagram: '',
     regulatory_status: "[Statut réglementaire et autorisations à compléter. Tant que ce champ n'est pas renseigné et que la réception de fonds n'est pas activée, la plateforme ne reçoit aucun fonds du public.]",
     director: '[Directeur de la publication à compléter]',
     host: '[Hébergeur à compléter]'

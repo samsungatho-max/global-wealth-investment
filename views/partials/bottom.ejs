@@ -1,48 +1,55 @@
 </main>
 <footer class="site-footer">
-  <div class="container">
-    <p class="footer-closing">« <%= t('closing') %> »</p>
-    <div class="footer-grid">
-      <div>
-        <a class="brand" href="/" style="margin-bottom:16px"><%- include('logo') %><span class="brand-name">Globacor<small>Partners Inc</small></span></a>
-        <p><%= t('slogan') %></p>
-        <p class="small"><%= t('footer.disclaimer') %></p>
-      </div>
-      <div>
-        <h4><%= t('footer.col_company') %></h4>
-        <ul>
-          <li><a href="/company"><%= t('site.nav_company') %></a></li>
-          <li><a href="/markets"><%= t('site.nav_markets') %></a></li>
-          <li><a href="/news"><%= t('nav.news') %></a></li>
-          <li><a href="/page/faq"><%= t('footer.faq') %></a></li>
-          <li><a href="/contact"><%= t('footer.contact') %></a></li>
-        </ul>
-      </div>
-      <div>
-        <h4><%= t('footer.col_invest') %></h4>
-        <ul>
-          <li><a href="/solutions"><%= t('site.nav_solutions') %></a></li>
-          <li><a href="/fund-management"><%= t('site.nav_fund') %></a></li>
-          <li><a href="/submit-project"><%= t('site.cta_submit') %></a></li>
-          <li><a href="/page/sectors"><%= t('footer.sectors') %></a></li>
-          <li><a href="/page/risks"><%= t('footer.risks') %></a></li>
-          <li><a href="/simulator"><%= t('nav.simulator') %></a></li>
-        </ul>
-      </div>
-      <div>
-        <h4><%= t('footer.col_legal') %></h4>
-        <ul>
-          <li><a href="/page/legal"><%= t('footer.legal') %></a></li>
-          <li><a href="/page/terms"><%= t('footer.terms') %></a></li>
-          <li><a href="/page/privacy"><%= t('footer.privacy') %></a></li>
-          <li><a href="/cookies"><%= t('site.cookies_title') %></a></li>
-        </ul>
+  <div class="footer-cta">
+    <div class="container footer-cta-inner">
+      <p><%= t('closing') %></p>
+      <div class="footer-cta-btns">
+        <a class="btn btn-emerald" href="/solutions"><%= nav.text.solutions %></a>
+        <a class="btn btn-line" href="/submit-project"><%= nav.text.submit %></a>
       </div>
     </div>
+  </div>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="brand" href="/"><%- include('logo') %><span class="brand-name">Globacor<small>Partners Inc</small></span></a>
+        <p><%= t('site.hero_sub') %></p>
+        <% var PIN = 'M12 22s7-6.2 7-12a7 7 0 10-14 0c0 5.8 7 12 7 12zM12 12.500a2.5 2.5 0 100-5 2.5 2.5 0 000 5z', MAIL = 'M3 5h18v14H3zM3 7l9 6 9-6', TEL = 'M5 3h4l2 5-2.5 1.500a11 11 0 005 5L15 12l5 2v4a2 2 0 01-2 2A16 16 0 013 5a2 2 0 012-2z'; %>
+        <% var fIco = function (d) { return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + d + '"/></svg>'; }; %>
+        <% if (company.address || company.email || company.phone || company.hours) { %>
+        <ul class="footer-contact">
+          <% if (company.address) { %><li><%- fIco(PIN) %><span><%= company.address %></span></li><% } %>
+          <% if (company.email) { %><li><%- fIco(MAIL) %><a href="mailto:<%= company.email %>"><%= company.email %></a></li><% } %>
+          <% if (company.phone) { %><li><%- fIco(TEL) %><a href="tel:<%= String(company.phone).replace(/[^+\d]/g, '') %>"><%= company.phone %></a></li><% } %>
+          <% if (company.hours) { %><li><%- include('icon', { name: 'clock', size: 16 }) %><span><%= company.hours %></span></li><% } %>
+        </ul>
+        <% } %>
+        <% if (socialLinks.length) { %>
+        <div class="footer-social" aria-label="<%= nav.text.follow %>">
+          <% var SOC = {"linkedin":"M4 9h4v11H4zM6 3.5a2.2 2.2 0 110 4.4 2.2 2.2 0 010-4.4zM10.5 9h3.8v1.6c.6-1 1.9-1.9 3.7-1.9 3.3 0 4 2.1 4 5V20h-4v-5.5c0-1.4-.4-2.4-1.7-2.4-1.5 0-1.8 1.1-1.8 2.4V20h-4z","twitter":"M4 4l16 16M20 4L4 20","facebook":"M14 8V6.5c0-.9.3-1.5 1.6-1.5H17V2.2C16.6 2.1 15.6 2 14.5 2 12 2 10.5 3.5 10.5 6.200V8H8v3h2.500v9H14v-9h2.600l.4-3z","instagram":"M7 3h10a4 4 0 014 4v10a4 4 0 01-4 4H7a4 4 0 01-4-4V7a4 4 0 014-4zM12 8.500a3.5 3.5 0 100 7 3.5 3.5 0 000-7zM17.3 6.700h.01"}; socialLinks.forEach(function (s) { %><a href="<%= s.url %>" target="_blank" rel="noopener noreferrer" aria-label="<%= s.name %>" title="<%= s.name %>"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="<%= SOC[s.key] %>"/></svg></a><% }) %>
+        </div>
+        <% } %>
+      </div>
+      <% nav.groups.filter(function (g) { return g.items.length; }).forEach(function (g) { %>
+      <div>
+        <h4><%= g.label %></h4>
+        <ul>
+          <% g.items.filter(function (i) { return g.id === 'company' || i.href.indexOf('#') === -1; }).forEach(function (i) { %><li><a href="<%= i.href %>"><%= i.label %></a></li><% }) %>
+          <% if (g.id === 'company') { %><li><a href="/page/about"><%= t('footer.about') %></a></li><li><a href="/news"><%= t('site.nav_news') %></a></li><li><a href="/contact"><%= t('footer.contact') %></a></li><% } %>
+          <% if (g.id === 'solutions') { %><li><a href="/page/strategies"><%= t('footer.strategies') %></a></li><% } %>
+          <% if (g.id === 'opportunities') { %><li><a href="<%= user ? '/account' : '/login' %>"><%= nav.text.client %></a></li><% } %>
+        </ul>
+      </div>
+      <% }) %>
+    </div>
+    <div class="footer-bar">
+      <span>© <%= new Date().getFullYear() %> <%= site %>. <%= t('footer.rights') %></span>
+      <nav aria-label="<%= nav.text.legal %>"><% nav.legal.forEach(function (l) { %><a href="<%= l.href %>"><%= l.label %></a><% }) %></nav>
+    </div>
     <div class="footer-legal">
+      <div><%= t('footer.disclaimer') %></div>
       <% if (company.regulatory_status) { %><div><strong><%= t('footer.regulatory') %><%= colon %></strong> <%= company.regulatory_status %></div><% } %>
-      <% var idLine = [company.legal_name, company.registration, company.address].filter(Boolean); if (idLine.length) { %><div><%= idLine.join(' — ') %></div><% } %>
-      <div>© <%= new Date().getFullYear() %> <%= site %>. <%= t('footer.rights') %></div>
+      <% var idLine = [company.legal_name, company.legal_form, company.registration].filter(Boolean); if (idLine.length) { %><div><%= idLine.join(' — ') %></div><% } %>
     </div>
   </div>
 </footer>

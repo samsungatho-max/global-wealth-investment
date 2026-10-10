@@ -5,12 +5,49 @@
   // Menu mobile
   var toggle = document.querySelector('[data-menu-toggle]');
   var mobileNav = document.getElementById('mobile-nav');
+  var setMobile = function (open) {
+    mobileNav.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    document.documentElement.classList.toggle('nav-open', open);
+  };
   if (toggle && mobileNav) {
-    toggle.addEventListener('click', function () {
-      var open = mobileNav.classList.toggle('open');
-      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    toggle.addEventListener('click', function () { setMobile(!mobileNav.classList.contains('open')); });
+    mobileNav.addEventListener('click', function (e) { if (e.target.closest('a')) setMobile(false); });
+    window.addEventListener('resize', function () { if (window.innerWidth >= 1160 && mobileNav.classList.contains('open')) setMobile(false); });
+    // Un seul sous-menu ouvert à la fois
+    mobileNav.querySelectorAll('details').forEach(function (d) {
+      d.addEventListener('toggle', function () {
+        if (d.open) mobileNav.querySelectorAll('details[open]').forEach(function (o) { if (o !== d) o.removeAttribute('open'); });
+      });
     });
   }
+
+  // Menus déroulants de l'en-tête
+  var navItems = document.querySelectorAll('[data-nav-item]');
+  var closeNav = function (except) {
+    navItems.forEach(function (it) {
+      if (it === except) return;
+      it.classList.remove('open');
+      var b = it.querySelector('[data-nav-toggle]'); if (b) b.setAttribute('aria-expanded', 'false');
+    });
+  };
+  navItems.forEach(function (it) {
+    var btn = it.querySelector('[data-nav-toggle]');
+    btn.addEventListener('click', function () {
+      var open = !it.classList.contains('open');
+      closeNav(it);
+      it.classList.toggle('open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    it.addEventListener('mouseleave', function () { it.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); btn.blur(); });
+  });
+  document.addEventListener('click', function (e) { if (!e.target.closest('[data-nav-item]')) closeNav(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    closeNav();
+    if (mobileNav && mobileNav.classList.contains('open')) { setMobile(false); toggle.focus(); }
+    document.querySelectorAll('details.dropdown[open]').forEach(function (d) { d.removeAttribute('open'); });
+  });
 
   // En-tête : état « défilé »
   var header = document.querySelector('.site-header');

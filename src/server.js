@@ -17,6 +17,7 @@ const { refreshRates } = require('./lib/rates');
 const security = require('./lib/security');
 const photos = require('./lib/photos');
 const sectorsLib = require('./lib/sectors');
+const navLib = require('./lib/nav');
 
 // Version des fichiers CSS / JS : change à chaque déploiement, pour que les navigateurs ne gardent pas une ancienne feuille de style.
 const ASSET_VERSION = (process.env.VERCEL_GIT_COMMIT_SHA || '').slice(0, 10) || Date.now().toString(36);
@@ -182,6 +183,8 @@ app.use(async (req, res, next) => {
   res.locals.countryName = (name) => sectorsLib.countryName(name, lang);
   res.locals.num =(x, digits = 1) => new Intl.NumberFormat(LOCALES[lang], { maximumFractionDigits: digits }).format(x);
   res.locals.path = req.path;
+  res.locals.nav = navLib.build(lang, req.path);
+  res.locals.socialLinks = navLib.social(res.locals.company);
   // Le parametre choisi est place en tete de l'adresse : la suite de caracteres « &curren » (lue comme le signe ¤ par certains robots) n'apparait jamais.
   const withParam = (name, code) => { const u = new URL(req.originalUrl, 'http://x'); u.searchParams.delete(name); for (const k of [...u.searchParams.keys()]) if (!/^(sector|country|amount|risk|q|region|kind|type|inv_type|page|motif|status|motive|currency|lang)$/.test(k)) u.searchParams.delete(k); const rest = u.searchParams.toString(); return u.pathname + '?' + name + '=' + encodeURIComponent(code) + (rest ? '&' + rest : ''); };
   res.locals.langUrl = (code) => withParam('lang', code);
