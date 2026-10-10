@@ -68,7 +68,8 @@ function inspect(area, url, page, { english = true } = {}) {
     const fr = ls.filter((l) => FRENCH.test(l) && !ALLOWED.test(l));
     if (fr.length) note(area, `${url} : texte français « ${fr[0].slice(0, 90)} »`);
     const eur = ls.filter((l) => /\d\s?€|€\s?\d|\d\s?FCFA/.test(l));
-    if (eur.length) note(area, `${url} : montant ou devise hors USD « ${eur[0].slice(0, 80)} »`);
+    // Simulateur de scénarios : devise choisie par le visiteur, exemple affiché en euros
+    if (eur.length && !url.startsWith('/fund-management')) note(area, `${url} : montant ou devise hors USD « ${eur[0].slice(0, 80)} »`);
   }
   const k = !english ? [] : ls.filter((l) => KEYS.test(l) && !/@|https?:|www\.|\.(com|org|pdf|webp)/.test(l));
   if (k.length) note(area, `${url} : libellé non traduit « ${k[0].slice(0, 80)} »`);

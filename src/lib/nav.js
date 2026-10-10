@@ -26,7 +26,7 @@ const GROUPS = [
     items: [{ href: '/solutions', icon: 'pie', label: L('All our solutions', 'Toutes nos solutions'), note: L('Overview and information request', 'Vue d’ensemble et demande d’information') }]
       .concat(pages.SOLUTIONS.map((s) => ({ href: '/solutions#' + s.id, icon: s.icon, label: s.title })))
       .concat([
-        { href: '/fund-management', icon: 'wallet', label: L('Fund management', 'Gestion de fonds'), note: L('Process, reporting and safeguards', 'Processus, suivi et garanties') },
+        { href: '/fund-management', icon: 'wallet', label: L('Fund management', 'Gestion de fonds'), note: L('Our method and scenario simulator', 'Notre méthode et simulateur de scénarios') },
         { href: '/simulator', icon: 'growth', label: L('Investment simulator', 'Simulateur d’investissement'), note: L('Indicative projections only', 'Projections purement indicatives') }
       ]) },
   { id: 'opportunities', href: '/opportunities', label: L('Opportunities', 'Opportunités'), match: ['/opportunities', '/submit-project', '/page/sectors', '/page/risks'],

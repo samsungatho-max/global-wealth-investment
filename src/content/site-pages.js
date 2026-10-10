@@ -56,6 +56,51 @@ const SOLUTIONS = [
 ];
 
 const FUND = {
+  /** Simulateur de scénarios : calcul purement arithmétique sur des variations hypothétiques, à la hausse comme à la baisse. */
+  sim: {
+    tag: L('Illustrative simulation', 'Simulation illustrative'),
+    title: L('Scenario simulator', 'Simulateur de scénarios'),
+    lead: L('Enter an amount, choose a currency and a hypothetical market variation: the simulator instantly shows how that variation, up or down, would change your capital.',
+      'Saisissez un montant, choisissez une devise et une variation de marché hypothétique : le simulateur montre aussitôt comment cette variation, à la hausse ou à la baisse, modifierait votre capital.'),
+    settings: L('Your simulation', 'Votre simulation'),
+    amount: L('Initial amount', 'Montant initial'),
+    currency: L('Currency', 'Devise'),
+    pct: L('Hypothetical variation', 'Variation hypothétique'),
+    pctHint: L('From −100 % (total loss) upwards. You choose the figure: it is an assumption, not a forecast.', 'À partir de −100 % (perte totale). Vous choisissez le chiffre : c’est une hypothèse, pas une prévision.'),
+    duration: L('Scenario duration', 'Durée du scénario'),
+    durations: [
+      { k: '24h', label: L('24 hours', '24 heures'), mid: L('12 hours', '12 heures') },
+      { k: '7d', label: L('7 days', '7 jours'), mid: L('3.5 days', '3,5 jours') },
+      { k: '30d', label: L('30 days', '30 jours'), mid: L('15 days', '15 jours') },
+      { k: '90d', label: L('90 days', '90 jours'), mid: L('45 days', '45 jours') },
+      { k: '1y', label: L('1 year', '1 an'), mid: L('6 months', '6 mois') }
+    ],
+    result: L('Simulated result', 'Résultat simulé'),
+    total: L('Simulated total amount', 'Montant total simulé'),
+    initial: L('Initial capital', 'Capital initial'),
+    variation: L('Hypothetical variation', 'Variation hypothétique'),
+    gain: L('Theoretical gain', 'Gain théorique'),
+    loss: L('Theoretical loss', 'Perte théorique'),
+    span: L('Duration', 'Durée'),
+    start: L('Start', 'Départ'),
+    chart: L('Theoretical change in capital over the scenario', 'Évolution théorique du capital sur la durée du scénario'),
+    chartCap: L('The line joins the initial capital to the simulated amount at a constant pace. Real markets do not move in a straight line.', 'La courbe relie le capital initial au montant simulé à rythme constant. Les marchés réels n’évoluent pas en ligne droite.'),
+    compare: L('Compare several scenarios', 'Comparer plusieurs scénarios'),
+    compareLead: L('The same capital under five different variations. Change any percentage to see its effect, or apply a scenario to the chart.', 'Le même capital soumis à cinq variations différentes. Modifiez un pourcentage pour en voir l’effet, ou appliquez un scénario au graphique.'),
+    scenario: L('Scenario', 'Scénario'),
+    change: L('Gain or loss', 'Gain ou perte'),
+    final: L('Total', 'Total'),
+    apply: L('Show on the chart', 'Afficher sur le graphique'),
+    noticeTitle: L('This is an illustrative simulation, not an offer', 'Ceci est une simulation illustrative, pas une offre'),
+    notice: [
+      L('The figures are the result of a simple calculation on percentages that you choose. They are not forecasts, and no amount shown here is promised, guaranteed or paid.',
+        'Les chiffres résultent d’un simple calcul sur des pourcentages que vous choisissez. Ce ne sont pas des prévisions, et aucun montant affiché ici n’est promis, garanti ou versé.'),
+      L('A +30 % variation in 24 hours is shown only to make the calculation easy to follow. It is not a return that is available, guaranteed or usual: movements of that size are exceptional and are just as likely to be losses.',
+        'Une variation de +30 % en 24 heures n’est affichée que pour rendre le calcul facile à suivre. Ce n’est pas un rendement disponible, garanti ou habituel : des mouvements de cette ampleur sont exceptionnels et peuvent tout autant être des pertes.'),
+      L('Investing involves a risk of losing all or part of the capital. This tool is neither investment advice nor an invitation to deposit funds.',
+        'Investir comporte un risque de perte totale ou partielle du capital. Cet outil n’est ni un conseil en investissement ni une invitation à déposer des fonds.')
+    ]
+  },
   intro: L('Fund and capital management is a regulated activity. This page explains how we approach it; any management service is provided only within the limits of the authorisations held in the jurisdiction concerned.',
     'La gestion de fonds et de capitaux est une activité réglementée. Cette page explique notre approche ; tout service de gestion n’est fourni que dans la limite des autorisations détenues dans la juridiction concernée.'),
   steps: [

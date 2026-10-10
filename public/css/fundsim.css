@@ -1,0 +1,103 @@
+/* GLOBACOR Partners INC — simulateur de scénarios (page « Gestion de fonds ») */
+.fsim { position: relative; overflow: hidden; padding: 72px 0 80px; color: rgba(255, 255, 255, .78); background: radial-gradient(1100px 520px at 85% -10%, rgba(18, 163, 122, .20), transparent 60%), radial-gradient(800px 480px at 0% 110%, rgba(31, 65, 117, .55), transparent 60%), linear-gradient(180deg, #071226, #050d1c); scroll-margin-top: 70px; }
+.fsim-head { max-width: 760px; margin-bottom: 34px; }
+.fsim-tag { display: inline-flex; align-items: center; gap: 8px; padding: 6px 13px; border-radius: 999px; border: 1px solid rgba(18, 163, 122, .5); background: rgba(18, 163, 122, .12); color: #8fe6c8; font-family: var(--font-head); font-size: .7rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; }
+.fsim-tag i { width: 7px; height: 7px; border-radius: 50%; background: var(--emerald-500); box-shadow: 0 0 0 0 rgba(18, 163, 122, .6); animation: fsim-pulse 2.4s infinite; }
+@keyframes fsim-pulse { 70% { box-shadow: 0 0 0 9px rgba(18, 163, 122, 0); } 100% { box-shadow: 0 0 0 0 rgba(18, 163, 122, 0); } }
+.fsim h2 { margin: 16px 0 10px; color: var(--white); font-size: clamp(1.6rem, 3.4vw, 2.3rem); }
+.fsim-head p { margin: 0; font-size: 1.02rem; line-height: 1.65; }
+.fsim-grid { display: grid; gap: 20px; }
+.fsim-card { border: 1px solid rgba(255, 255, 255, .09); border-radius: 22px; background: linear-gradient(180deg, rgba(255, 255, 255, .055), rgba(255, 255, 255, .02)); box-shadow: 0 30px 70px -40px rgba(0, 0, 0, .9); padding: 24px; backdrop-filter: blur(6px); }
+.fsim-card h3 { margin: 0 0 18px; color: var(--white); font-size: 1.02rem; letter-spacing: 0; }
+.fsim label, .fsim-lab { display: block; margin: 0 0 8px; font-size: .74rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: rgba(255, 255, 255, .55); }
+.fsim-field { margin-bottom: 22px; }
+.fsim-money { display: grid; grid-template-columns: 1fr 112px; gap: 10px; }
+.fsim input[type="text"], .fsim input[type="number"], .fsim select { width: 100%; height: 54px; padding: 0 16px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(5, 13, 28, .6); color: var(--white); font: 600 1.15rem/1 var(--font-head); transition: border-color .2s, box-shadow .2s; }
+.fsim select { font-size: .95rem; padding: 0 12px; cursor: pointer; }
+.fsim select option { color: #0a1628; background: #fff; }
+.fsim input:focus, .fsim select:focus { outline: none; border-color: var(--emerald-500); box-shadow: 0 0 0 3px rgba(18, 163, 122, .22); }
+.fsim-pct { display: grid; grid-template-columns: 1fr 112px; gap: 14px; align-items: center; }
+.fsim-pct-box { position: relative; }
+.fsim-pct-box input { padding-right: 34px; }
+.fsim-pct-box span { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: rgba(255, 255, 255, .5); font-weight: 600; pointer-events: none; }
+.fsim input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 6px; background: linear-gradient(90deg, #ff8a7a, rgba(255, 255, 255, .25) 50%, var(--emerald-500)); outline: none; }
+.fsim input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; border-radius: 50%; background: var(--white); border: 4px solid var(--emerald-500); cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, .45); }
+.fsim input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--white); border: 4px solid var(--emerald-500); cursor: pointer; }
+.fsim-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.fsim-chip { min-height: 40px; padding: 0 15px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14); background: transparent; color: rgba(255, 255, 255, .82); font: 600 .86rem/1 var(--font-body); cursor: pointer; transition: background .2s, border-color .2s, color .2s; }
+.fsim-chip:hover { border-color: rgba(255, 255, 255, .4); color: var(--white); }
+.fsim-chip[aria-pressed="true"] { background: var(--emerald-600); border-color: var(--emerald-500); color: var(--white); }
+.fsim-hint { margin: 10px 0 0; font-size: .8rem; line-height: 1.5; color: rgba(255, 255, 255, .5); }
+
+/* Résultat */
+.fsim-result { display: flex; flex-direction: column; gap: 20px; }
+.fsim-total { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 20px; }
+.fsim-total strong { display: block; font: 700 clamp(2.1rem, 6vw, 3.1rem)/1.05 var(--font-head); color: var(--white); letter-spacing: -.02em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.fsim-badge { display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 999px; font: 700 1rem/1 var(--font-head); font-variant-numeric: tabular-nums; background: rgba(255, 255, 255, .08); color: var(--white); }
+.fsim-result[data-tone="up"] .fsim-badge { background: rgba(18, 163, 122, .2); color: #7fe0c0; }
+.fsim-result[data-tone="down"] .fsim-badge { background: rgba(255, 138, 122, .16); color: #ffa397; }
+.fsim-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fsim-kpi { padding: 14px 16px; border-radius: 16px; background: rgba(5, 13, 28, .5); border: 1px solid rgba(255, 255, 255, .07); min-width: 0; }
+.fsim-kpi b { display: block; font: 700 1.12rem/1.25 var(--font-head); color: var(--white); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.fsim-kpi .fsim-lab { margin-bottom: 6px; font-size: .68rem; }
+.fsim-result[data-tone="up"] [data-out="gain"] { color: #7fe0c0; }
+.fsim-result[data-tone="down"] [data-out="gain"] { color: #ffa397; }
+.fsim-chart { border-radius: 16px; background: rgba(5, 13, 28, .5); border: 1px solid rgba(255, 255, 255, .07); padding: 14px 10px 6px; }
+.fsim-chart svg { display: block; width: 100%; height: auto; }
+.fsim-chart text { font: 600 13px var(--font-body); fill: rgba(255, 255, 255, .7); }
+.fsim-chart .ax { font-weight: 500; font-size: 12px; fill: rgba(255, 255, 255, .45); }
+.fsim-chart .grid { stroke: rgba(255, 255, 255, .06); }
+.fsim-chart .base { stroke: rgba(255, 255, 255, .35); stroke-dasharray: 5 6; }
+.fsim-line { fill: none; stroke: var(--emerald-500); stroke-width: 3.5; stroke-linecap: round; transition: stroke .3s; }
+.fsim-line.draw { stroke-dasharray: 700; stroke-dashoffset: 700; animation: fsim-draw .7s var(--ease) forwards; }
+@keyframes fsim-draw { to { stroke-dashoffset: 0; } }
+.fsim-area { fill: rgba(18, 163, 122, .16); transition: fill .3s; }
+.fsim-dot { fill: var(--white); stroke: var(--emerald-500); stroke-width: 3.5; transition: stroke .3s; }
+.fsim-halo { fill: rgba(18, 163, 122, .25); animation: fsim-halo 2.2s ease-in-out infinite; transform-origin: 560px center; }
+@keyframes fsim-halo { 50% { opacity: .25; } }
+.fsim-result[data-tone="down"] .fsim-line, .fsim-result[data-tone="down"] .fsim-dot { stroke: #ff8a7a; }
+.fsim-result[data-tone="down"] .fsim-area { fill: rgba(255, 138, 122, .13); }
+.fsim-result[data-tone="down"] .fsim-halo { fill: rgba(255, 138, 122, .25); }
+.fsim-cap { margin: 0; font-size: .78rem; line-height: 1.5; color: rgba(255, 255, 255, .5); }
+
+/* Scénarios comparatifs */
+.fsim-sub { margin: 44px 0 6px; color: var(--white); font-size: 1.25rem; }
+.fsim-sub + p { margin: 0 0 20px; font-size: .95rem; max-width: 720px; }
+.fsim-scn { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.fsim-scn-card { display: grid; gap: 12px; padding: 18px; border-radius: 18px; border: 1px solid rgba(255, 255, 255, .09); background: rgba(255, 255, 255, .035); transition: border-color .2s, transform .2s, background .2s; min-width: 0; }
+.fsim-scn-card:hover { border-color: rgba(255, 255, 255, .22); transform: translateY(-2px); }
+.fsim-scn-card.is-active { border-color: var(--emerald-500); background: rgba(18, 163, 122, .09); }
+.fsim-scn-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.fsim-scn-top .fsim-lab { margin: 0; }
+.fsim-scn-top .fsim-pct-box { width: 104px; flex: none; }
+.fsim .fsim-scn-top input { height: 42px; font-size: 1rem; padding: 0 30px 0 12px; border-radius: 11px; }
+.fsim-track { height: 5px; border-radius: 5px; background: rgba(255, 255, 255, .08); overflow: hidden; }
+.fsim-track i { display: block; height: 100%; border-radius: 5px; background: var(--emerald-500); transition: width .35s var(--ease), background .3s; }
+.fsim-scn-card[data-tone="down"] .fsim-track i { background: #ff8a7a; }
+.fsim-scn-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: .84rem; }
+.fsim-scn-row b { font: 700 1rem/1.2 var(--font-head); color: var(--white); font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+.fsim-scn-card[data-tone="up"] [data-scn-gain] { color: #7fe0c0; }
+.fsim-scn-card[data-tone="down"] [data-scn-gain] { color: #ffa397; }
+.fsim-apply { min-height: 40px; border-radius: 11px; border: 1px solid rgba(255, 255, 255, .16); background: transparent; color: rgba(255, 255, 255, .85); font: 600 .84rem/1 var(--font-body); cursor: pointer; transition: background .2s, border-color .2s, color .2s; }
+.fsim-apply:hover { background: rgba(255, 255, 255, .08); color: var(--white); border-color: rgba(255, 255, 255, .35); }
+
+/* Avertissement */
+.fsim-notice { display: grid; grid-template-columns: auto 1fr; gap: 14px; margin-top: 32px; padding: 20px 22px; border-radius: 18px; border: 1px solid rgba(201, 169, 110, .45); background: rgba(201, 169, 110, .08); color: rgba(255, 255, 255, .86); }
+.fsim-notice svg { color: var(--gold-400); margin-top: 3px; }
+.fsim-notice strong { display: block; margin-bottom: 6px; color: var(--white); font-family: var(--font-head); font-size: .98rem; }
+.fsim-notice p { margin: 0 0 6px; font-size: .9rem; line-height: 1.6; }
+.fsim-notice p:last-child { margin: 0; }
+
+@media (min-width: 620px) {
+  .fsim-card { padding: 30px; }
+  .fsim-kpis { grid-template-columns: repeat(4, 1fr); }
+  .fsim-scn { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1000px) {
+  .fsim { padding: 92px 0 100px; }
+  .fsim-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: start; }
+  .fsim-scn { grid-template-columns: repeat(5, 1fr); }
+}
+@media (min-width: 1000px) and (max-width: 1240px) { .fsim-kpis { grid-template-columns: 1fr 1fr; } }
+@media (prefers-reduced-motion: reduce) { .fsim-tag i, .fsim-halo { animation: none; } }
+@media (max-width: 619px) { .fsim-chart text { font-size: 22px; } .fsim-chart .ax { font-size: 20px; } .fsim-chart [data-x-mid] { display: none; } }
