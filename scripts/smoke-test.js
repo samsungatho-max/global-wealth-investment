@@ -113,7 +113,7 @@ async function main() {
   for (const u of ['/', '/opportunities', '/simulator', '/news', '/contact', '/page/legal', '/page/risks', '/?lang=en', '/?lang=es', '/?lang=de']) {
     assert.strictEqual((await pub.get(u)).status, 200, u);
   }
-  assert.match((await pub.get('/?lang=de')).text, /Mein Anlegerkonto erstellen/);
+  assert.match((await pub.get('/?lang=de')).text, /Alle Rechte vorbehalten/);
   assert.match((await pub.get('/?lang=fr')).text, /Chaque investissement mérite une vision/);
   step('Pages publiques accessibles dans les 4 langues');
 
@@ -172,7 +172,7 @@ async function main() {
   assert.match(sheet.text, /hotel-1600\.webp/);
   assert.doesNotMatch(sheet.text, /id="interest"/, 'aucune souscription sur une fiche exemple');
   const homePage = await pub.get('/');
-  assert.strictEqual(cards(homePage.text), 6);
+  assert.strictEqual(cards(homePage.text), 3);
   assert.match(homePage.text, /Opportunités internationales/);
   assert.match((await pub.get('/opportunities?lang=en&currency=USD')).text, /\$45,000,000</);
   step('Opportunités internationales : 10 catégories, filtres pays / secteur / montant / risque, dollars par défaut');
@@ -493,7 +493,7 @@ async function main() {
   assert.match(art.text, /Perspectives, limites et risques/);
   assert.match(art.text, /Synthèse originale rédigée à partir des sources citées/);
   assert.match((await pub.get('/news/fao-indice-prix-alimentaires-septembre-2026?lang=en')).text, /136\.0 points/);
-  assert.match((await pub.get('/?lang=fr')).text, /Actualités et rapports d’investissement internationaux/);
+  assert.match((await pub.get('/?lang=fr')).text, /Dernières analyses financières/);
   step('Rubrique actualités : 9 publications sourcées et datées, 4 langues, filtres, chiffres clés, graphique');
 
   // Contrôle éditorial : pas de publication sans source ni vérification ; planification ; suppression

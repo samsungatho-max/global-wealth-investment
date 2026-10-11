@@ -34,13 +34,17 @@ async function decorateProject(p, lang) {
 const isEmail = (s) => /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/.test(String(s || ''));
 
 router.get('/', async (req, res) => {
-  const projects = await Promise.all((await all(`SELECT * FROM projects WHERE status = 'open' ORDER BY is_demo ASC, kind = 'referenced' ASC, created_at DESC, id DESC LIMIT 6`))
+  const projects = await Promise.all((await all(`SELECT * FROM projects WHERE status = 'open' ORDER BY is_demo ASC, kind = 'referenced' ASC, created_at DESC, id DESC LIMIT 3`))
     .map((p) => decorateProject(p, req.lang)));
   const news = (await all(`SELECT * FROM news WHERE ${newsLib.VISIBLE} ORDER BY featured DESC, ${newsLib.ORDER} LIMIT 3`))
     .map((n) => newsLib.decorate(n, req.lang));
   const marketsLib = require('../lib/markets');
   const marketTiles = await marketsLib.home(req.lang).catch(() => []);
-  res.render('public/home', { marketTiles, spark: marketsLib.sparkPath, projects, news, sectors: SECTORS, featuredSectors: require('../lib/sectors').FEATURED_SECTORS, sim: settings.get('simulator') });
+  // Portée internationale : uniquement des chiffres tirés des projets réellement publiés
+  const reachRow = await one(`SELECT COUNT(*) AS projects, COUNT(DISTINCT country) AS countries, COUNT(DISTINCT sector) AS sectors FROM projects WHERE status = 'open' AND is_demo = 0`);
+  const reach = { projects: Number(reachRow.projects), countries: Number(reachRow.countries), sectors: Number(reachRow.sectors) };
+  const sitePages = require('../content/site-pages');
+  res.render('public/home', { home: require('../content/home-page'), pick: (v) => sitePages.pick(v, req.lang), reach, metaDescription: sitePages.pick(require('../content/home-page').hero.sub, req.lang), marketTiles, spark: marketsLib.sparkPath, projects, news, sectors: SECTORS, featuredSectors: require('../lib/sectors').FEATURED_SECTORS, sim: settings.get('simulator') });
 });
 
 router.get('/opportunities', async (req, res) => {

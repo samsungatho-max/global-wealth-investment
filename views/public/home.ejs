@@ -1,148 +1,137 @@
 <%- include('../partials/top', { bodyClass: 'home' }) %>
-<% var hero = photo('hero'); %>
+<link rel="stylesheet" href="/static/css/home.css?v=<%= assetV %>">
+<% var hero = photo('hero'); var H = home; var arrow = function (n) { return include('../partials/icon', { name: 'arrow', size: n || 16 }); }; %>
+<% var nfm = function (v, d) { return new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: d, minimumFractionDigits: d }).format(v); }; %>
+<% var pct = function (r) { return (r > 0 ? '+' : r < 0 ? '−' : '') + nfm(Math.abs(r) * 100, 2) + ' %'; }; %>
 
-<!-- ============ HÉROS ============ -->
-<section class="hero hero-photo">
+<!-- ============ BANNIÈRE ============ -->
+<section class="hero hero-photo hm-hero">
   <img class="hero-bg" src="<%= hero.large %>" srcset="<%= hero.small %> 800w, <%= hero.large %> 1600w" sizes="100vw" alt="<%= hero.alt %>" fetchpriority="high" decoding="async">
   <div class="hero-shade" aria-hidden="true"></div>
-  <div class="container hero-inner">
+  <svg class="hm-hero-lines" viewBox="0 0 1440 600" preserveAspectRatio="none" aria-hidden="true">
+    <path class="l1" d="M0 470 L120 452 L240 462 L360 418 L480 430 L600 372 L720 388 L840 322 L960 338 L1080 262 L1200 282 L1320 204 L1440 176"/>
+    <path class="l2" d="M0 530 L160 512 L320 520 L480 478 L640 492 L800 440 L960 452 L1120 398 L1280 412 L1440 352"/>
+  </svg>
+  <div class="container hero-inner hm-hero-inner">
     <div class="hero-copy">
-      <div class="eyebrow fade-up"><%= t('site.hero_eyebrow') %></div>
-      <h1 class="fade-up d1"><%= t('site.hero_title') %></h1>
-      <p class="hero-sub fade-up d2"><%= t('site.hero_sub') %></p>
+      <div class="eyebrow fade-up"><%= pick(H.hero.eyebrow) %></div>
+      <h1 class="fade-up d1"><%= pick(H.hero.title) %></h1>
+      <p class="hero-sub fade-up d2"><%= pick(H.hero.sub) %></p>
       <div class="hero-cta fade-up d3">
-        <a class="btn btn-emerald btn-lg" href="/solutions"><%= t('site.cta_solutions') %> <%- include('../partials/icon', { name: 'arrow', size: 18 }) %></a>
-        <a class="btn btn-gold btn-lg" href="/submit-project"><%= t('site.cta_submit') %></a>
-        <a class="btn btn-glass btn-lg" href="/contact"><%= t('site.cta_contact') %></a>
+        <a class="btn btn-emerald btn-lg" href="/solutions"><%= pick(H.hero.cta1) %> <%- arrow(18) %></a>
+        <a class="btn btn-glass btn-lg" href="/opportunities"><%= pick(H.hero.cta2) %></a>
+        <a class="btn btn-line btn-lg" href="/submit-project"><%= pick(H.hero.cta3) %></a>
       </div>
-      <ul class="hero-trust fade-up d4">
-        <% [['shield','trust1'],['clock','trust2'],['eye','trust3'],['globe','trust4']].forEach(function (x) { %>
-          <li><%- include('../partials/icon', { name: x[0], size: 18 }) %><span><%= t('ux.' + x[1]) %></span></li>
-        <% }) %>
-      </ul>
     </div>
+    <% if (marketTiles.length) { %>
+    <aside class="hm-snap fade-up d4" aria-label="<%= pick(H.hero.snapshot) %>">
+      <div class="hm-snap-head"><span><i></i><%= pick(H.hero.snapshot) %></span><a href="/markets"><%= t('site.mk_all') %> <%- arrow(13) %></a></div>
+      <% marketTiles.slice(0, 3).forEach(function (s) { var g = spark(s.points.slice(-40), 110, 34, 3); var up = s.change == null || s.change >= 0; %>
+      <a class="hm-snap-row" href="/markets/<%= s.cat %>">
+        <span class="hm-snap-name"><b><%= s.name %></b><small><%= s.date %></small></span>
+        <svg viewBox="0 0 110 34" aria-hidden="true" preserveAspectRatio="none"><path d="<%= g.d %>" class="hm-spark <%= up ? 'up' : 'down' %>"/></svg>
+        <strong><%= nfm(s.value, s.digits) %><small><%= s.unit %></small></strong>
+      </a>
+      <% }) %>
+      <p><%= pick(H.hero.snapshotNote) %></p>
+    </aside>
+    <% } %>
   </div>
 </section>
 
-<% if (marketTiles.length) { var nfm = function (v, d) { return new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-GB', { maximumFractionDigits: d, minimumFractionDigits: d }).format(v); }; %>
-<!-- ============ INDICATEURS DE MARCHÉ ============ -->
-<section class="mk-home">
+<% if (marketTiles.length) { %>
+<!-- ============ BARRE DE MARCHÉ ============ -->
+<section class="hm-bar" aria-label="<%= t('site.mk_home_t') %>">
   <div class="container">
-    <div class="mk-home-head"><div><h2><%= t('site.mk_home_t') %></h2><p><%= t('site.mk_home_sub') %></p></div><a class="btn btn-ghost btn-sm" href="/markets"><%= t('site.mk_all') %> <%- include('../partials/icon', { name: 'arrow', size: 14 }) %></a></div>
-    <div class="mk-strip">
-      <% marketTiles.forEach(function (s) { var g = spark(s.points.slice(-40), 120, 36, 3); var up = s.change == null || s.change >= 0; %>
-        <a class="mk-tile" href="/markets/<%= s.cat %>">
-          <span class="mk-tile-name"><%= s.name %></span>
-          <strong><%= nfm(s.value, s.digits) %> <small><%= s.unit %></small></strong>
-          <svg viewBox="0 0 120 36" aria-hidden="true" preserveAspectRatio="none"><path d="<%= g.d %>" class="mk-line <%= up ? 'up' : 'down' %>"/></svg>
-          <span class="mk-tile-date"><%= s.date %></span>
-        </a>
+    <div class="hm-bar-track">
+      <% marketTiles.forEach(function (s) { var up = s.change == null || s.change >= 0; %>
+      <a class="hm-tick" href="/markets/<%= s.cat %>">
+        <span class="hm-tick-name"><%= s.name %></span>
+        <span class="hm-tick-val"><strong><%= nfm(s.value, s.digits) %></strong> <small><%= s.unit %></small><% if (s.changePct != null) { %><em class="<%= up ? 'up' : 'down' %>"><%= pct(s.changePct) %></em><% } else if (s.change != null) { %><em class="<%= up ? 'up' : 'down' %>"><%= (s.change > 0 ? '+' : s.change < 0 ? '−' : '') + nfm(Math.abs(s.change), 2) %> pt</em><% } %></span>
+        <span class="hm-tick-date"><%= s.date %></span>
+      </a>
       <% }) %>
     </div>
-    <p class="mk-disclaimer"><%= t('site.mk_disclaimer') %></p>
+    <p class="hm-bar-note"><%= pick(H.bar.source) %> <a href="/markets"><%= pick(H.bar.all) %> →</a></p>
   </div>
 </section>
 <% } %>
 
-<!-- ============ ENGAGEMENTS ============ -->
-<section class="commit-strip">
-  <div class="container">
-    <div class="commit-grid">
-      <% [['growth','growth'],['eye','transparency'],['globe','international'],['users','support']].forEach(function (c, i) { %>
-      <div class="commit-item reveal" style="--d:<%= i * 80 %>ms">
-        <div class="commit-icon"><%- include('../partials/icon', { name: c[0] }) %></div>
-        <div><h3><%= t('commit.' + c[1] + '_t') %></h3><p><%= t('commit.' + c[1] + '_d') %></p></div>
-      </div>
-      <% }) %>
-    </div>
-  </div>
-</section>
-
-<!-- ============ COMMENT ÇA MARCHE ============ -->
-<section class="section">
-  <div class="container split">
-    <div class="split-media reveal">
-      <%- include('../partials/photo', { p: photo('reunion'), label: t('ux.photo_label'), cls: 'ph-tall', sizes: '(min-width: 1000px) 45vw, 100vw' }) %>
-      <div class="floating-card">
-        <%- include('../partials/icon', { name: 'shield', size: 22 }) %>
-        <div><strong><%= t('ux.trust1') %></strong><span><%= t('ux.trust3') %></span></div>
-      </div>
-    </div>
-    <div>
-      <div class="eyebrow eyebrow-dark reveal"><%= t('ux.how_eyebrow') %></div>
-      <h2 class="reveal"><%= t('ux.how_title') %></h2>
-      <p class="lead reveal"><%= t('ux.how_sub') %></p>
-      <ol class="steps-list">
-        <% [['user',1],['idcard',2],['search',3],['chart',4]].forEach(function (s, i) { %>
-        <li class="reveal" style="--d:<%= i * 90 %>ms">
-          <span class="step-badge"><%- include('../partials/icon', { name: s[0], size: 20 }) %></span>
-          <div><h3><span class="step-n">0<%= s[1] %></span> <%= t('home.step' + s[1] + '_t') %></h3><p><%= t('home.step' + s[1] + '_d') %></p></div>
-        </li>
-        <% }) %>
-      </ol>
-      <a class="btn btn-navy reveal" href="<%= user ? '/account' : '/register' %>"><%= t('hero.cta_open') %></a>
-    </div>
-  </div>
-</section>
-
-<!-- ============ SECTEURS ============ -->
-<section class="section section-gray">
+<!-- ============ DOMAINES D'EXPERTISE ============ -->
+<section class="section hm-exp">
   <div class="container">
     <div class="section-head">
-      <div class="eyebrow eyebrow-dark eyebrow-center reveal"><%= t('ux.sectors_eyebrow') %></div>
-      <h2 class="reveal"><%= t('ux.sectors_title') %></h2>
-      <p class="reveal"><%= t('home.sectors_sub') %></p>
+      <div class="eyebrow eyebrow-dark eyebrow-center reveal"><%= pick(H.expertise.eyebrow) %></div>
+      <h2 class="reveal"><%= pick(H.expertise.title) %></h2>
+      <p class="reveal"><%= pick(H.expertise.sub) %></p>
     </div>
-    <div class="sector-grid">
-            <% featuredSectors.forEach(function (s, i) { var sp = sectorPhoto(s); %>
-      <a class="sector-tile reveal" style="--d:<%= (i % 4) * 80 %>ms" href="/opportunities?sector=<%= s %>">
-        <img src="<%= sp.small %>" srcset="<%= sp.small %> 800w, <%= sp.large %> 1600w" sizes="(min-width: 1100px) 25vw, (min-width: 640px) 50vw, 100vw" alt="<%= sp.alt %>" loading="lazy" decoding="async" width="800" height="600">
-        <div class="sector-tile-body">
-          <span class="sector-tile-icon"><%- include('../partials/icon', { name: sectorIcon(s), size: 22 }) %></span>
-          <h3><%= t('sector.' + s) %></h3>
-          <p><%= t('sector.' + s + '_d') %></p>
-          <span class="sector-tile-link"><%= t('ux.see_projects') %> <%- include('../partials/icon', { name: 'arrow', size: 16 }) %></span>
-        </div>
+    <div class="hm-exp-grid">
+      <% H.expertise.cards.forEach(function (c, i) { var cp = photo(c.photo); %>
+      <a class="hm-exp-card reveal" style="--d:<%= (i % 3) * 80 %>ms" href="<%= c.href %>">
+        <span class="hm-exp-media"><img src="<%= cp.small %>" srcset="<%= cp.small %> 800w, <%= cp.large %> 1600w" sizes="(min-width: 1000px) 33vw, (min-width: 640px) 50vw, 100vw" alt="<%= cp.alt %>" loading="lazy" decoding="async" width="800" height="600"></span>
+        <span class="hm-exp-body">
+          <span class="hm-exp-ico"><%- include('../partials/icon', { name: c.icon, size: 22 }) %></span>
+          <h3><%= pick(c.title) %></h3>
+          <p><%= pick(c.text) %></p>
+          <span class="hm-link"><%= pick(H.expertise.more) %> <%- arrow(15) %></span>
+        </span>
       </a>
       <% }) %>
     </div>
-    <nav class="cat-strip reveal" aria-label="<%= t('project.sector') %>">
-      <% sectors.forEach(function (s) { %>
-        <a class="cat-pill" href="/opportunities?sector=<%= s %>"><span class="cat-ico"><%- include('../partials/icon', { name: sectorIcon(s), size: 20 }) %></span><span class="cat-name"><%= t('sector.' + s) %></span></a>
-      <% }) %>
-    </nav>
   </div>
 </section>
 
-<!-- ============ ACTIFS TANGIBLES (galerie) ============ -->
-<section class="section section-navy">
-  <div class="container">
-    <div class="section-head">
-      <div class="eyebrow eyebrow-center reveal"><%= t('ux.real_eyebrow') %></div>
-      <h2 class="reveal"><%= t('ux.real_title') %></h2>
-      <p class="reveal"><%= t('ux.real_sub') %></p>
+<!-- ============ MARCHÉS FINANCIERS ============ -->
+<section class="hm-mk">
+  <div class="container hm-mk-grid">
+    <div class="hm-mk-copy">
+      <div class="eyebrow reveal"><%= pick(H.markets.eyebrow) %></div>
+      <h2 class="reveal"><%= pick(H.markets.title) %></h2>
+      <p class="reveal"><%= pick(H.markets.sub) %></p>
+      <ul class="hm-mk-cats reveal">
+        <% nav.groups.filter(function (g) { return g.id === 'markets'; })[0].items.slice(1).forEach(function (i) { %>
+          <li><a href="<%= i.href %>"><%- include('../partials/icon', { name: i.icon, size: 16 }) %><%= i.label %></a></li>
+        <% }) %>
+      </ul>
+      <a class="btn btn-emerald btn-lg reveal" href="/markets"><%= pick(H.markets.cta) %> <%- arrow(18) %></a>
     </div>
-    <div class="mosaic">
-      <% [['villa','g_villa','m-a'],['chantier','g_site','m-b'],['usine','g_factory','m-c'],['eolien','g_wind','m-d'],['cargo','g_cargo','m-e'],['champs','g_fields','m-f']].forEach(function (m, i) { var mp = photo(m[0]); %>
-        <figure class="mosaic-item <%= m[2] %> reveal" style="--d:<%= i * 70 %>ms">
-          <img src="<%= mp.small %>" srcset="<%= mp.small %> 800w, <%= mp.large %> 1600w" sizes="(min-width: 1000px) 40vw, 100vw" alt="<%= mp.alt %>" loading="lazy" decoding="async" width="800" height="600">
-          <figcaption><span><%= t('ux.' + m[1]) %></span></figcaption>
-        </figure>
+    <div class="hm-mk-charts">
+      <% if (!marketTiles.length) { %><p class="hm-mk-none reveal"><%= pick(H.markets.none) %></p><% } %>
+      <% marketTiles.slice(0, 2).forEach(function (s, i) { var g = spark(s.points, 520, 170, 8); var up = s.periodPct == null ? (s.change == null || s.change >= 0) : s.periodPct >= 0; %>
+      <a class="hm-chart reveal" style="--d:<%= i * 90 %>ms" href="/markets/<%= s.cat %>">
+        <div class="hm-chart-head">
+          <div><span><%= s.name %></span><strong><%= nfm(s.value, s.digits) %> <small><%= s.unit %></small></strong></div>
+          <% if (s.periodPct != null) { %><em class="<%= up ? 'up' : 'down' %>" title="<%= pick(H.markets.over) %>"><%= pct(s.periodPct) %> <small><%= pick(H.markets.since) %> <%= s.periodFrom %></small></em><% } %>
+        </div>
+        <svg viewBox="0 0 520 170" preserveAspectRatio="none" aria-hidden="true">
+          <defs><linearGradient id="hm-g<%= i %>" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="<%= up ? '#12a37a' : '#ff8a7a' %>" stop-opacity=".35"/><stop offset="1" stop-color="<%= up ? '#12a37a' : '#ff8a7a' %>" stop-opacity="0"/></linearGradient></defs>
+          <path d="<%= g.d %> L512 170 L8 170 Z" fill="url(#hm-g<%= i %>)"/>
+          <path d="<%= g.d %>" class="hm-spark big <%= up ? 'up' : 'down' %>"/>
+        </svg>
+        <div class="hm-chart-foot"><span><%= pick(H.markets.asOf) %> <%= s.date %></span><span><%= s.source.name.split(' — ')[0] %></span></div>
+      </a>
       <% }) %>
+      <% if (marketTiles.length > 2) { %>
+      <div class="hm-stats reveal">
+        <% marketTiles.slice(2).forEach(function (s) { %>
+        <a href="/markets/<%= s.cat %>"><span><%= s.name %></span><strong><%= nfm(s.value, s.digits) %> <small><%= s.unit %></small></strong><small><%= s.date %></small></a>
+        <% }) %>
+      </div>
+      <% } %>
     </div>
   </div>
 </section>
 
 <!-- ============ OPPORTUNITÉS ============ -->
-<section class="section">
+<section class="section section-gray hm-opps">
   <div class="container">
-    <div class="panel-head">
+    <div class="hm-head-row">
       <div>
-        <div class="eyebrow eyebrow-dark reveal"><%= t('nav.opportunities') %></div>
+        <div class="eyebrow eyebrow-dark reveal"><%= pick(H.opps.eyebrow) %></div>
         <h2 class="reveal"><%= t('opp.title') %></h2>
-        <p class="opp-lead mb-0 reveal"><%= t('opp.lead') %></p>
+        <p class="reveal"><%= pick(H.opps.sub) %></p>
       </div>
-      <a class="btn btn-ghost" href="/opportunities"><%= t('home.featured_all') %> <%- include('../partials/icon', { name: 'arrow', size: 16 }) %></a>
+      <a class="btn btn-ghost" href="/opportunities"><%= t('home.featured_all') %> <%- arrow(16) %></a>
     </div>
     <% if (projects.length) { %>
       <div class="grid grid-3 mt-3">
@@ -155,177 +144,80 @@
   </div>
 </section>
 
-<!-- ============ RÉSEAU DE PARTENAIRES ============ -->
-<section class="section section-navy partners" id="partenaires">
-  <div class="container">
-    <div class="split">
-      <div>
-        <div class="eyebrow reveal"><%= t('partners.eyebrow') %></div>
-        <h2 class="reveal"><%= t('partners.title') %></h2>
-        <p class="partners-lead reveal"><%= t('partners.p1') %></p>
-        <h3 class="partners-h reveal"><%= t('partners.eng_t') %></h3>
-        <p class="reveal"><%= t('partners.eng_p') %></p>
-      </div>
-      <div class="split-media reveal">
-        <%- include('../partials/photo', { p: photo('poignee-main'), label: t('ux.photo_label'), cls: 'ph-tall', sizes: '(min-width: 1000px) 45vw, 100vw' }) %>
-      </div>
-    </div>
-
-    <h3 class="partners-sub reveal"><%= t('partners.why_t') %></h3>
-    <div class="why-grid">
-      <% [['globe',1],['pie',2],['search',3],['users',4]].forEach(function (w, i) { %>
-        <div class="why-card reveal" style="--d:<%= i * 70 %>ms">
-          <span class="why-icon"><%- include('../partials/icon', { name: w[0], size: 22 }) %></span>
-          <h4><%= t('partners.w' + w[1] + '_t') %></h4>
-          <p><%= t('partners.w' + w[1] + '_d') %></p>
-        </div>
-      <% }) %>
-    </div>
-
-    <div class="partners-cta reveal">
-      <div>
-        <h3><%= t('partners.cta_t') %></h3>
-        <p><%= t('partners.cta_p') %></p>
-      </div>
-      <a class="btn btn-gold" href="/contact"><%= t('partners.cta') %> <%- include('../partials/icon', { name: 'arrow', size: 16 }) %></a>
-    </div>
-
-    <h3 class="partners-sub reveal"><%= t('partners.markets_title') %></h3>
-    <div class="market-grid">
-      <% [['immeuble','building',1],['agriculture','leaf',2],['port','ship',3],['usine','sun',4],['reunion','users',5]].forEach(function (m, i) { var mp = photo(m[0]); %>
-        <article class="market-card reveal" style="--d:<%= i * 70 %>ms">
-          <div class="market-media">
-            <img src="<%= mp.small %>" alt="<%= mp.alt %>" loading="lazy" decoding="async" width="800" height="600">
-            <span class="market-icon"><%- include('../partials/icon', { name: m[1], size: 20 }) %></span>
-          </div>
-          <div class="market-body">
-            <h4><%= t('partners.m' + m[2] + '_t') %></h4>
-            <p><%= t('partners.m' + m[2] + '_d') %></p>
-          </div>
-        </article>
-      <% }) %>
-    </div>
-  </div>
-</section>
-
-<!-- ============ NOTRE ENGAGEMENT ============ -->
-<section class="section" id="engagement">
+<!-- ============ NOTRE APPROCHE ============ -->
+<section class="section hm-app">
   <div class="container">
     <div class="section-head">
-      <div class="eyebrow eyebrow-dark eyebrow-center reveal"><%= t('partners.commit_eyebrow') %></div>
-      <h2 class="reveal"><%= t('partners.commit_title') %></h2>
+      <div class="eyebrow eyebrow-dark eyebrow-center reveal"><%= pick(H.approach.eyebrow) %></div>
+      <h2 class="reveal"><%= pick(H.approach.title) %></h2>
+      <p class="reveal"><%= pick(H.approach.sub) %></p>
     </div>
-    <div class="pledge-grid">
-      <% [['eye',1],['search',2],['shield',3],['file',4],['pie',5]].forEach(function (c, i) { %>
-        <div class="pledge reveal" style="--d:<%= i * 70 %>ms">
-          <span class="pledge-num">0<%= c[1] %></span>
-          <span class="pledge-icon"><%- include('../partials/icon', { name: c[0], size: 22 }) %></span>
-          <h3><%= t('partners.c' + c[1] + '_t') %></h3>
-          <p><%= t('partners.c' + c[1] + '_d') %></p>
-        </div>
+    <ol class="hm-steps">
+      <% H.approach.steps.forEach(function (s, i) { %>
+      <li class="reveal" style="--d:<%= i * 80 %>ms">
+        <span class="hm-step-top"><span class="hm-step-ico"><%- include('../partials/icon', { name: s.icon, size: 22 }) %></span><span class="hm-step-n">0<%= i + 1 %></span></span>
+        <h3><%= pick(s.title) %></h3>
+        <p><%= pick(s.text) %></p>
+      </li>
       <% }) %>
-    </div>
-    <p class="risk-banner mt-3 reveal"><%- include('../partials/icon', { name: 'alert', size: 16 }) %> <%= t('partners.note') %></p>
+    </ol>
+    <p class="text-center mt-3 reveal"><a class="btn btn-ghost" href="/company#approach"><%= pick(H.expertise.more) %> <%- arrow(16) %></a></p>
   </div>
 </section>
 
-<!-- ============ TRANSPARENCE ============ -->
-<section class="section section-gray">
-  <div class="container split split-reverse">
-    <div class="split-media reveal">
-      <%- include('../partials/photo', { p: photo('graphiques'), label: t('ux.photo_label'), cls: 'ph-tall', sizes: '(min-width: 1000px) 45vw, 100vw' }) %>
+<!-- ============ PORTÉE INTERNATIONALE ============ -->
+<section class="hm-world">
+  <div class="container hm-world-grid">
+    <div class="hm-globe reveal" aria-hidden="true">
+      <svg viewBox="0 0 520 520">
+        <defs>
+          <radialGradient id="hm-globe-g" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#1f4175" stop-opacity=".95"/><stop offset=".6" stop-color="#0f2140" stop-opacity=".9"/><stop offset="1" stop-color="#050d1c"/></radialGradient>
+          <clipPath id="hm-globe-c"><circle cx="260" cy="260" r="200"/></clipPath>
+        </defs>
+        <circle class="orbit" cx="260" cy="260" r="246"/><circle class="orbit o2" cx="260" cy="260" r="222"/>
+        <circle cx="260" cy="260" r="200" fill="url(#hm-globe-g)" stroke="rgba(255,255,255,.18)"/>
+        <g clip-path="url(#hm-globe-c)" class="grat">
+          <% [40, 80, 120, 160].forEach(function (rx) { %><ellipse cx="260" cy="260" rx="<%= rx %>" ry="200"/><% }) %>
+          <% [-150, -100, -50, 0, 50, 100, 150].forEach(function (dy) { var w = Math.sqrt(200 * 200 - dy * dy); %><ellipse cx="260" cy="<%= 260 + dy %>" rx="<%= w.toFixed(1) %>" ry="<%= (w * 0.16).toFixed(1) %>"/><% }) %>
+          <line x1="260" y1="60" x2="260" y2="460"/>
+        </g>
+        <% var nodes = [[150, 190], [215, 300], [262, 168], [300, 252], [352, 205], [385, 300], [318, 362], [185, 372]]; var links = [[0, 2], [2, 4], [0, 3], [3, 5], [1, 3], [3, 6], [4, 5], [1, 7], [2, 3]]; %>
+        <% links.forEach(function (l, i) { var a = nodes[l[0]], b = nodes[l[1]], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2 - 46; %><path class="arc" style="animation-delay:<%= i * 0.35 %>s" d="M<%= a[0] %> <%= a[1] %> Q<%= mx %> <%= my %> <%= b[0] %> <%= b[1] %>"/><% }) %>
+        <% nodes.forEach(function (n, i) { %><circle class="pulse" style="animation-delay:<%= i * 0.4 %>s" cx="<%= n[0] %>" cy="<%= n[1] %>" r="9"/><circle class="node" cx="<%= n[0] %>" cy="<%= n[1] %>" r="4"/><% }) %>
+      </svg>
     </div>
     <div>
-      <div class="eyebrow eyebrow-dark reveal"><%= t('ux.transp_eyebrow') %></div>
-      <h2 class="reveal"><%= t('ux.transp_title') %></h2>
-      <p class="lead reveal"><%= t('ux.transp_sub') %></p>
-      <ul class="check-list">
-        <% [['wallet',1],['clock',2],['chart',3],['file',4]].forEach(function (x, i) { %>
-          <li class="reveal" style="--d:<%= i * 80 %>ms"><span class="check-ico"><%- include('../partials/icon', { name: x[0], size: 18 }) %></span><%= t('ux.transp_' + x[1]) %></li>
-        <% }) %>
+      <div class="eyebrow reveal"><%= pick(H.world.eyebrow) %></div>
+      <h2 class="reveal"><%= pick(H.world.title) %></h2>
+      <p class="reveal"><%= pick(H.world.sub) %></p>
+      <% if (reach.projects) { %>
+      <dl class="hm-reach reveal">
+        <div><dt><%= reach.projects %></dt><dd><%= pick(H.world.statOpps) %></dd></div>
+        <div><dt><%= reach.countries %></dt><dd><%= pick(H.world.statCountries) %></dd></div>
+        <div><dt><%= reach.sectors %></dt><dd><%= pick(H.world.statSectors) %></dd></div>
+      </dl>
+      <% } %>
+      <ul class="hm-sectors reveal">
+        <% H.world.sectors.forEach(function (s) { %><li><%- include('../partials/icon', { name: s.icon, size: 16 }) %><%= pick(s.label) %></li><% }) %>
       </ul>
-      <p class="note-line reveal"><%- include('../partials/icon', { name: 'shield', size: 16 }) %> <%= t('ux.transp_note') %></p>
     </div>
-  </div>
-</section>
-
-<!-- ============ SIMULATEUR ============ -->
-<section class="section">
-  <div class="container">
-    <div class="sim-teaser reveal">
-      <div>
-        <div class="eyebrow"><%= t('nav.simulator') %></div>
-        <h2><%= t('home.sim_title') %></h2>
-        <p><%= t('home.sim_sub') %></p>
-        <a class="btn btn-gold" href="/simulator"><%= t('home.sim_cta') %> <%- include('../partials/icon', { name: 'arrow', size: 16 }) %></a>
-      </div>
-      <% var simFinal = Math.round(sim.capital * Math.pow(1 + sim.rate / 100, sim.years) * 100); var simCap = Math.round(sim.capital * 100); %>
-      <div class="sim-teaser-card">
-        <div class="small muted-light"><%= t('sim.subtitle') %></div>
-        <div class="sim-teaser-row"><span><%= t('sim.capital') %></span><strong><%= usd(simCap) %></strong></div>
-        <div class="sim-teaser-row"><span><%= t('sim.rate') %></span><strong><%= sim.rate %> %</strong></div>
-        <div class="sim-teaser-row"><span><%= t('sim.years') %></span><strong><%= sim.years %> <%= t('sim.years_unit') %></strong></div>
-        <div class="sim-teaser-total"><span><%= t('sim.final') %></span><strong><%= usd(simFinal) %></strong></div>
-        <p class="small muted-light mb-0"><%= t('sim.disclaimer') %></p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============ CONDITIONS & RISQUES ============ -->
-<section class="section section-gray">
-  <div class="container">
-    <div class="grid grid-2 cond-risk">
-      <div class="card card-lift reveal">
-        <div class="eyebrow eyebrow-dark"><%= t('ux.cond_eyebrow') %></div>
-        <h2 class="h3-like"><%= t('ux.cond_title') %></h2>
-        <ol class="num-list">
-          <% [1,2,3,4].forEach(function (n) { %><li><%= t('ux.cond_' + n) %></li><% }) %>
-        </ol>
-        <a class="btn btn-navy btn-sm" href="/page/terms"><%= t('footer.terms') %></a>
-      </div>
-      <div class="card card-lift reveal" style="--d:100ms">
-        <div class="eyebrow eyebrow-dark"><%= t('ux.risk_eyebrow') %></div>
-        <h2 class="h3-like"><%= t('ux.risk_title') %></h2>
-        <ul class="risk-points">
-          <% [['alert',1],['lock',2],['pie',3]].forEach(function (r) { %>
-            <li><span class="risk-ico"><%- include('../partials/icon', { name: r[0], size: 18 }) %></span><div><strong><%= t('ux.risk' + r[1] + '_t') %></strong><p><%= t('ux.risk' + r[1] + '_d') %></p></div></li>
-          <% }) %>
-        </ul>
-        <div class="risk-scale" aria-label="<%= t('risk.scale') %>">
-          <% [1,2,3,4,5].forEach(function (r) { %><span class="rs rs<%= r %>"><b><%= r %></b><%= t('risk.' + r) %></span><% }) %>
-        </div>
-        <p class="small muted mt-1 mb-0"><%= t('ux.risk_scale') %> <a href="/page/risks"><%= t('common.learn_more') %></a></p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============ FAQ ============ -->
-<section class="section">
-  <div class="container faq-wrap">
-    <div class="section-head">
-      <div class="eyebrow eyebrow-dark eyebrow-center reveal"><%= t('ux.faq_eyebrow') %></div>
-      <h2 class="reveal"><%= t('ux.faq_title') %></h2>
-    </div>
-    <div class="faq">
-      <% [1,2,3,4].forEach(function (n, i) { %>
-        <details class="faq-item reveal" style="--d:<%= i * 60 %>ms" <%= n === 1 ? 'open' : '' %>>
-          <summary><%= t('ux.q' + n) %><span class="faq-plus" aria-hidden="true"></span></summary>
-          <p><%= t('ux.a' + n) %></p>
-        </details>
-      <% }) %>
-    </div>
-    <p class="text-center mt-3"><a class="btn btn-ghost" href="/page/faq"><%= t('ux.faq_more') %></a></p>
   </div>
 </section>
 
 <% if (news.length) { %>
-<section class="section section-gray">
+<!-- ============ ACTUALITÉS ============ -->
+<section class="section hm-news">
   <div class="container">
-    <div class="panel-head"><h2 class="mb-0"><%= t('home.news_title') %></h2><a class="btn btn-ghost btn-sm" href="/news"><%= t('common.learn_more') %></a></div>
-    <div class="grid grid-3 mt-2">
-      <% news.forEach(function (n) { %><%- include('../partials/news-card', { n: n }) %><% }) %>
+    <div class="hm-head-row">
+      <div>
+        <div class="eyebrow eyebrow-dark reveal"><%= pick(H.news.eyebrow) %></div>
+        <h2 class="reveal"><%= pick(H.news.title) %></h2>
+        <p class="reveal"><%= pick(H.news.sub) %></p>
+      </div>
+      <a class="btn btn-ghost" href="/news"><%= pick(H.news.all) %> <%- arrow(16) %></a>
+    </div>
+    <div class="grid grid-3 mt-3">
+      <% news.forEach(function (n, i) { %><div class="reveal" style="--d:<%= i * 90 %>ms"><%- include('../partials/news-card', { n: n }) %></div><% }) %>
     </div>
   </div>
 </section>
@@ -333,16 +225,16 @@
 
 <!-- ============ APPEL À L'ACTION ============ -->
 <% var cta = photo('skyline'); %>
-<section class="cta-band">
+<section class="cta-band hm-cta">
   <img src="<%= cta.large %>" srcset="<%= cta.small %> 800w, <%= cta.large %> 1600w" sizes="100vw" alt="" loading="lazy" decoding="async">
   <div class="container cta-inner reveal">
-    <h2><%= t('ux.cta_title') %></h2>
-    <p><%= t('ux.cta_sub') %></p>
+    <h2><%= pick(H.cta.title) %></h2>
+    <p><%= pick(H.cta.sub) %></p>
     <div class="hero-cta">
-      <a class="btn btn-gold btn-lg" href="/opportunities"><%= t('hero.cta_discover') %></a>
-      <a class="btn btn-glass btn-lg" href="<%= user ? '/account' : '/register' %>"><%= t('hero.cta_open') %></a>
+      <a class="btn btn-emerald btn-lg" href="/opportunities"><%= pick(H.cta.b1) %> <%- arrow(18) %></a>
+      <a class="btn btn-gold btn-lg" href="/submit-project"><%= pick(H.cta.b2) %></a>
+      <a class="btn btn-glass btn-lg" href="/contact"><%= pick(H.cta.b3) %></a>
     </div>
-    <p class="small cta-risk"><%= t('home.risk_text') %></p>
   </div>
 </section>
 
