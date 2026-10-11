@@ -11,14 +11,15 @@
 %>
 <div class="table-wrap">
   <table>
-    <thead><tr><th>#</th><th>Date et heure</th><th>Administrateur</th><th>Action</th><th>Cible</th><th>Ancienne valeur</th><th>Nouvelle valeur</th><th>Référence / motif</th><th>IP</th></tr></thead>
+    <thead><tr><th>#</th><th>Date et heure</th><th>Administrateur</th><th>Client</th><th>Action</th><th>Cible</th><th>Ancienne valeur</th><th>Nouvelle valeur</th><th>Référence / motif</th><th>IP</th></tr></thead>
     <tbody>
-    <% if (!rows.length) { %><tr><td colspan="9" class="empty">Aucune entrée.</td></tr><% } %>
+    <% if (!rows.length) { %><tr><td colspan="10" class="empty">Aucune entrée.</td></tr><% } %>
     <% rows.forEach(function (a) { var v = auditView(a.details); %>
       <tr>
         <td class="mono small"><%= a.id %></td>
         <td class="small" style="white-space:nowrap"><%= fmtDate(a.created_at, true) %></td>
         <td class="small"><%= a.actor_email || '—' %></td>
+        <td class="small"><% if (a.client_id) { %><a href="/admin/users/<%= a.client_id %>"><%= a.client_name %></a><% } else { %>—<% } %></td>
         <td><span class="chip"><%= a.action %></span></td>
         <td class="small"><%= a.target_type || '' %> <%= a.target_id || '' %></td>
         <td class="small"><%= v.before || '—' %></td>

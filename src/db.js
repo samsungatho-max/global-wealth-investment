@@ -15,7 +15,7 @@ const { AsyncLocalStorage } = require('async_hooks');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
-const SCHEMA_VERSION = '11';
+const SCHEMA_VERSION = '12';
 
 const als = new AsyncLocalStorage();
 let driver = null; // { kind, query(text, params), exec(sql), transaction(fn), close() }
@@ -253,7 +253,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   type TEXT NOT NULL CHECK (type IN ('deposit','withdrawal','investment','payout','fee')),
   amount_cents BIGINT NOT NULL CHECK (amount_cents > 0),
   fee_cents BIGINT NOT NULL DEFAULT 0,
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','processing','confirmed','rejected','cancelled')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','processing','approved','confirmed','rejected','cancelled')),
   reference TEXT NOT NULL UNIQUE,
   method TEXT,
   beneficiary TEXT,
@@ -479,6 +479,10 @@ ALTER TABLE news ADD COLUMN IF NOT EXISTS featured INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE news ADD COLUMN IF NOT EXISTS publish_at TEXT;
 ALTER TABLE news ADD COLUMN IF NOT EXISTS reviewed_by BIGINT;
 ALTER TABLE news ADD COLUMN IF NOT EXISTS updated_at TEXT;
+-- Retraits : étape « approuvé » entre l'examen et l'exécution ; pièces justificatives internes (non visibles du client)
+ALTER TABLE transactions DROP CONSTRAINT IF EXISTS transactions_status_check;
+ALTER TABLE transactions ADD CONSTRAINT transactions_status_check CHECK (status IN ('pending','processing','approved','confirmed','rejected','cancelled'));
+ALTER TABLE user_documents ADD COLUMN IF NOT EXISTS internal INTEGER NOT NULL DEFAULT 0;
 
 -- Veille : sources officielles suivies et publications détectées (jamais publiées automatiquement)
 CREATE TABLE IF NOT EXISTS news_sources (

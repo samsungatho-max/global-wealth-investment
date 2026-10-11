@@ -148,3 +148,9 @@ html.nav-open, html.nav-open body { overflow: hidden; }
 /* Ancres : le titre visé reste visible sous l'en-tête fixe */
 .company-card, .sol-card, #request { scroll-margin-top: 96px; }
 @media (max-width: 1499px) { .header-cta.is-auth .btn-line { display: none; } }
+/* Utilisateur connecté : davantage d'éléments dans l'en-tête, le menu compact est conservé jusqu'à 1340 px */
+@media (min-width: 1160px) and (max-width: 1339px) {
+  .site-header:has(.header-cta.is-auth) .gnav, .site-header:has(.header-cta.is-auth) .header-cta { display: none; }
+  .site-header:has(.header-cta.is-auth) .nav-burger { display: inline-flex; }
+  .site-header:has(.header-cta.is-auth) .mnav.open { display: block; }
+}

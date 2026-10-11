@@ -237,12 +237,12 @@ router.post('/withdraw', async (req, res, next) => {
 router.get('/documents', async (req, res) => {
   res.render('account/documents', {
     title: t(req.lang, 'docs.title'),
-    docs: await all('SELECT * FROM user_documents WHERE user_id = ? ORDER BY created_at DESC', req.user.id)
+    docs: await all('SELECT * FROM user_documents WHERE user_id = ? AND internal = 0 ORDER BY created_at DESC', req.user.id)
   });
 });
 
 router.get('/documents/:id', async (req, res, next) => {
-  const d = await one('SELECT * FROM user_documents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+  const d = await one('SELECT * FROM user_documents WHERE id = ? AND user_id = ? AND internal = 0', req.params.id, req.user.id);
   if (!d) return next();
   await sendStoredFile(res, d.file_path, d.original_name);
 });

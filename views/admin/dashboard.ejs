@@ -1,34 +1,85 @@
 <%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<% var monthName = function (m) { return new Intl.DateTimeFormat('fr-FR', { month: 'short' }).format(new Date(m + '-15')); };
+   var maxFlow = Math.max.apply(null, months.map(function (x) { return Math.max(x.deposits, x.withdrawals); }).concat([1]));
+   var maxCl = Math.max.apply(null, months.map(function (x) { return x.clients; }).concat([1]));
+   var compact = function (c) { return new Intl.NumberFormat('fr-FR', { notation: 'compact', maximumFractionDigits: 1 }).format(c / 100) + ' $'; }; %>
 <div class="container dash">
   <%- include('../partials/admin-nav') %>
-  <div>
-    <div class="dash-head"><h1>Tableau de bord</h1><span class="muted small">Connecté : <%= user.email %></span></div>
-
-    <% if (!fundsEnabled) { %>
-      <div class="alert alert-warning"><strong>Réception de fonds désactivée.</strong> Les investisseurs ne peuvent pas déclarer de dépôt. Activez-la dans <a href="/admin/settings">Paramètres</a> uniquement après obtention des autorisations réglementaires et renseignement des informations légales.</div>
-    <% } %>
-    <% if (!mailEnabled) { %><div class="alert alert-error"><strong>Aucun e-mail ne part du site.</strong> L'envoi n'est pas encore configuré : les demandes du formulaire Contact sont bien enregistrées dans « Demandes et dossiers », mais ni vous ni le demandeur ne recevez d'e-mail. Voir « E-mails / Journal d'envoi ».</div><% } %>
-    <% if (stats.demo) { %>
-      <div class="alert alert-warning"><strong><%= stats.demo %> fiche(s) de démonstration publiée(s).</strong> Elles sont clairement marquées comme fictives ; archivez-les avant la mise en production depuis <a href="/admin/projects">Projets</a>.</div>
-    <% } %>
-    <% if (!user.totp_enabled) { %>
-      <div class="alert alert-info">Recommandé : <a href="/account/security#twofa">activez l'authentification à deux facteurs</a> sur votre compte administrateur.</div>
-    <% } %>
-
-    <div class="kpis four">
-      <a class="kpi" href="/admin/kyc" style="text-decoration:none"><div class="kpi-label">KYC à examiner</div><div class="kpi-value"><%= stats.kyc %></div></a>
-      <a class="kpi" href="/admin/transactions?type=deposit&status=pending" style="text-decoration:none"><div class="kpi-label">Dépôts à vérifier</div><div class="kpi-value"><%= stats.deposits %></div></a>
-      <a class="kpi" href="/admin/transactions?type=withdrawal" style="text-decoration:none"><div class="kpi-label">Retraits en cours</div><div class="kpi-value"><%= stats.withdrawals %></div></a>
-      <a class="kpi" href="/admin/requests?status=new" style="text-decoration:none"><div class="kpi-label">Nouvelles demandes</div><div class="kpi-value"><%= stats.requests %></div></a>
-      <a class="kpi" href="/admin/messages" style="text-decoration:none"><div class="kpi-label">Nouveaux messages</div><div class="kpi-value"><%= stats.messages %></div></a>
-      <a class="kpi" href="/admin/interests" style="text-decoration:none"><div class="kpi-label">Nouveaux intérêts</div><div class="kpi-value"><%= stats.interests %></div></a>
-      <a class="kpi" href="/admin/users" style="text-decoration:none"><div class="kpi-label">Investisseurs inscrits</div><div class="kpi-value"><%= stats.investors %></div></a>
-      <div class="kpi dark"><div class="kpi-label">Capital investi (actif)</div><div class="kpi-value"><%= usd(stats.invested) %></div><div class="kpi-note">Dépôts confirmés cumulés : <%= usd(stats.deposited) %></div></div>
-      <a class="kpi" href="/admin/logins?failed=1" style="text-decoration:none"><div class="kpi-label">Échecs de connexion (24 h)</div><div class="kpi-value"><%= stats.failedLogins %></div></a>
+  <div class="adm">
+    <div class="dash-head adm-head">
+      <div><p class="pf-kicker"><span class="pf-live"></span>Administration · <%= user.email %></p><h1>Tableau de bord</h1></div>
+      <form class="adm-search" method="get" action="/admin/users" role="search">
+        <%- include('../partials/icon', { name: 'search', size: 17 }) %>
+        <input type="search" name="q" placeholder="Rechercher un client : nom, e-mail, n° de compte, référence…" aria-label="Rechercher un client">
+      </form>
     </div>
 
-    <section class="panel">
-      <div class="panel-head"><h2>Activité administrative récente</h2><a class="small" href="/admin/audit">Journal complet →</a></div>
+    <% if (!fundsEnabled) { %>
+      <div class="alert alert-warning"><strong>Réception de fonds désactivée.</strong> Aucun dépôt ne peut être enregistré ni crédité. Activez-la dans <a href="/admin/settings">Paramètres</a> uniquement après obtention des autorisations réglementaires.</div>
+    <% } %>
+    <% if (!mailEnabled) { %><div class="alert alert-error"><strong>Aucun e-mail ne part du site.</strong> L'envoi n'est pas configuré : voir « E-mails envoyés ».</div><% } %>
+    <% if (stats.demo) { %><div class="alert alert-warning"><strong><%= stats.demo %> fiche(s) de démonstration publiée(s).</strong> Archivez-les depuis <a href="/admin/projects">Projets</a>.</div><% } %>
+    <% if (!user.totp_enabled) { %><div class="alert alert-info">Recommandé : <a href="/account/security#twofa">activez l'authentification à deux facteurs</a> sur votre compte administrateur.</div><% } %>
+
+    <div class="adm-stats">
+      <a class="adm-stat" href="/admin/users"><span class="adm-stat-ico"><%- include('../partials/icon', { name: 'users', size: 20 }) %></span><span class="pf-lab">Clients</span><strong><%= stats.investors %></strong><small><%= stats.portfolios %> portefeuille(s) actif(s)</small></a>
+      <a class="adm-stat" href="/admin/deposits?status=confirmed"><span class="adm-stat-ico up"><%- include('../partials/icon', { name: 'wallet', size: 20 }) %></span><span class="pf-lab">Total des dépôts confirmés</span><strong><%= usd(stats.deposited) %></strong><small>&nbsp;</small></a>
+      <a class="adm-stat" href="/admin/withdrawals?status=confirmed"><span class="adm-stat-ico down"><%- include('../partials/icon', { name: 'swap', size: 20 }) %></span><span class="pf-lab">Total des retraits exécutés</span><strong><%= usd(stats.withdrawn) %></strong><small>&nbsp;</small></a>
+      <div class="adm-stat adm-stat-main"><span class="adm-stat-ico gold"><%- include('../partials/icon', { name: 'shield', size: 20 }) %></span><span class="pf-lab">Fonds suivis</span><strong><%= usd(Number(stats.cash) + Number(stats.positions)) %></strong><small>Liquidités <%= usd(stats.cash) %> · positions <%= usd(stats.positions) %></small></div>
+      <a class="adm-stat <%= Number(stats.deposits) ? 'is-alert' : '' %>" href="/admin/deposits"><span class="adm-stat-ico"><%- include('../partials/icon', { name: 'clock', size: 20 }) %></span><span class="pf-lab">Dépôts à vérifier</span><strong><%= stats.deposits %></strong><small><%= usd(stats.depositsAmount) %></small></a>
+      <a class="adm-stat <%= Number(stats.withdrawals) ? 'is-alert' : '' %>" href="/admin/withdrawals"><span class="adm-stat-ico"><%- include('../partials/icon', { name: 'clock', size: 20 }) %></span><span class="pf-lab">Retraits en cours</span><strong><%= stats.withdrawals %></strong><small><%= usd(stats.withdrawalsAmount) %></small></a>
+      <a class="adm-stat" href="/admin/users"><span class="adm-stat-ico"><%- include('../partials/icon', { name: 'pie', size: 20 }) %></span><span class="pf-lab">Portefeuilles actifs</span><strong><%= stats.portfolios %></strong><small>Capital investi <%= usd(stats.invested) %></small></a>
+      <a class="adm-stat <%= Number(stats.kyc) ? 'is-alert' : '' %>" href="/admin/kyc"><span class="adm-stat-ico"><%- include('../partials/icon', { name: 'idcard', size: 20 }) %></span><span class="pf-lab">Identités à vérifier</span><strong><%= stats.kyc %></strong><small><%= stats.failedLogins %> échec(s) de connexion en 24 h</small></a>
+    </div>
+
+    <div class="adm-two">
+      <section class="pf-card">
+        <div class="pf-card-head"><h2>Dépôts et retraits confirmés — 12 derniers mois</h2></div>
+        <div class="pf-legend"><span><i></i>Dépôts</span><span><i class="wd"></i>Retraits</span></div>
+        <div class="adm-bars" role="img" aria-label="Dépôts et retraits confirmés par mois">
+          <% months.forEach(function (x) { %>
+            <div class="adm-bar" title="<%= x.m %> — dépôts <%= usd(x.deposits) %>, retraits <%= usd(x.withdrawals) %>">
+              <div class="adm-bar-cols"><i class="dep" style="height:<%= (x.deposits / maxFlow * 100).toFixed(1) %>%"></i><i class="wd" style="height:<%= (x.withdrawals / maxFlow * 100).toFixed(1) %>%"></i></div>
+              <span><%= monthName(x.m) %></span>
+            </div>
+          <% }) %>
+        </div>
+        <p class="pf-dim small mb-0">Maximum mensuel : <%= compact(maxFlow) %>. Seules les opérations confirmées sont comptées.</p>
+      </section>
+      <section class="pf-card">
+        <div class="pf-card-head"><h2>Nouveaux clients par mois</h2></div>
+        <div class="adm-bars" role="img" aria-label="Nouveaux clients par mois">
+          <% months.forEach(function (x) { %>
+            <div class="adm-bar" title="<%= x.m %> — <%= x.clients %> nouveau(x) client(s)">
+              <div class="adm-bar-cols"><i class="cl" style="height:<%= (x.clients / maxCl * 100).toFixed(1) %>%"></i></div>
+              <span><%= monthName(x.m) %></span>
+            </div>
+          <% }) %>
+        </div>
+        <div class="adm-mini">
+          <a href="/admin/requests?status=new"><b><%= stats.requests %></b>Nouvelles demandes</a>
+          <a href="/admin/messages"><b><%= stats.messages %></b>Nouveaux messages</a>
+          <a href="/admin/interests"><b><%= stats.interests %></b>Nouveaux intérêts</a>
+          <a href="/admin/projects"><b><%= stats.projects %></b>Projets publiés</a>
+        </div>
+      </section>
+    </div>
+
+    <section class="pf-card">
+      <div class="pf-card-head"><h2>Transactions récentes</h2><a href="/admin/transactions">Toutes les transactions →</a></div>
+      <div class="pf-table"><table>
+        <thead><tr><th>Date</th><th>Client</th><th>Type</th><th>Référence</th><th class="num">Montant</th><th>Statut</th></tr></thead>
+        <tbody>
+          <% if (!recent.length) { %><tr><td colspan="6" class="pf-dim">Aucune transaction.</td></tr><% } %>
+          <% recent.forEach(function (r) { var credit = r.type === 'deposit' || r.type === 'payout'; %>
+            <tr><td><%= fmtDate(r.created_at, true) %></td><td><a href="/admin/users/<%= r.user_id %>"><%= r.full_name %></a><small><%= acctNo(r.user_id) %></small></td><td><span class="pf-type pf-type-<%= r.type %>"><%= t('tx.' + r.type) %></span></td><td class="mono"><%= r.reference %></td><td class="num <%= r.status === 'confirmed' ? (credit ? 'pos' : 'neg') : 'pf-dim' %>"><b><%= credit ? '+' : '−' %><%= usd(r.amount_cents) %></b></td><td><%- include('../partials/tx-status', { status: r.status }) %></td></tr>
+          <% }) %>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="pf-card">
+      <div class="pf-card-head"><h2>Dernières opérations de l'administration</h2><a href="/admin/audit">Journal complet →</a></div>
       <%- include('_audit-table', { rows: audits }) %>
     </section>
   </div>

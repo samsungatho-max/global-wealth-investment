@@ -84,7 +84,7 @@
       <section class="pf-card">
         <div class="pf-card-head"><h2><%= pick(A.withdrawals.title) %></h2><a href="/account/withdraw"><%= pick(A.withdraw) %> →</a></div>
         <% if (!withdrawals.length) { %><p class="pf-none"><%= pick(A.withdrawals.none) %></p><% } %>
-        <% withdrawals.forEach(function (w) { var step = { pending: 1, processing: 2, confirmed: 4 }[w.status] || 0; %>
+        <% withdrawals.forEach(function (w) { var step = { pending: 1, processing: 2, approved: 3, confirmed: 4 }[w.status] || 0; %>
           <div class="pf-wd">
             <div class="pf-wd-top"><span class="mono"><%= w.reference %></span><b><%= money(w.amount_cents) %></b></div>
             <% if (step) { %>
@@ -118,7 +118,7 @@
         <tbody><% recent.forEach(function (r) { var credit = r.type === 'deposit' || r.type === 'payout'; %>
           <tr><td><%= fmtDate(r.created_at, true) %></td><td><span class="pf-type pf-type-<%= r.type %>"><%= t('tx.' + r.type) %></span></td><td class="mono"><%= r.reference %></td>
             <td class="num <%= r.status === 'confirmed' ? (credit ? 'pos' : 'neg') : 'pf-dim' %>"><b><%= credit ? '+' : '−' %><%= money(r.amount_cents) %></b></td>
-            <td><span class="pf-chip <%= { confirmed: 'pos', rejected: 'neg', cancelled: '' , pending: 'warn', processing: 'warn' }[r.status] %>"><%= t('tx.' + r.status) %></span></td></tr>
+            <td><span class="pf-chip <%= { confirmed: 'pos', rejected: 'neg', cancelled: '' , pending: 'warn', processing: 'warn', approved: 'warn' }[r.status] %>"><%= t('tx.' + r.status) %></span></td></tr>
         <% }) %></tbody>
       </table></div>
       <% } %>

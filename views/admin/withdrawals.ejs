@@ -1,0 +1,19 @@
+<%- include('../partials/top', { bodyClass: 'admin-body' }) %>
+<% var isDep = typeof deposits !== 'undefined' && deposits; var base = isDep ? '/admin/deposits' : '/admin/withdrawals';
+   var LABEL = isDep ? { pending: 'À vérifier', confirmed: 'Confirmés', rejected: 'Refusés' } : { pending: 'En attente', processing: 'En cours d\'examen', approved: 'Approuvés', confirmed: 'Exécutés', rejected: 'Refusés' }; %>
+<div class="container dash">
+  <%- include('../partials/admin-nav') %>
+  <div class="adm">
+    <div class="dash-head"><div><p class="pf-kicker">Opérations financières</p><h1><%= isDep ? 'Gestion des dépôts' : 'Gestion des retraits' %></h1></div></div>
+    <nav class="adm-tabs" aria-label="Étapes">
+      <% states.forEach(function (s) { var c = counts[s] || { n: 0, s: 0 }; %>
+        <a href="<%= base %>?status=<%= s %>" <%- status === s ? 'aria-current="page"' : '' %>><span><%= LABEL[s] %></span><b><%= c.n %></b><small><%= usd(c.s) %></small></a>
+      <% }) %>
+    </nav>
+    <p class="alert alert-info small"><%= isDep
+      ? 'Un dépôt n\'est confirmé qu\'après constat de la réception effective des fonds sur le compte officiel (relevé bancaire ou confirmation du prestataire). Pour créditer directement un dépôt déjà vérifié, ouvrez la fiche du client.'
+      : 'Vérifiez l\'identité du client et le compte bénéficiaire avant d\'approuver. Un retrait n\'est marqué « exécuté » qu\'une fois le virement réellement effectué, avec sa référence bancaire.' %> Chaque décision est inscrite au journal d'audit.</p>
+    <%- include('_tx-admin-table', { rows: rows }) %>
+  </div>
+</div>
+<%- include('../partials/bottom') %>

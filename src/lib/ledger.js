@@ -19,7 +19,7 @@ async function cashBalance(userId) {
 
 async function reservedForWithdrawals(userId) {
   return (await one(`SELECT COALESCE(SUM(amount_cents),0) AS s FROM transactions
-    WHERE user_id = ? AND type = 'withdrawal' AND status IN ('pending','processing')`, userId)).s;
+    WHERE user_id = ? AND type = 'withdrawal' AND status IN ('pending','processing','approved')`, userId)).s;
 }
 
 async function availableBalance(userId) {

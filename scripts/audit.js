@@ -332,7 +332,7 @@ async function crawl(client, area, starts, { english = true, allow = () => true 
     await adm.post(`/admin/users/${john.id}/valuations/import`, { lines: `${val.investment_id} ; 2026-10-08 ; 10300 ; Manager statement` });
     from = inbox.length;
     await adm.post(`/admin/users/${john.id}/notify`, { message: 'Your quarterly statement is available.' });
-    if (!mailTo('john.carter@example.org', from).length && !(await one(`SELECT id FROM notifications WHERE user_id = ? AND message LIKE 'Your quarterly statement%'`, john.id))) note('Notifications', 'message de l’administration non transmis au client');
+    if (!mailTo('john.smith@example.org', from).length && !(await one(`SELECT id FROM notifications WHERE user_id = ? AND message LIKE 'Your quarterly statement%'`, john.id))) note('Notifications', 'message de l’administration non transmis au client');
     pf = await pfJson();
     // 15 000 + 120 − 50 de liquidités, position valorisée 10 300
     if (pf.points[pf.points.length - 1][1] !== 2537000) note('Tableau de bord', `valeur après écritures inattendue : ${pf.points[pf.points.length - 1][1]}`);
@@ -341,6 +341,31 @@ async function crawl(client, area, starts, { english = true, allow = () => true 
     const admUser = await adm.get(`/admin/users/${john.id}`);
     for (const s of ['valuation.correct', 'Ancienne valeur', 'Corrected quarterly report, page 4', 'payout.record', 'BANK-STMT-2026-10']) if (!admUser.text.includes(s)) note('Traçabilité', `fiche client : élément du journal absent : ${s}`);
   }
+  // Crédit direct d'un dépôt vérifié : référence obligatoire, solde avant / après au journal, pièce interne invisible du client
+  await adm.get(`/admin/users/${john.id}`);
+  await adm.post(`/admin/users/${john.id}/deposits/credit`, { amount: '1000', currency: 'USD', method: 'bank_transfer', reference: '', date: '2026-10-09', verified: 'on' }, { multipart: true });
+  if (await one(`SELECT id FROM transactions WHERE user_id = ? AND type = 'deposit' AND amount_cents = 100000`, john.id)) note('Traçabilité', 'dépôt crédité sans référence de l’opération');
+  await adm.get(`/admin/users/${john.id}`);
+  await adm.post(`/admin/users/${john.id}/deposits/credit`, { amount: '1000', currency: 'USD', method: 'bank_transfer', reference: 'SWIFT-778899', date: '2026-10-09', note: 'Second transfer', verified: 'on', file: pdf() }, { multipart: true });
+  const credited = await one(`SELECT * FROM transactions WHERE user_id = ? AND type = 'deposit' AND external_ref = 'SWIFT-778899'`, john.id);
+  if (!credited || credited.status !== 'confirmed' || Number(credited.amount_cents) !== 100000) note('Dépôts', 'crédit d’un dépôt vérifié non enregistré');
+  const creditLog = await one(`SELECT * FROM audit_log WHERE action = 'deposit.credit' ORDER BY id DESC LIMIT 1`);
+  const cd = creditLog ? JSON.parse(creditLog.details) : {};
+  if (!creditLog || cd.new_value_cents - cd.old_value_cents !== 100000 || cd.external_ref !== 'SWIFT-778899') note('Traçabilité', 'crédit de dépôt absent ou incomplet dans le journal d’audit');
+  await adm.get(`/admin/users/${john.id}`);
+  await adm.post(`/admin/users/${john.id}/deposits/credit`, { amount: '1000', currency: 'USD', method: 'bank_transfer', reference: 'SWIFT-778899', date: '2026-10-09', verified: 'on' }, { multipart: true });
+  if (Number((await one(`SELECT COUNT(*) AS n FROM transactions WHERE user_id = ? AND external_ref = 'SWIFT-778899'`, john.id)).n) !== 1) note('Dépôts', 'même référence créditée deux fois');
+  if (!(await one('SELECT id FROM user_documents WHERE user_id = ? AND internal = 1', john.id))) note('Dépôts', 'pièce justificative du dépôt non conservée');
+  if (/Justificatif du dépôt/.test((await cli.get('/account/documents')).text)) note('Droits', 'pièce justificative interne visible par le client');
+  if (!(await cli.get('/account/transactions')).text.includes(credited ? credited.reference : '???')) note('Dépôts', 'dépôt crédité absent de l’historique du client');
+  // Recherche d'un client par numéro de compte et par référence ; pages de gestion
+  const acct = 'GC-' + String(john.id).padStart(6, '0');
+  for (const q of [acct, 'SWIFT-778899', 'john.smith']) if (!(await adm.get('/admin/users?q=' + encodeURIComponent(q))).text.includes('John Smith')) note('Administration', `recherche de client sans résultat pour « ${q} »`);
+  if ((await adm.get('/admin/users?q=GC-999999')).text.includes('John Smith')) note('Administration', 'recherche par numéro de compte imprécise');
+  for (const u of ['/admin', '/admin/deposits', '/admin/deposits?status=confirmed', '/admin/withdrawals', '/admin/withdrawals?status=approved', '/admin/audit?fin=1', '/admin/audit?q=SWIFT-778899']) {
+    const pg = await adm.get(u); if (pg.status !== 200) note('Administration', `${u} → ${pg.status}`);
+  }
+  if (!(await adm.get('/admin/audit?fin=1')).text.includes('John Smith')) note('Traçabilité', 'journal d’audit : client concerné non affiché');
   report.account = await crawl(cli, 'Espace client', ['/account'], { allow: (l) => /^\/account/.test(l) });
   const doc = await one('SELECT * FROM user_documents WHERE user_id = ?', john.id);
   if (!doc) note('Documents', 'document déposé par l’administration non enregistré');
@@ -358,7 +383,18 @@ async function crawl(client, area, starts, { english = true, allow = () => true 
   r = await cli.post('/account/withdraw', { amount: '900000', holder: 'John Smith', iban: 'GB29NWBK60161331926819', bank: 'NatWest' });
   if (r.status === 302) note('Retrait', 'retrait supérieur au solde accepté');
   const wdr = await one(`SELECT * FROM transactions WHERE type = 'withdrawal' AND user_id = ?`, john.id);
-  if (wdr) { await adm.get('/admin/transactions'); await adm.post(`/admin/transactions/${wdr.id}/action`, { action: 'confirm', external_ref: 'WIRE-OUT-1', verified: 'on' }); }
+  if (wdr) {
+    // Étapes du retrait : examen → approuvé → exécuté (référence bancaire obligatoire)
+    await adm.get('/admin/withdrawals');
+    await adm.post(`/admin/transactions/${wdr.id}/action`, { action: 'processing' });
+    await adm.post(`/admin/transactions/${wdr.id}/action`, { action: 'approve', note: 'Beneficiary account checked' });
+    if ((await one('SELECT status FROM transactions WHERE id = ?', wdr.id)).status !== 'approved') note('Retraits', 'étape « approuvé » non enregistrée');
+    if (!/Approved/.test((await cli.get('/account')).text)) note('Retraits', 'étape « Approved » non visible par le client');
+    await adm.post(`/admin/transactions/${wdr.id}/action`, { action: 'confirm', external_ref: '', verified: 'on' });
+    if ((await one('SELECT status FROM transactions WHERE id = ?', wdr.id)).status === 'confirmed') note('Traçabilité', 'retrait marqué exécuté sans référence bancaire');
+    await adm.post(`/admin/transactions/${wdr.id}/action`, { action: 'confirm', external_ref: 'WIRE-OUT-1', verified: 'on' });
+    if ((await one('SELECT status FROM transactions WHERE id = ?', wdr.id)).status !== 'confirmed') note('Retraits', 'exécution du retrait non enregistrée');
+  }
 
   // Notifications
   const notif = await cli.get('/account/notifications'); inspect('Notifications', '/account/notifications', notif);
@@ -396,7 +432,7 @@ async function crawl(client, area, starts, { english = true, allow = () => true 
   // ================= 6. Cohérence de la base =================
   const ledger = require('../src/lib/ledger');
   const cash = await ledger.cashBalance(john.id);
-  const expected = 2500000 - 1000000 + 12000 - 5000 - (wdr ? Number(wdr.amount_cents) : 0); // dépôt − investissement + revenu − frais − retrait
+  const expected = 2500000 + 100000 - 1000000 + 12000 - 5000 - (wdr ? Number(wdr.amount_cents) : 0); // dépôt − investissement + revenu − frais − retrait
   if (cash !== expected) note('Base de données', `solde du client ${cash / 100} $ au lieu de ${expected / 100} $`);
   if (!(await one(`SELECT id FROM audit_log WHERE action = 'project.create'`))) note('Base de données', 'journal d’audit vide');
   try { await run('DELETE FROM audit_log'); if (!(await one('SELECT id FROM audit_log LIMIT 1'))) note('Sécurité', 'le journal d’audit peut être effacé'); } catch { /* attendu : suppression refusée */ }

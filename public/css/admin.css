@@ -1,0 +1,88 @@
+/* GLOBACOR Partners INC — administration : back-office financier (complète account.css) */
+.admin-body .site-header { background: #050b17; }
+.admin-body .dash { padding-top: 28px; }
+@media (min-width: 1000px) { .admin-body .dash { grid-template-columns: 264px minmax(0, 1fr); gap: 28px; } }
+.adm { min-width: 0; }
+.adm h1, .admin-body .dash-head h1 { font-size: clamp(1.4rem, 2.6vw, 1.85rem); letter-spacing: -.02em; margin: 4px 0 0; }
+.admin-body .panel { margin-top: 26px; scroll-margin-top: 130px; }
+.admin-body [id] { scroll-margin-top: 130px; }
+.admin-body .panel-head h2 { font-size: 1.08rem; letter-spacing: 0; }
+.admin-body .chip-navy { background: rgba(120, 160, 220, .2); color: #cfe0f7; }
+.admin-body .btn-danger { background: rgba(255, 107, 94, .16); border-color: rgba(255, 107, 94, .5); color: #ffb3ab; }
+.admin-body .btn-danger:hover { background: #d9483b; color: #fff; }
+.admin-body details.box { padding: 10px 12px; border-radius: 12px; }
+.admin-body details.box > summary { cursor: pointer; font-weight: 600; font-size: .86rem; color: #7fe0c0; }
+.admin-body details.box[open] > summary { margin-bottom: 10px; }
+.admin-body .table-wrap { border-radius: 14px; overflow-x: auto; }
+.admin-body .kv dt { font-size: .8rem; }
+.admin-body .tabs a, .admin-body .lang-tabs button { color: rgba(255, 255, 255, .7); }
+
+/* Menu latéral */
+.adm-nav { padding: 12px 10px; }
+.adm-nav .nav-title { padding: 14px 12px 6px; font-size: .64rem; letter-spacing: .16em; }
+.adm-nav .nav-title:first-child { padding-top: 4px; }
+.adm-nav a { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; font-size: .9rem; }
+.adm-nav-l { display: inline-flex; align-items: center; gap: 11px; min-width: 0; }
+.adm-nav-l svg { flex: none; opacity: .7; }
+.adm-nav a[aria-current="page"] .adm-nav-l svg { opacity: 1; color: #2fd3a0; }
+.adm-nav .badge-dot { background: #c9a96e; color: #050d1c; }
+@media (min-width: 1000px) { .adm-nav { position: sticky; top: 88px; max-height: calc(100vh - 104px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .15) transparent; } }
+@media (max-width: 999px) { .adm-nav .nav-title { display: none; } .adm-nav a { padding: 9px 14px; } }
+
+/* En-tête de page, recherche, filtres */
+.adm-head { align-items: flex-end; gap: 16px 24px; }
+.adm-search { position: relative; flex: 1 1 320px; max-width: 460px; }
+.adm-search svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: rgba(255, 255, 255, .45); pointer-events: none; }
+.acct .adm-search input { width: 100%; height: 44px; padding: 0 14px 0 42px; border-radius: 12px; }
+.adm-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 16px; }
+.adm-filters .adm-search { max-width: none; }
+.acct .adm-filters select { width: auto; height: 44px; border-radius: 12px; padding: 0 12px; }
+.adm-filters .btn { height: 44px; display: inline-flex; align-items: center; }
+
+/* Cartes statistiques */
+.adm-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 6px 0 14px; }
+.adm-stat { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 18px 18px 16px; border-radius: 16px; background: rgba(255, 255, 255, .04); border: 1px solid rgba(255, 255, 255, .08); text-decoration: none; min-width: 0; transition: border-color .25s, transform .25s var(--ease); }
+a.adm-stat:hover { border-color: rgba(18, 163, 122, .5); transform: translateY(-2px); }
+.adm-stat strong { font: 700 clamp(1.15rem, 3.4vw, 1.5rem)/1.2 var(--font-head); color: #fff; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.adm-stat small { font-size: .72rem; line-height: 1.4; color: rgba(255, 255, 255, .5); }
+.adm-stat-ico { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; margin-bottom: 6px; border-radius: 11px; background: rgba(120, 160, 220, .16); color: #b9d2f5; }
+.adm-stat-ico.up { background: rgba(18, 163, 122, .18); color: #5fe0b6; }
+.adm-stat-ico.down { background: rgba(255, 107, 94, .16); color: #ff9d93; }
+.adm-stat-ico.gold { background: rgba(201, 169, 110, .2); color: #e6d3ad; }
+.adm-stat-main { background: linear-gradient(135deg, rgba(201, 169, 110, .14), rgba(31, 65, 117, .22) 60%, rgba(255, 255, 255, .03)); border-color: rgba(201, 169, 110, .4); }
+.adm-stat.is-alert { border-color: rgba(201, 169, 110, .55); }
+.adm-stat.is-alert::after { content: ""; position: absolute; top: 16px; right: 16px; width: 9px; height: 9px; border-radius: 50%; background: #c9a96e; box-shadow: 0 0 0 4px rgba(201, 169, 110, .2); }
+@media (min-width: 760px) { .adm-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* Graphiques en barres */
+.adm-two { display: grid; gap: 14px; }
+@media (min-width: 1240px) { .adm-two { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); } .adm-two > .pf-card { margin-bottom: 14px; } }
+.adm-bars { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px; height: 190px; margin: 6px 0 12px; padding-top: 8px; border-bottom: 1px solid rgba(255, 255, 255, .1); background: repeating-linear-gradient(180deg, rgba(255, 255, 255, .05) 0 1px, transparent 1px 25%); }
+.adm-bar { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; min-width: 0; height: 100%; }
+.adm-bar-cols { flex: 1; display: flex; align-items: flex-end; justify-content: center; gap: 3px; width: 100%; }
+.adm-bar-cols i { display: block; width: 42%; max-width: 16px; min-height: 2px; border-radius: 4px 4px 0 0; background: #12a37a; transition: opacity .2s; }
+.adm-bar-cols i.wd { background: #ff6b5e; }
+.adm-bar-cols i.cl { background: #c9a96e; width: 60%; max-width: 22px; }
+.adm-bar:hover i { opacity: .75; }
+.adm-bar span { font-size: .62rem; color: rgba(255, 255, 255, .45); text-transform: capitalize; margin-bottom: -20px; }
+.adm-bars + p, .adm-bars + .adm-mini { margin-top: 30px; }
+.pf-legend i.wd { border-top-color: #ff6b5e; }
+.adm-mini { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.adm-mini a { display: flex; align-items: baseline; gap: 8px; padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, .04); font-size: .8rem; color: rgba(255, 255, 255, .7); text-decoration: none; }
+.adm-mini a:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+.adm-mini b { font: 700 1.1rem/1 var(--font-head); color: #fff; }
+
+/* Onglets d'étapes et sous-menu de la fiche client */
+.adm-tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.adm-tabs a { display: grid; gap: 2px; padding: 14px 16px; border-radius: 14px; background: rgba(255, 255, 255, .04); border: 1px solid rgba(255, 255, 255, .08); text-decoration: none; color: rgba(255, 255, 255, .7); transition: border-color .2s, background .2s; }
+.adm-tabs a:hover { border-color: rgba(255, 255, 255, .25); color: #fff; }
+.adm-tabs a span { font-size: .7rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
+.adm-tabs a b { font: 700 1.45rem/1.2 var(--font-head); color: #fff; }
+.adm-tabs a small { font-size: .74rem; color: rgba(255, 255, 255, .5); font-variant-numeric: tabular-nums; }
+.adm-tabs a[aria-current="page"] { background: linear-gradient(135deg, rgba(18, 163, 122, .22), rgba(255, 255, 255, .03)); border-color: #12a37a; color: #fff; }
+.adm-subnav { position: sticky; top: 70px; z-index: 20; display: flex; gap: 4px; margin: 4px 0 6px; padding: 6px; border-radius: 14px; background: rgba(8, 16, 32, .94); border: 1px solid rgba(255, 255, 255, .1); backdrop-filter: blur(10px); overflow-x: auto; scrollbar-width: none; }
+.adm-subnav::-webkit-scrollbar { display: none; }
+.acct .adm-subnav a { flex: none; padding: 8px 13px; border-radius: 9px; font-size: .82rem; font-weight: 600; color: rgba(255, 255, 255, .72); text-decoration: none; white-space: nowrap; transition: background .2s, color .2s; }
+.acct .adm-subnav a:hover { background: rgba(18, 163, 122, .2); color: #fff; }
+@media (max-width: 760px) { .adm-search { max-width: none; flex-basis: 100%; } .adm-filters select, .adm-filters .btn { flex: 1 1 140px; justify-content: center; } }
+.admin-body .table-wrap, .pf-table { scrollbar-color: rgba(255, 255, 255, .2) transparent; scrollbar-width: thin; }

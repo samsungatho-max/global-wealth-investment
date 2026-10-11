@@ -8,7 +8,7 @@ const { one, all, run, tx } = require('../db');
 const { requireAdmin, verifyCsrf, makeUploader, sendStoredFile, removeFile } = require('../lib/security');
 const { audit } = require('../lib/audit');
 const { notify } = require('../lib/notify');
-const { parseAmount } = require('../lib/money');
+const { parseAmount, rateFor } = require('../lib/money');
 const { parseI18n, rawI18n, i18nFromBody, slugify, LANGS } = require('../lib/content');
 const ledger = require('../lib/ledger');
 const settings = require('../lib/settings');
@@ -47,13 +47,42 @@ const back = (req, fallback) => { const r = req.get('referer'); return r && r.in
 
 const removePublicFile = (id) => removeFile(id).catch(() => {});
 
+// Numéro de compte client (dérivé de l'identifiant), compteurs du menu, journal d'audit avec le client concerné
+const acctNo = (id) => 'GC-' + String(id).padStart(6, '0');
+const OPEN_WDR = `('pending','processing','approved')`;
+const AUDIT_SELECT = `SELECT a.*, COALESCE(cu.id, tu.id, iu.id) AS client_id, COALESCE(cu.full_name, tu.full_name, iu.full_name) AS client_name FROM audit_log a
+  LEFT JOIN users cu ON a.target_type = 'user' AND CAST(cu.id AS TEXT) = a.target_id
+  LEFT JOIN transactions tt ON a.target_type = 'transaction' AND CAST(tt.id AS TEXT) = a.target_id LEFT JOIN users tu ON tu.id = tt.user_id
+  LEFT JOIN investments ii ON a.target_type = 'investment' AND CAST(ii.id AS TEXT) = a.target_id LEFT JOIN users iu ON iu.id = ii.user_id`;
+router.use(async (req, res, next) => {
+  try {
+    res.locals.acctNo = acctNo;
+    if (req.method === 'GET' && req.user) {
+      res.locals.navCounts = await one(`SELECT
+        (SELECT COUNT(*) FROM kyc_submissions WHERE status = 'pending') AS kyc,
+        (SELECT COUNT(*) FROM transactions WHERE type = 'deposit' AND status = 'pending') AS deposits,
+        (SELECT COUNT(*) FROM transactions WHERE type = 'withdrawal' AND status IN ${OPEN_WDR}) AS withdrawals,
+        (SELECT COUNT(*) FROM requests WHERE status = 'new') AS requests,
+        (SELECT COUNT(*) FROM interests WHERE status = 'new') AS interests,
+        (SELECT COUNT(*) FROM messages WHERE status = 'new') AS messages`);
+    }
+    next();
+  } catch (e) { next(e); }
+});
+
 // ---------- Tableau de bord ----------
 router.get('/', async (req, res) => {
   const s = await one(`SELECT
     (SELECT COUNT(*) FROM users WHERE role = 'investor') AS investors,
     (SELECT COUNT(*) FROM kyc_submissions WHERE status = 'pending') AS kyc,
     (SELECT COUNT(*) FROM transactions WHERE type = 'deposit' AND status = 'pending') AS deposits,
-    (SELECT COUNT(*) FROM transactions WHERE type = 'withdrawal' AND status IN ('pending','processing')) AS withdrawals,
+    (SELECT COUNT(*) FROM transactions WHERE type = 'withdrawal' AND status IN ('pending','processing','approved')) AS withdrawals,
+    (SELECT COALESCE(SUM(amount_cents),0) FROM transactions WHERE type = 'withdrawal' AND status IN ('pending','processing','approved')) AS "withdrawalsAmount",
+    (SELECT COALESCE(SUM(amount_cents),0) FROM transactions WHERE type = 'deposit' AND status = 'pending') AS "depositsAmount",
+    (SELECT COALESCE(SUM(amount_cents),0) FROM transactions WHERE type = 'withdrawal' AND status = 'confirmed') AS withdrawn,
+    (SELECT COALESCE(SUM(CASE WHEN type IN ('deposit','payout') THEN amount_cents ELSE -amount_cents END),0) FROM transactions WHERE status = 'confirmed') AS cash,
+    (SELECT COALESCE(SUM(COALESCE((SELECT value_cents FROM valuations v WHERE v.investment_id = i.id ORDER BY valuation_date DESC, id DESC LIMIT 1), i.amount_cents)),0) FROM investments i WHERE i.status = 'active') AS positions,
+    (SELECT COUNT(DISTINCT user_id) FROM investments WHERE status = 'active') AS portfolios,
     (SELECT COUNT(*) FROM messages WHERE status = 'new') AS messages,
     (SELECT COUNT(*) FROM requests WHERE status = 'new') AS requests,
     (SELECT COUNT(*) FROM interests WHERE status = 'new') AS interests,
@@ -68,7 +97,9 @@ router.get('/', async (req, res) => {
     fundsEnabled: settings.get('funds_enabled'),
     mailEnabled: mailer.config().enabled,
     notifyEmails: settings.get('notify_emails'),
-    audits: await all('SELECT * FROM audit_log ORDER BY id DESC LIMIT 12')
+    audits: await all(`${AUDIT_SELECT} ORDER BY a.id DESC LIMIT 10`),
+    recent: await all('SELECT t.*, u.full_name, u.email, u.kyc_status FROM transactions t JOIN users u ON u.id = t.user_id ORDER BY t.created_at DESC, t.id DESC LIMIT 8'),
+    months: await monthlyActivity()
   });
 });
 
@@ -203,16 +234,44 @@ router.post('/interests/:id/status', async (req, res) => {
 });
 
 // ---------- Investisseurs ----------
+/** Activité des 12 derniers mois : dépôts et retraits confirmés, nouveaux clients — lus dans la base. */
+async function monthlyActivity() {
+  const now = new Date(), keys = [];
+  for (let k = 11; k >= 0; k--) keys.push(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - k, 1)).toISOString().slice(0, 7));
+  const tx = await all(`SELECT substr(CAST(COALESCE(processed_at, created_at) AS TEXT), 1, 7) AS m, type, SUM(amount_cents) AS s FROM transactions
+    WHERE status = 'confirmed' AND type IN ('deposit','withdrawal') GROUP BY 1, 2`);
+  const cl = await all(`SELECT substr(CAST(created_at AS TEXT), 1, 7) AS m, COUNT(*) AS n FROM users WHERE role = 'investor' GROUP BY 1`);
+  return keys.map((m) => ({
+    m,
+    deposits: Number((tx.find((r) => r.m === m && r.type === 'deposit') || {}).s || 0),
+    withdrawals: Number((tx.find((r) => r.m === m && r.type === 'withdrawal') || {}).s || 0),
+    clients: Number((cl.find((r) => r.m === m) || {}).n || 0)
+  }));
+}
+
 router.get('/users', async (req, res) => {
   const q = String(req.query.q || '').trim();
   const kyc = ['none', 'pending', 'approved', 'rejected'].includes(req.query.kyc) ? req.query.kyc : null;
   let sql = 'SELECT * FROM users WHERE 1=1';
   const params = [];
-  if (q) { sql += ' AND (email ILIKE ? OR full_name ILIKE ? OR phone ILIKE ?)'; params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
+  // Recherche : nom, e-mail, téléphone, pays, numéro de compte (GC-000123) ou référence d'une transaction / d'un dossier
+  const acct = q.match(/^GC-?0*(\d+)$/i);
+  if (acct) { sql += ' AND id = ?'; params.push(acct[1]); }
+  else if (q) {
+    sql += ` AND (email ILIKE ? OR full_name ILIKE ? OR phone ILIKE ? OR country ILIKE ?
+      OR id IN (SELECT user_id FROM transactions WHERE reference ILIKE ? OR external_ref ILIKE ?)
+      OR id IN (SELECT user_id FROM requests WHERE ref ILIKE ? AND user_id IS NOT NULL))`;
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`);
+  }
   if (kyc) { sql += ' AND kyc_status = ?'; params.push(kyc); }
+  const status = ['active', 'suspended'].includes(req.query.status) ? req.query.status : null;
+  if (status) { sql += ' AND status = ?'; params.push(status); }
+  const countries = (await all('SELECT DISTINCT country FROM users ORDER BY country')).map((r) => r.country).filter(Boolean);
+  const country = countries.includes(req.query.country) ? req.query.country : null;
+  if (country) { sql += ' AND country = ?'; params.push(country); }
   sql += ' ORDER BY created_at DESC LIMIT 300';
   const rows = await Promise.all((await all(sql, ...params)).map(async (u) => ({ ...u, cash: await ledger.cashBalance(u.id) })));
-  res.render('admin/users', { title: 'Investisseurs', rows, q, kyc });
+  res.render('admin/users', { title: 'Comptes clients', rows, q, kyc, status, country, countries });
 });
 
 router.get('/users/:id', async (req, res, next) => {
@@ -228,9 +287,11 @@ router.get('/users/:id', async (req, res, next) => {
     txs: await all('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 100', u.id),
     kycs: await all('SELECT * FROM kyc_submissions WHERE user_id = ? ORDER BY id DESC', u.id),
     docs: await all('SELECT * FROM user_documents WHERE user_id = ? ORDER BY created_at DESC', u.id),
+    notifs: await all('SELECT * FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT 15', u.id),
+    currencies: ['USD', 'EUR', 'GBP', 'XOF'].filter((c) => rateFor(c)),
     logins: await all('SELECT * FROM login_attempts WHERE lower(email) = lower(?) ORDER BY id DESC LIMIT 15', u.email),
     timeline: (await ledger.timeline(u.id)).points.slice(-12).reverse(),
-    audits: await all(`SELECT * FROM audit_log WHERE (target_type = 'user' AND target_id = ?) OR (target_type = 'transaction' AND target_id IN (SELECT CAST(id AS TEXT) FROM transactions WHERE user_id = ?)) OR (target_type = 'investment' AND target_id IN (SELECT CAST(id AS TEXT) FROM investments WHERE user_id = ?)) ORDER BY id DESC LIMIT 40`, String(u.id), u.id, u.id),
+    audits: await all(`${AUDIT_SELECT} WHERE (a.target_type = 'user' AND a.target_id = ?) OR tt.user_id = ? OR ii.user_id = ? ORDER BY a.id DESC LIMIT 40`, String(u.id), u.id, u.id),
     openProjects,
     today: today()
   });
@@ -316,6 +377,44 @@ router.post('/users/:id/deposits', async (req, res, next) => {
     await audit(req, 'deposit.record', 'transaction', info.lastInsertRowid, { reference, new_value_cents: cents, user_id: u.id, to: 'pending' });
     req.flash('success', `Dépôt ${reference} enregistré « en attente ». Confirmez-le dans « Dépôts & retraits » après contrôle du relevé bancaire.`);
     res.redirect('/admin/transactions?type=deposit&status=pending');
+  } catch (e) { next(e); }
+});
+
+// Dépôt réellement reçu et vérifié : crédité immédiatement, avec la référence de l'opération, la date et la pièce justificative.
+router.post('/users/:id/deposits/credit', docUpload.single('file'), verifyCsrf, async (req, res, next) => {
+  try {
+    const u = await one('SELECT * FROM users WHERE id = ?', req.params.id);
+    if (!u) return next();
+    const fail = (m) => { req.flash('error', m); res.redirect(`/admin/users/${u.id}#deposit`); };
+    const currency = ['USD', 'EUR', 'GBP', 'XOF'].includes(req.body.currency) && rateFor(req.body.currency) ? req.body.currency : null;
+    const original = parseAmount(req.body.amount);
+    const method = { bank_transfer: 'bank_transfer', card: 'card', cash: 'cash', other: 'other' }[req.body.method] || null;
+    const extRef = String(req.body.reference || '').trim().slice(0, 120);
+    const date = isDate(req.body.date) && req.body.date <= today() ? req.body.date : null;
+    const note = String(req.body.note || '').trim().slice(0, 500);
+    if (!settings.get('funds_enabled')) return fail('La réception de fonds n\'est pas activée dans les Paramètres.');
+    if (u.kyc_status !== 'approved') return fail('L\'identité du client doit être vérifiée avant tout crédit.');
+    if (!original || !currency || !method) return fail('Montant, devise et moyen de paiement valides obligatoires.');
+    if (!extRef || !date) return fail('La référence de l\'opération et sa date (au plus tard aujourd\'hui) sont obligatoires.');
+    if (req.body.verified !== 'on') return fail('Confirmez avoir vérifié la réception effective des fonds.');
+    if (await one(`SELECT id FROM transactions WHERE user_id = ? AND type = 'deposit' AND external_ref = ? AND status = 'confirmed'`, u.id, extRef)) return fail('Un dépôt confirmé porte déjà cette référence pour ce client.');
+    const rate = rateFor(currency);
+    const cents = currency === 'USD' ? original : Math.round(original / rate);
+    const at = date === today() ? new Date().toISOString().slice(0, 19).replace('T', ' ') : `${date} 12:00:00`;
+    const reference = makeReference('DEP');
+    const adminNote = [note, currency !== 'USD' ? `Montant d'origine : ${(original / 100).toFixed(2)} ${currency} (taux ${rate})` : ''].filter(Boolean).join(' — ') || null;
+    const before = await ledger.cashBalance(u.id);
+    const id = await tx(async () => {
+      const txId = (await run(`INSERT INTO transactions (user_id, type, amount_cents, status, reference, method, admin_note, external_ref, created_at, processed_at, processed_by)
+           VALUES (?, 'deposit', ?, 'confirmed', ?, ?, ?, ?, ?, ?, ?)`, u.id, cents, reference, method, adminNote, extRef, at, at, req.user.id)).lastInsertRowid;
+      if (req.file) await run('INSERT INTO user_documents (user_id, title, category, file_path, original_name, uploaded_by, internal) VALUES (?, ?, ?, ?, ?, ?, 1)',
+        u.id, `Justificatif du dépôt ${reference}`, 'other', req.file.filename, req.file.originalname.slice(0, 200), req.user.id);
+      return txId;
+    });
+    await audit(req, 'deposit.credit', 'transaction', id, { reference, user_id: u.id, old_value_cents: before, new_value_cents: before + cents, amount_cents: cents, currency, method, date, external_ref: extRef, document: !!req.file, reason: note || 'Dépôt reçu et vérifié' });
+    await notify(u.id, 'deposit_confirmed', { ref: reference, amount_cents: cents }, '/account/transactions');
+    req.flash('success', `Dépôt ${reference} crédité sur le compte du client.`);
+    res.redirect(`/admin/users/${u.id}#deposit`);
   } catch (e) { next(e); }
 });
 
@@ -532,9 +631,27 @@ router.post('/kyc/:id/review', async (req, res, next) => {
 });
 
 // ---------- Transactions (dépôts / retraits) ----------
+// Gestion des retraits, par étape
+router.get('/withdrawals', async (req, res) => {
+  const STATES = ['pending', 'processing', 'approved', 'confirmed', 'rejected'];
+  const status = STATES.includes(req.query.status) ? req.query.status : 'pending';
+  const counts = Object.fromEntries((await all(`SELECT status, COUNT(*) AS n, COALESCE(SUM(amount_cents),0) AS s FROM transactions WHERE type = 'withdrawal' GROUP BY status`)).map((r) => [r.status, { n: Number(r.n), s: Number(r.s) }]));
+  const rows = await all(`SELECT t.*, u.full_name, u.email, u.kyc_status FROM transactions t JOIN users u ON u.id = t.user_id WHERE t.type = 'withdrawal' AND t.status = ? ORDER BY t.created_at DESC, t.id DESC LIMIT 300`, status);
+  res.render('admin/withdrawals', { title: 'Retraits', rows, status, counts, states: STATES });
+});
+
+// Dépôts : à vérifier, confirmés, refusés
+router.get('/deposits', async (req, res) => {
+  const STATES = ['pending', 'confirmed', 'rejected'];
+  const status = STATES.includes(req.query.status) ? req.query.status : 'pending';
+  const counts = Object.fromEntries((await all(`SELECT status, COUNT(*) AS n, COALESCE(SUM(amount_cents),0) AS s FROM transactions WHERE type = 'deposit' GROUP BY status`)).map((r) => [r.status, { n: Number(r.n), s: Number(r.s) }]));
+  const rows = await all(`SELECT t.*, u.full_name, u.email, u.kyc_status FROM transactions t JOIN users u ON u.id = t.user_id WHERE t.type = 'deposit' AND t.status = ? ORDER BY t.created_at DESC, t.id DESC LIMIT 300`, status);
+  res.render('admin/withdrawals', { title: 'Dépôts', rows, status, counts, states: STATES, deposits: true });
+});
+
 router.get('/transactions', async (req, res) => {
   const type = ['deposit', 'withdrawal', 'investment', 'payout', 'fee'].includes(req.query.type) ? req.query.type : null;
-  const status = ['pending', 'processing', 'confirmed', 'rejected', 'cancelled'].includes(req.query.status) ? req.query.status : null;
+  const status = ['pending', 'processing', 'approved', 'confirmed', 'rejected', 'cancelled'].includes(req.query.status) ? req.query.status : null;
   let sql = 'SELECT t.*, u.full_name, u.email, u.kyc_status FROM transactions t JOIN users u ON u.id = t.user_id WHERE 1=1';
   const p = [];
   if (type) { sql += ' AND t.type = ?'; p.push(type); }
@@ -553,7 +670,7 @@ router.post('/transactions/:id/action', async (req, res, next) => {
   const user = await one('SELECT * FROM users WHERE id = ?', row.user_id);
 
   if (action === 'confirm') {
-    if (!['pending', 'processing'].includes(row.status)) return fail('Transaction déjà traitée.');
+    if (!['pending', 'processing', 'approved'].includes(row.status)) return fail('Transaction déjà traitée.');
     if (req.body.verified !== 'on' || !extRef) return fail('Confirmez la vérification effective et indiquez la référence bancaire / du prestataire.');
     if (user.kyc_status !== 'approved') return fail('Identité de l\'investisseur non vérifiée.');
     if (row.type === 'withdrawal' && row.amount_cents > await ledger.cashBalance(user.id)) return fail('Solde insuffisant pour exécuter ce retrait.');
@@ -568,8 +685,16 @@ router.post('/transactions/:id/action', async (req, res, next) => {
     await audit(req, 'withdrawal.processing', 'transaction', row.id, { reference: row.reference, from: row.status, to: 'processing', reason: note || undefined });
     await notify(user.id, 'withdrawal_processing', { ref: row.reference }, '/account/withdraw');
     req.flash('success', `Retrait ${row.reference} passé en traitement.`);
-  } else if (action === 'reject') {
+  } else if (action === 'approve' && row.type === 'withdrawal') {
     if (!['pending', 'processing'].includes(row.status)) return fail('Transaction déjà traitée.');
+    if (user.kyc_status !== 'approved') return fail('Identité de l\'investisseur non vérifiée.');
+    if (row.amount_cents > await ledger.cashBalance(user.id)) return fail('Solde insuffisant pour approuver ce retrait.');
+    await run(`UPDATE transactions SET status = 'approved', admin_note = ?, processed_by = ? WHERE id = ?`, note || null, req.user.id, row.id);
+    await audit(req, 'withdrawal.approve', 'transaction', row.id, { reference: row.reference, amount_cents: row.amount_cents, from: row.status, to: 'approved', reason: note || undefined });
+    await notify(user.id, 'withdrawal_approved', { ref: row.reference }, '/account/withdraw');
+    req.flash('success', `Retrait ${row.reference} approuvé. Enregistrez la référence du virement lorsqu'il est exécuté.`);
+  } else if (action === 'reject') {
+    if (!['pending', 'processing', 'approved'].includes(row.status)) return fail('Transaction déjà traitée.');
     if (!note) return fail('Un motif est obligatoire pour refuser une transaction.');
     await run(`UPDATE transactions SET status = 'rejected', admin_note = ?, processed_at = datetime('now'), processed_by = ? WHERE id = ?`,
       note, req.user.id, row.id);
@@ -1008,10 +1133,12 @@ router.post('/emails/test', async (req, res, next) => {
 router.get('/audit', async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page, 10) || 1);
   const q = String(req.query.q || '').trim();
-  const rows = q
-    ? await all('SELECT * FROM audit_log WHERE action ILIKE ? OR actor_email ILIKE ? OR target_id = ? ORDER BY id DESC LIMIT 100 OFFSET ?', `%${q}%`, `%${q}%`, q, (page - 1) * 100)
-    : await all('SELECT * FROM audit_log ORDER BY id DESC LIMIT 100 OFFSET ?', (page - 1) * 100);
-  res.render('admin/audit', { title: 'Journal d\'audit', rows, page, q });
+  const fin = req.query.fin === '1';
+  const where = [], params = [];
+  if (q) { where.push('(a.action ILIKE ? OR a.actor_email ILIKE ? OR a.target_id = ? OR a.details ILIKE ? OR cu.full_name ILIKE ? OR tu.full_name ILIKE ? OR iu.full_name ILIKE ?)'); params.push(`%${q}%`, `%${q}%`, q, `%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`); }
+  if (fin) where.push(`a.target_type IN ('transaction','investment')`);
+  const rows = await all(`${AUDIT_SELECT} ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY a.id DESC LIMIT 100 OFFSET ?`, ...params, (page - 1) * 100);
+  res.render('admin/audit', { title: 'Journal d\'audit', rows, page, q, fin });
 });
 
 router.get('/logins', async (req, res) => {
