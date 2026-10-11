@@ -7,6 +7,8 @@ const { one, all } = require('../db');
 const { parseI18n } = require('./content');
 
 const CREDIT = ['deposit', 'payout'];
+/** Date et heure de valeur d'une valorisation (les anciennes, sans heure, valent en fin de journée). */
+const EFFECTIVE = `COALESCE(v.valued_at, v.valuation_date || ' 23:59:59')`;
 const DEBIT = ['withdrawal', 'investment', 'fee'];
 
 async function cashBalance(userId) {
@@ -29,8 +31,9 @@ async function availableBalance(userId) {
 /** Portefeuille : investissements + dernière valorisation enregistrée par l'administration. */
 async function portfolio(userId, lang) {
   const rows = await all(`SELECT i.*, p.i18n AS p_i18n, p.slug AS p_slug, p.sector, p.country,
-      (SELECT value_cents FROM valuations v WHERE v.investment_id = i.id ORDER BY valuation_date DESC, id DESC LIMIT 1) AS last_value,
-      (SELECT valuation_date FROM valuations v WHERE v.investment_id = i.id ORDER BY valuation_date DESC, id DESC LIMIT 1) AS last_value_date
+      (SELECT value_cents FROM valuations v WHERE v.investment_id = i.id AND v.published = 1 ORDER BY ${EFFECTIVE} DESC, id DESC LIMIT 1) AS last_value,
+      (SELECT valuation_date FROM valuations v WHERE v.investment_id = i.id AND v.published = 1 ORDER BY ${EFFECTIVE} DESC, id DESC LIMIT 1) AS last_value_date,
+      (SELECT ${EFFECTIVE} FROM valuations v WHERE v.investment_id = i.id AND v.published = 1 ORDER BY ${EFFECTIVE} DESC, id DESC LIMIT 1) AS last_value_at
     FROM investments i JOIN projects p ON p.id = i.project_id
     WHERE i.user_id = ? ORDER BY i.start_date DESC`, userId);
   return rows.map((r) => ({
@@ -62,10 +65,10 @@ async function summary(userId, lang) {
 }
 
 /** Historique réel des valorisations (dates précises) pour tous les investissements du client. */
-async function valuationHistory(userId, lang) {
-  return (await all(`SELECT v.*, i.amount_cents, i.start_date, p.i18n AS p_i18n FROM valuations v
+async function valuationHistory(userId, lang, opts = {}) {
+  return (await all(`SELECT v.*, ${EFFECTIVE} AS effective_at, i.amount_cents, i.start_date, i.status AS inv_status, p.i18n AS p_i18n FROM valuations v
       JOIN investments i ON i.id = v.investment_id JOIN projects p ON p.id = i.project_id
-      WHERE i.user_id = ? ORDER BY v.valuation_date DESC, v.id DESC`, userId))
+      WHERE i.user_id = ? ${opts.drafts ? '' : 'AND v.published = 1'} ORDER BY ${EFFECTIVE} DESC, v.id DESC`, userId))
     .map((v) => ({
       ...v,
       title: parseI18n(v.p_i18n, lang).title,
@@ -96,17 +99,19 @@ function toMs(s) {
  * Aucun point n'est généré ou extrapolé : la valeur ne change qu'à la date d'une écriture réelle.
  * Valeur = liquidités + positions ouvertes (dernière valorisation connue, à défaut le montant investi).
  */
-async function timeline(userId) {
+async function timeline(userId, opts = {}) {
   const [txs, invs, vals] = await Promise.all([
     all(`SELECT id, type, amount_cents, investment_id, reference, created_at, processed_at FROM transactions WHERE user_id = ? AND status = 'confirmed'`, userId),
     all('SELECT id, amount_cents, status FROM investments WHERE user_id = ?', userId),
-    all(`SELECT v.id, v.investment_id, v.value_cents, v.valuation_date, v.created_at FROM valuations v JOIN investments i ON i.id = v.investment_id WHERE i.user_id = ?`, userId)
-  ]);
+    all(`SELECT v.id, v.investment_id, v.value_cents, v.valuation_date, v.valued_at, v.published, v.created_at FROM valuations v JOIN investments i ON i.id = v.investment_id WHERE i.user_id = ?`, userId)
+  ]).then(([a, b, c]) => [a, b, c.filter((v) => Number(v.published) !== 0)]);
   const inv = new Map(invs.map((i) => [String(i.id), i]));
   const events = [];
   for (const t of txs) events.push({ ms: toMs(t.processed_at || t.created_at), order: 1, kind: 'tx', t });
   // Une valorisation prend effet à sa date de valeur, sans jamais précéder son enregistrement réel dans l'avenir
-  for (const v of vals) events.push({ ms: Math.min(toMs(v.valuation_date), toMs(v.created_at)), order: 0, kind: 'val', v });
+  for (const v of vals) events.push({ ms: Math.min(toMs(v.valued_at || v.valuation_date), toMs(v.created_at)), order: 0, kind: 'val', v });
+  // Aperçu avant publication : valorisation hypothétique ajoutée au calcul, sans être enregistrée
+  if (opts.extra) events.push({ ms: opts.extra.ms, order: 0, kind: 'val', v: { investment_id: opts.extra.investment_id, value_cents: opts.extra.value_cents } });
   // Clôture d'une position échue : au dernier versement lié, à défaut à la dernière valorisation
   const closeAt = new Map();
   for (const i of invs.filter((x) => x.status !== 'active')) {
@@ -147,11 +152,17 @@ async function timeline(userId) {
 async function dashboard(userId, lang) {
   const [s, tl] = await Promise.all([summary(userId, lang), timeline(userId)]);
   const value = s.cash + s.value, net = tl.deposits - tl.withdrawals, pl = value - net;
+  // Variation du jour : gain ou perte depuis minuit (UTC), hors dépôts et retraits
+  const midnight = new Date(); midnight.setUTCHours(0, 0, 0, 0);
+  const before = tl.points.filter((p) => p.t < midnight.getTime()).pop();
+  const today = pl - (before ? before.pl : 0);
+  const lastVal = s.active.filter((i) => i.valued).map((i) => i.last_value_at).sort().pop() || null;
   return {
-    s, points: tl.points,
-    stats: { value, available: s.available, invested: s.invested, deposits: tl.deposits, withdrawals: tl.withdrawals, pl, perf: tl.deposits > 0 ? pl / tl.deposits : null }
+    s, points: tl.points, lastValuationAt: lastVal,
+    stats: { today, net, value, available: s.available, invested: s.invested, deposits: tl.deposits, withdrawals: tl.withdrawals, pl, perf: tl.deposits > 0 ? pl / tl.deposits : null }
   };
 }
 
 module.exports.timeline = timeline;
+module.exports.toMs = toMs;
 module.exports.dashboard = dashboard;

@@ -86,3 +86,33 @@ a.adm-stat:hover { border-color: rgba(18, 163, 122, .5); transform: translateY(-
 .acct .adm-subnav a:hover { background: rgba(18, 163, 122, .2); color: #fff; }
 @media (max-width: 760px) { .adm-search { max-width: none; flex-basis: 100%; } .adm-filters select, .adm-filters .btn { flex: 1 1 140px; justify-content: center; } }
 .admin-body .table-wrap, .pf-table { scrollbar-color: rgba(255, 255, 255, .2) transparent; scrollbar-width: thin; }
+
+/* Évolution du portefeuille / gestion de la performance */
+.adm-pf { margin-top: 6px; }
+.adm-kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.adm-kpis > div { padding: 14px 16px; border-radius: 14px; background: rgba(255, 255, 255, .04); border: 1px solid rgba(255, 255, 255, .08); min-width: 0; }
+.adm-kpis strong { display: block; margin-top: 6px; font: 700 1.12rem/1.25 var(--font-head); color: #fff; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.adm-pf-grid { display: grid; gap: 14px; align-items: start; }
+.adm-pf-grid > .pf-card { margin-bottom: 0; }
+.adm-pf > .pf-card { margin-top: 14px; margin-bottom: 0; }
+.adm-editor .form { display: grid; gap: 12px; }
+.adm-ve-values { display: grid; grid-template-columns: 1fr; gap: 10px; padding: 12px; border-radius: 12px; background: rgba(5, 13, 28, .5); border: 1px solid rgba(255, 255, 255, .08); }
+.adm-ve-values b { display: block; margin-top: 6px; font: 700 1.05rem/1.3 var(--font-head); color: #fff; font-variant-numeric: tabular-nums; }
+.adm-ve-values b.pos { color: #2fd3a0; } .adm-ve-values b.neg { color: #ff7a6e; }
+.adm-ve-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.adm-ve-actions .btn { flex: 1 1 auto; justify-content: center; min-height: 42px; display: inline-flex; align-items: center; }
+.adm-editor [hidden] { display: none !important; }
+.adm-timeline { list-style: none; margin: 0; padding: 0 0 0 18px; border-left: 2px solid rgba(255, 255, 255, .1); display: grid; gap: 2px; }
+.adm-timeline li { position: relative; display: grid; grid-template-columns: minmax(150px, 1.2fr) 1fr 1fr auto; gap: 6px 16px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, .05); font-variant-numeric: tabular-nums; }
+.adm-timeline li:last-child { border-bottom: 0; }
+.adm-timeline li::before { content: ""; position: absolute; left: -25px; top: 15px; width: 12px; height: 12px; border-radius: 50%; background: #0b1730; border: 2px solid rgba(255, 255, 255, .3); }
+.adm-timeline li.up::before { border-color: #12a37a; background: #12a37a; }
+.adm-timeline li.down::before { border-color: #ff6b5e; background: #ff6b5e; }
+.adm-timeline time { font-size: .84rem; color: rgba(255, 255, 255, .65); }
+.adm-timeline b { font: 700 1rem/1.3 var(--font-head); color: #fff; text-align: right; }
+.adm-timeline span { font-size: .88rem; font-weight: 600; text-align: right; }
+.adm-timeline small { font-size: .78rem; color: rgba(255, 255, 255, .5); text-align: right; min-width: 64px; }
+@media (min-width: 620px) { .adm-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .adm-ve-values { grid-template-columns: 1fr 1.2fr 1fr; align-items: end; } }
+@media (min-width: 1280px) { .adm-kpis { grid-template-columns: repeat(6, minmax(0, 1fr)); } .adm-pf-grid { grid-template-columns: minmax(0, 5fr) minmax(320px, 3fr); } }
+@media (max-width: 560px) { .adm-timeline li { grid-template-columns: 1fr 1fr; } .adm-timeline time { grid-column: 1 / -1; } .adm-timeline b { text-align: left; } }
+.admin-body .container.dash { max-width: 1560px; }

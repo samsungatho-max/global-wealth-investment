@@ -8,14 +8,16 @@ module.exports = {
   deposit: L('Deposit Funds', 'Déposer des fonds'),
   withdraw: L('Withdraw Funds', 'Retirer des fonds'),
   stats: {
-    value: L('Portfolio Value', 'Valeur du portefeuille'),
+    value: L('Live Portfolio Value', 'Valeur du portefeuille'),
+    today: L('Today’s Change', 'Variation du jour'),
+    todayNote: L('Profit / loss since 00:00 UTC, deposits and withdrawals excluded', 'Gain / perte depuis 00:00 UTC, hors dépôts et retraits'),
     valueNote: L('Cash balance and open positions at their latest recorded valuation', 'Liquidités et positions ouvertes à leur dernière valorisation enregistrée'),
     available: L('Available Balance', 'Solde disponible'),
     invested: L('Invested Funds', 'Fonds investis'),
     deposits: L('Total Deposits', 'Total des dépôts'),
     withdrawals: L('Total Withdrawals', 'Total des retraits'),
     pl: L('Profit / Loss', 'Gain / Perte'),
-    perf: L('Performance', 'Performance'),
+    perf: L('Total Performance', 'Performance totale'),
     perfNote: L('Profit / loss relative to total deposits', 'Gain / perte rapporté au total des dépôts'),
     reserved: L('reserved for pending withdrawals', 'réservés pour des retraits en cours'),
     positions: L('open position(s)', 'position(s) ouverte(s)')

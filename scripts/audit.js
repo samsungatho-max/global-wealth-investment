@@ -330,6 +330,27 @@ async function crawl(client, area, starts, { english = true, allow = () => true 
     await adm.post(`/admin/users/${john.id}/valuations/import`, { lines: `${val.investment_id} ; 2026-10-08 ; 10300 ; Manager statement\n${val.investment_id} ; 2031-01-01 ; 99999 ; Future` });
     if (Number((await one('SELECT COUNT(*) AS n FROM valuations WHERE investment_id = ?', val.investment_id)).n) !== 1) note('Traçabilité', 'import de valorisations partiellement enregistré malgré une ligne invalide');
     await adm.post(`/admin/users/${john.id}/valuations/import`, { lines: `${val.investment_id} ; 2026-10-08 ; 10300 ; Manager statement` });
+    // Éditeur de valorisation : l'aperçu n'enregistre rien, un brouillon reste invisible du client, la publication est tracée
+    const nVal = async () => Number((await one('SELECT COUNT(*) AS n FROM valuations WHERE investment_id = ?', val.investment_id)).n);
+    const pv = JSON.parse((await adm.get(`/admin/users/${john.id}/portfolio-preview.json?investment_id=${val.investment_id}&date=2026-10-09&time=10:00&value=10900`)).text);
+    if (!pv.points || pv.last !== 2597000) note('Valorisations', `aperçu avant publication inattendu : ${pv.last}`);
+    if (await nVal() !== 2) note('Valorisations', 'l’aperçu a enregistré une valorisation');
+    if ((await adm.get(`/admin/users/${john.id}/portfolio-preview.json?investment_id=${val.investment_id}&date=2031-01-01&value=10900`)).status !== 400) note('Valorisations', 'aperçu accepté pour une date future');
+    await adm.get(`/admin/users/${john.id}`);
+    await adm.post(`/admin/investments/${val.investment_id}/valuations`, { from: 'editor', date: '2026-10-09', time: '10:00', value: '10900', note: 'Manager statement (draft)', publish: '0' });
+    const draft = await one('SELECT * FROM valuations WHERE investment_id = ? AND published = 0', val.investment_id);
+    if (!draft || draft.valued_at !== '2026-10-09 10:00:00') note('Valorisations', 'brouillon non enregistré avec son heure de valeur');
+    if ((await pfJson()).points.slice(-1)[0][1] !== 2537000) note('Valorisations', 'un brouillon modifie le portefeuille vu par le client');
+    if (/10,900/.test((await cli.get('/account/investments')).text)) note('Droits', 'valorisation en brouillon visible par le client');
+    if (draft) await adm.post(`/admin/valuations/${draft.id}/discard`, {});
+    if (await nVal() !== 2) note('Valorisations', 'abandon du brouillon sans effet');
+    await adm.post(`/admin/investments/${val.investment_id}/valuations`, { from: 'editor', date: '2026-10-09', time: '11:00', value: '10300', note: 'Manager statement 11:00', comment: 'Unchanged', publish: '0' });
+    const draft2 = await one('SELECT * FROM valuations WHERE investment_id = ? AND published = 0', val.investment_id);
+    if (draft2) await adm.post(`/admin/valuations/${draft2.id}/publish`, {});
+    if (!draft2 || Number((await one('SELECT published FROM valuations WHERE id = ?', draft2.id)).published) !== 1) note('Valorisations', 'publication du brouillon sans effet');
+    if (!(await one(`SELECT id FROM audit_log WHERE action = 'valuation.publish'`)) || !(await one(`SELECT id FROM audit_log WHERE action = 'valuation.draft_discard'`))) note('Traçabilité', 'publication ou abandon de brouillon absent du journal d’audit');
+    await adm.post(`/admin/investments/${val.investment_id}/valuations`, { from: 'editor', date: '2026-10-09', time: '25:00', value: '10300', note: 'Bad time' });
+    if (await nVal() !== 3) note('Valorisations', 'heure de valeur invalide acceptée');
     from = inbox.length;
     await adm.post(`/admin/users/${john.id}/notify`, { message: 'Your quarterly statement is available.' });
     if (!mailTo('john.smith@example.org', from).length && !(await one(`SELECT id FROM notifications WHERE user_id = ? AND message LIKE 'Your quarterly statement%'`, john.id))) note('Notifications', 'message de l’administration non transmis au client');

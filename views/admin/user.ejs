@@ -55,6 +55,114 @@
       </div>
     </div>
 
+    <section class="panel" id="portfolio">
+      <div class="panel-head"><h2>Évolution du portefeuille / gestion de la performance</h2></div>
+      <% var ps = pf.stats; var drafts = history.filter(function (v) { return Number(v.published) === 0; }); var signed = function (c) { return (c > 0 ? '+' : c < 0 ? '−' : '') + usd(Math.abs(c)); }; %>
+      <div class="pf adm-pf" data-pf data-locale="fr-FR" data-currency="USD" data-rate="1" data-points="<%= JSON.stringify(pf.points.map(function (p) { return [p.t, p.value, p.net]; })) %>" data-now="<%= now %>">
+        <div class="adm-kpis">
+          <div><span class="pf-lab">Capital versé (dépôts nets)</span><strong><%= usd(ps.net) %></strong></div>
+          <div><span class="pf-lab">Valeur actuelle</span><strong><%= usd(ps.value) %></strong></div>
+          <div><span class="pf-lab">Gains / pertes</span><strong class="<%= ps.pl > 0 ? 'pos' : ps.pl < 0 ? 'neg' : '' %>"><%= signed(ps.pl) %></strong></div>
+          <div><span class="pf-lab">Performance</span><strong class="<%= ps.perf > 0 ? 'pos' : ps.perf < 0 ? 'neg' : '' %>"><%= pct(ps.perf) %></strong></div>
+          <div><span class="pf-lab">Dernière valorisation publiée</span><strong><%= pf.lastValuationAt ? fmtDate(pf.lastValuationAt, true) : '—' %></strong></div>
+          <div><span class="pf-lab">Variation du jour</span><strong class="<%= ps.today > 0 ? 'pos' : ps.today < 0 ? 'neg' : '' %>"><%= signed(ps.today) %></strong></div>
+        </div>
+
+        <div class="adm-pf-grid">
+          <div class="pf-card pf-chart-card">
+            <div class="pf-chart-top">
+              <div>
+                <span class="pf-lab">Vue du client</span>
+                <div class="pf-chart-val"><strong data-chart-value><%= usd(ps.value) %></strong><em data-chart-change></em></div>
+                <small class="pf-dim" data-chart-date>&nbsp;</small>
+              </div>
+              <div class="pf-ranges" role="group" aria-label="Période">
+                <% [['1H', 3600e3], ['1D', 86400e3], ['1W', 7 * 86400e3], ['1M', 30 * 86400e3], ['3M', 91 * 86400e3], ['6M', 182 * 86400e3], ['1Y', 365 * 86400e3], ['ALL', 0]].forEach(function (r) { %><button type="button" data-range="<%= r[1] %>" aria-pressed="<%= r[0] === 'ALL' %>"><%= r[0] %></button><% }) %>
+              </div>
+            </div>
+            <div class="pf-legend"><span><i></i>Valeur du portefeuille</span><span><i class="net"></i>Dépôts nets</span><span data-preview-legend hidden><i class="pv"></i>Aperçu avant publication</span></div>
+            <div class="pf-chart" data-chart data-empty="Aucune opération confirmée : le graphique apparaîtra après le premier dépôt confirmé." data-flat="Aucune variation sur cette période." data-change-label="Variation de la valeur sur la période, dépôts et retraits compris :" data-pl-label="de gain / perte sur la période">
+              <svg viewBox="0 0 900 340" preserveAspectRatio="none" aria-hidden="true">
+                <defs>
+                  <linearGradient id="pf-up" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#12a37a" stop-opacity=".38"/><stop offset="1" stop-color="#12a37a" stop-opacity="0"/></linearGradient>
+                  <linearGradient id="pf-down" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff6b5e" stop-opacity=".32"/><stop offset="1" stop-color="#ff6b5e" stop-opacity="0"/></linearGradient>
+                </defs>
+                <g data-grid></g>
+                <path data-area></path>
+                <path class="pf-net" data-net></path>
+                <path class="pf-line" data-line></path>
+                <path class="pf-preview" data-preview></path>
+                <line class="pf-cross" data-cross x1="0" x2="0" y1="0" y2="340"></line>
+              </svg>
+              <div class="pf-axis-y" data-axis-y></div>
+              <div class="pf-axis-x" data-axis-x></div>
+              <span class="pf-dot" data-dot></span>
+              <p class="pf-empty" data-empty-msg hidden></p>
+            </div>
+            <div class="pf-chart-foot"><span>Heures affichées en UTC.</span><span class="pf-dim">Courbe calculée à partir des transactions confirmées et des valorisations publiées. Elle ne peut pas être modifiée directement.</span></div>
+          </div>
+
+          <div class="pf-card adm-editor">
+            <div class="pf-card-head"><h2>Éditeur de valorisation</h2></div>
+            <% if (!s.active.length) { %>
+              <p class="alert alert-info small mb-0">Ce client n'a aucune position ouverte : son portefeuille n'est constitué que de liquidités, dont la valeur ne varie pas. Une valorisation se rattache toujours à un investissement enregistré (rubrique « Investissements »).</p>
+            <% } else { %>
+            <form class="form" method="post" action="/admin/investments/<%= s.active[0].id %>/valuations" data-val-editor data-preview-url="/admin/users/<%= u.id %>/portfolio-preview.json" data-today="<%= today %>">
+              <input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="from" value="editor">
+              <div><label for="ve-inv">Position valorisée</label>
+                <select id="ve-inv" data-ve-inv><% s.active.forEach(function (i) { %><option value="<%= i.id %>" data-current="<%= i.current_value %>" data-start="<%= i.start_date %>" data-label="<%= usd(i.current_value) %>">#<%= i.id %> · <%= i.title %></option><% }) %></select></div>
+              <div class="form-row form-row-2">
+                <div><label for="ve-freq">Fréquence de la source</label>
+                  <select id="ve-freq" data-ve-freq><option value="week">Semaine</option><option value="day" selected>Jour</option><option value="hour">Heure</option><option value="minute">Minute</option><option value="second">Seconde</option></select></div>
+                <div><label for="ve-date">Date de valeur</label><input id="ve-date" name="date" type="date" required max="<%= today %>" value="<%= today %>" data-ve-date></div>
+              </div>
+              <div data-ve-time-wrap hidden><label for="ve-time">Heure de valeur (UTC)</label><input id="ve-time" name="time" type="time" step="3600" data-ve-time>
+                <p class="hint" data-ve-fine hidden>Minute ou seconde : à utiliser uniquement si la source fournit réellement des données à cette fréquence (flux de marché, dépositaire).</p></div>
+              <div class="adm-ve-values">
+                <div><span class="pf-lab">Valeur précédente</span><b data-ve-prev><%= usd(s.active[0].current_value) %></b></div>
+                <div><label for="ve-value">Nouvelle valeur ($)</label><input id="ve-value" name="value" type="text" inputmode="decimal" required data-ve-value></div>
+                <div><span class="pf-lab">Variation</span><b data-ve-diff>—</b></div>
+              </div>
+              <div><label for="ve-src">Source / référence *</label><input id="ve-src" name="note" type="text" required maxlength="400" placeholder="Relevé du gestionnaire, rapport, expertise…"></div>
+              <div><label for="ve-com">Commentaire</label><input id="ve-com" name="comment" type="text" maxlength="300"></div>
+              <p class="alert alert-error small" data-ve-error hidden></p>
+              <div class="adm-ve-actions">
+                <button class="btn btn-ghost btn-sm" type="button" data-ve-preview>Aperçu de l'évolution</button>
+                <button class="btn btn-ghost btn-sm" type="submit" name="publish" value="0">Enregistrer en brouillon</button>
+                <button class="btn btn-gold btn-sm" type="submit" name="publish" value="1" data-confirm-publish>Publier pour le client</button>
+              </div>
+              <p class="hint mb-0">L'aperçu n'enregistre rien. Un brouillon n'est pas visible du client. Une valorisation publiée apparaît aussitôt dans son tableau de bord et reste inscrite au journal d'audit.</p>
+            </form>
+            <% } %>
+          </div>
+        </div>
+
+        <% if (drafts.length) { %>
+        <div class="pf-card">
+          <div class="pf-card-head"><h2>Brouillons en attente de publication</h2></div>
+          <div class="pf-table"><table>
+            <thead><tr><th>Date de valeur</th><th>Position</th><th class="num">Valeur</th><th>Source</th><th></th></tr></thead>
+            <tbody><% drafts.forEach(function (v) { %>
+              <tr><td><%= fmtDate(v.effective_at, true) %></td><td>#<%= v.investment_id %> · <%= v.title %></td><td class="num"><b><%= usd(v.value_cents) %></b></td><td><small><%= v.note %></small></td>
+                <td><div class="actions"><form method="post" action="/admin/valuations/<%= v.id %>/publish" data-confirm="Publier cette valorisation pour le client ?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-gold btn-sm" type="submit">Publier</button></form><form method="post" action="/admin/valuations/<%= v.id %>/discard" data-confirm="Abandonner ce brouillon ?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-ghost btn-sm" type="submit">Abandonner</button></form></div></td></tr>
+            <% }) %></tbody>
+          </table></div>
+        </div>
+        <% } %>
+
+        <div class="pf-card">
+          <div class="pf-card-head"><h2>Chronologie du portefeuille</h2></div>
+          <% if (!timeline.length) { %><p class="pf-none">Aucune écriture.</p><% } else { %>
+          <ol class="adm-timeline">
+            <% timeline.forEach(function (p) { %>
+              <li class="<%= p.change > 0 ? 'up' : p.change < 0 ? 'down' : '' %>"><time><%= fmtDate(new Date(p.t).toISOString(), true) %></time><b><%= usd(p.value) %></b><span class="<%= p.change >= 0 ? 'pos' : 'neg' %>"><%= signed(p.change) %></span><small><%= pct(p.perf) %></small></li>
+            <% }) %>
+          </ol>
+          <% } %>
+        </div>
+      </div>
+    </section>
+
     <section class="panel" id="deposit">
       <div class="panel-head"><h2>Créditer un dépôt reçu et vérifié</h2></div>
       <form class="card form" method="post" action="/admin/users/<%= u.id %>/deposits/credit" enctype="multipart/form-data" data-confirm="Créditer ce dépôt sur le compte du client ? L'opération sera inscrite au journal d'audit.">
@@ -179,7 +287,7 @@
         <thead><tr><th>Date de valeur</th><th>Investissement</th><th class="num">Valeur précédente</th><th class="num">Valeur actuelle</th><th class="num">Variation</th><th class="num">Performance</th><th>Source / référence</th><th>Correction</th></tr></thead>
         <tbody>
           <% if (!history.length) { %><tr><td colspan="8" class="empty">Aucune valorisation.</td></tr><% } %>
-          <% history.forEach(function (v, k) { var older = history.slice(k + 1).filter(function (o) { return o.investment_id === v.investment_id; })[0]; var prev = older ? Number(older.value_cents) : Number(v.amount_cents); var diff = Number(v.value_cents) - prev; %><tr><td><%= fmtDate(v.valuation_date) %><div class="small muted">saisie le <%= fmtDate(v.created_at, true) %></div></td><td><%= v.title %><div class="small muted">#<%= v.investment_id %></div></td><td class="num"><%= usd(prev) %></td><td class="num"><strong><%= usd(v.value_cents) %></strong></td><td class="num <%= diff >= 0 ? 'pos' : 'neg' %>"><%= (diff > 0 ? '+' : diff < 0 ? '−' : '') + usd(Math.abs(diff)) %></td><td class="num <%= v.perf >= 0 ? 'pos' : 'neg' %>"><%= pct(v.perf) %></td><td class="small"><%= v.note %></td><td style="min-width:240px"><details class="box"><summary>Corriger</summary><form class="form" method="post" action="/admin/valuations/<%= v.id %>/correct" data-confirm="Corriger cette valorisation ? L'ancienne valeur restera au journal d'audit."><input type="hidden" name="_csrf" value="<%= csrf %>"><div><label>Nouvelle valeur ($)</label><input name="value" type="text" inputmode="decimal" required></div><div><label>Motif / pièce justificative *</label><input name="reason" type="text" required maxlength="500"></div><button class="btn btn-navy btn-sm" type="submit">Corriger</button></form></details></td></tr><% }) %>
+          <% history.forEach(function (v, k) { var older = history.slice(k + 1).filter(function (o) { return o.investment_id === v.investment_id; })[0]; var prev = older ? Number(older.value_cents) : Number(v.amount_cents); var diff = Number(v.value_cents) - prev; %><tr><td><%= fmtDate(v.effective_at, true) %><% if (Number(v.published) === 0) { %> <span class="chip chip-warning">Brouillon</span><% } %><div class="small muted">saisie le <%= fmtDate(v.created_at, true) %></div></td><td><%= v.title %><div class="small muted">#<%= v.investment_id %></div></td><td class="num"><%= usd(prev) %></td><td class="num"><strong><%= usd(v.value_cents) %></strong></td><td class="num <%= diff >= 0 ? 'pos' : 'neg' %>"><%= (diff > 0 ? '+' : diff < 0 ? '−' : '') + usd(Math.abs(diff)) %></td><td class="num <%= v.perf >= 0 ? 'pos' : 'neg' %>"><%= pct(v.perf) %></td><td class="small"><%= v.note %></td><td style="min-width:240px"><details class="box"><summary>Corriger</summary><form class="form" method="post" action="/admin/valuations/<%= v.id %>/correct" data-confirm="Corriger cette valorisation ? L'ancienne valeur restera au journal d'audit."><input type="hidden" name="_csrf" value="<%= csrf %>"><div><label>Nouvelle valeur ($)</label><input name="value" type="text" inputmode="decimal" required></div><div><label>Motif / pièce justificative *</label><input name="reason" type="text" required maxlength="500"></div><button class="btn btn-navy btn-sm" type="submit">Corriger</button></form></details></td></tr><% }) %>
         </tbody>
       </table></div>
     </section>
@@ -194,18 +302,6 @@
           <button class="btn btn-navy btn-sm" type="submit">Importer</button>
         </form>
       </details>
-    </section>
-
-    <section class="panel" id="portfolio">
-      <div class="panel-head"><h2>Évolution du portefeuille (vue du client)</h2></div>
-      <p class="small muted">Calculée automatiquement à partir des transactions confirmées et des valorisations enregistrées. Elle ne peut pas être modifiée directement.</p>
-      <div class="table-wrap"><table>
-        <thead><tr><th>Date et heure</th><th class="num">Valeur du portefeuille</th><th class="num">Variation</th><th class="num">Performance</th></tr></thead>
-        <tbody>
-          <% if (!timeline.length) { %><tr><td colspan="4" class="empty">Aucune écriture.</td></tr><% } %>
-          <% timeline.forEach(function (p) { %><tr><td><%= fmtDate(new Date(p.t).toISOString(), true) %></td><td class="num"><%= usd(p.value) %></td><td class="num <%= p.change >= 0 ? 'pos' : 'neg' %>"><%= (p.change > 0 ? '+' : p.change < 0 ? '−' : '') + usd(Math.abs(p.change)) %></td><td class="num <%= p.perf >= 0 ? 'pos' : 'neg' %>"><%= pct(p.perf) %></td></tr><% }) %>
-        </tbody>
-      </table></div>
     </section>
 
     <section class="panel" id="entries">
@@ -283,4 +379,6 @@
     </section>
   </div>
 </div>
+<script src="/static/js/portfolio.js?v=<%= assetV %>" defer></script>
+<script src="/static/js/admin-valuation.js?v=<%= assetV %>" defer></script>
 <%- include('../partials/bottom') %>

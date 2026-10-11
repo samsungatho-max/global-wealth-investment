@@ -32,8 +32,12 @@
     return new Intl.DateTimeFormat(locale, opt).format(new Date(ms));
   }
 
+  var preview = null, elPreview = $('[data-preview]'), elPreviewLegend = $('[data-preview-legend]');
+  root.addEventListener('pf:preview', function (e) { preview = e.detail && e.detail.length ? e.detail : null; if (elPreviewLegend) elPreviewLegend.hidden = !preview; draw(); });
+
   /** Points visibles sur la période : valeur reportée au début de la fenêtre, puis jusqu'à maintenant. */
-  function windowed() {
+  function windowed(src) {
+    var points = src;
     if (!points.length) return [];
     var from = range ? now - range : points[0][0], out = [], before = null;
     points.forEach(function (p) { if (p[0] < from) before = p; else if (p[0] <= now) out.push(p); });
@@ -44,7 +48,8 @@
   }
 
   function draw() {
-    view = windowed();
+    view = windowed(points);
+    var pv = preview && elPreview ? windowed(preview) : [];
     var has = view.length > 1;
     el.empty.hidden = has;
     el.chart.classList.toggle('is-empty', !has);
@@ -54,7 +59,7 @@
       el.change.textContent = ''; el.date.innerHTML = '&nbsp;';
       return;
     }
-    var t0 = view[0][0], t1 = view[view.length - 1][0], vals = view.map(function (p) { return p[1]; }).concat(view.map(function (p) { return p[2]; }));
+    var t0 = view[0][0], t1 = view[view.length - 1][0], vals = view.map(function (p) { return p[1]; }).concat(view.map(function (p) { return p[2]; }), pv.map(function (p) { return p[1]; }));
     var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
     var pad = (hi - lo) * 0.12 || Math.abs(hi) * 0.05 || 100;
     lo -= pad; hi += pad;
@@ -65,6 +70,11 @@
     var dn = 'M' + x(view[0][0]).toFixed(1) + ' ' + y(view[0][2]).toFixed(1);
     for (var i = 1; i < view.length; i++) { d += ' H' + x(view[i][0]).toFixed(1) + ' V' + y(view[i][1]).toFixed(1); dn += ' H' + x(view[i][0]).toFixed(1) + ' V' + y(view[i][2]).toFixed(1); }
     el.net.setAttribute('d', dn);
+    if (elPreview) {
+      var dp = '';
+      if (pv.length > 1) { dp = 'M' + x(Math.max(pv[0][0], t0)).toFixed(1) + ' ' + y(pv[0][1]).toFixed(1); for (var q = 1; q < pv.length; q++) dp += ' H' + x(Math.min(Math.max(pv[q][0], t0), t1)).toFixed(1) + ' V' + y(pv[q][1]).toFixed(1); }
+      elPreview.setAttribute('d', dp);
+    }
     // Couleur selon le gain ou la perte de la période (hors dépôts et retraits)
     var a = view[0], b = view[view.length - 1], up = (b[1] - b[2]) - (a[1] - a[2]) >= 0;
     el.line.setAttribute('d', d);
@@ -121,7 +131,7 @@
 
   /** Actualisation : relit les données enregistrées sur le serveur (aucune valeur calculée côté navigateur). */
   function refresh() {
-    if (document.hidden) return;
+    if (document.hidden || !root.getAttribute('data-url')) return;
     fetch(root.getAttribute('data-url'), { credentials: 'same-origin', headers: { accept: 'application/json' } })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) {

@@ -201,3 +201,7 @@ body.acct { background: #060d1b; color: rgba(255, 255, 255, .78); }
 .acct .faq-item, .acct .note-line, .acct .project-ref-note { background: rgba(255, 255, 255, .04); border-color: rgba(255, 255, 255, .1); color: rgba(255, 255, 255, .8); }
 .acct .section-gray, .acct .panel .card.form { background: rgba(255, 255, 255, .04); }
 @media (min-width: 900px) { .acct .dep-card { padding: 54px 44px 44px; } .acct .dep-steps { grid-template-columns: repeat(3, 1fr); } }
+
+.pf-preview { fill: none; stroke: #e6c98a; stroke-width: 2.2; stroke-dasharray: 7 5; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.pf-legend i.pv { border-top: 2px dashed #e6c98a; }
+.pf-legend [hidden] { display: none; }

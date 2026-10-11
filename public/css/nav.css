@@ -154,3 +154,10 @@ html.nav-open, html.nav-open body { overflow: hidden; }
   .site-header:has(.header-cta.is-auth) .nav-burger { display: inline-flex; }
   .site-header:has(.header-cta.is-auth) .mnav.open { display: block; }
 }
+.header-cta.is-auth .btn-line { display: none; }
+/* Administration : en-tête compact à toutes les largeurs (le menu latéral porte la navigation) */
+@media (min-width: 1160px) {
+  .admin-body .site-header .gnav, .admin-body .site-header .header-cta { display: none; }
+  .admin-body .site-header .nav-burger { display: inline-flex; }
+  .admin-body .site-header .mnav.open { display: block; }
+}

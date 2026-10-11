@@ -26,6 +26,7 @@
       <div class="pf-stat"><span class="pf-lab"><%= pick(A.stats.invested) %></span><strong data-stat="invested"><%= money(st.invested) %></strong><small><%= d.s.active.length %> <%= pick(A.stats.positions) %></small></div>
       <div class="pf-stat"><span class="pf-lab"><%= pick(A.stats.deposits) %></span><strong data-stat="deposits"><%= money(st.deposits) %></strong><small>&nbsp;</small></div>
       <div class="pf-stat"><span class="pf-lab"><%= pick(A.stats.withdrawals) %></span><strong data-stat="withdrawals"><%= money(st.withdrawals) %></strong><small>&nbsp;</small></div>
+      <div class="pf-stat"><span class="pf-lab"><%= pick(A.stats.today) %></span><strong class="<%= tone(st.today) %>" data-stat="today"><%= sign(st.today) %></strong><small><%= pick(A.stats.todayNote) %></small></div>
       <div class="pf-stat"><span class="pf-lab"><%= pick(A.stats.pl) %></span><strong class="<%= tone(st.pl) %>" data-stat="pl"><%= sign(st.pl) %></strong><small>&nbsp;</small></div>
       <div class="pf-stat"><span class="pf-lab"><%= pick(A.stats.perf) %></span><strong class="<%= tone(st.perf) %>" data-stat="perf"><%= pct(st.perf) %></strong><small><%= pick(A.stats.perfNote) %></small></div>
     </div>

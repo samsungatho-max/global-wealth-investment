@@ -97,6 +97,7 @@ router.get('/portfolio.json', async (req, res) => {
     stats: {
       value: { text: m(st.value) }, available: { text: m(st.available) }, invested: { text: m(st.invested) },
       deposits: { text: m(st.deposits) }, withdrawals: { text: m(st.withdrawals) },
+      today: { text: sign(st.today), tone: tone(st.today) },
       pl: { text: sign(st.pl), tone: tone(st.pl) }, perf: { text: pct(st.perf), tone: tone(st.perf) }
     }
   });

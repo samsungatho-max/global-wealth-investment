@@ -283,7 +283,8 @@ router.get('/users/:id', async (req, res, next) => {
     title: u.full_name,
     u,
     s: await ledger.summary(u.id, 'fr'),
-    history: await ledger.valuationHistory(u.id, 'fr'),
+    history: await ledger.valuationHistory(u.id, 'fr', { drafts: true }),
+    pf: await ledger.dashboard(u.id, 'fr'), now: Date.now(),
     txs: await all('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 100', u.id),
     kycs: await all('SELECT * FROM kyc_submissions WHERE user_id = ? ORDER BY id DESC', u.id),
     docs: await all('SELECT * FROM user_documents WHERE user_id = ? ORDER BY created_at DESC', u.id),
@@ -449,28 +450,78 @@ router.post('/users/:id/investments', async (req, res, next) => {
   res.redirect(`/admin/users/${u.id}#invest`);
 });
 
+/** Date et heure de valeur (UTC) : heure saisie, sinon l'instant présent pour aujourd'hui ou la fin de journée pour une date passée. Jamais dans le futur. */
+function valuedAt(date, time) {
+  const nowStr = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  const t = String(time || '').trim();
+  if (!t) return date === today() ? nowStr : `${date} 23:59:59`;
+  if (!/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(t)) return null;
+  const at = `${date} ${t.length === 5 ? t + ':00' : t}`;
+  return at > nowStr ? null : at;
+}
+
+// Aperçu avant publication : évolution du portefeuille si la valorisation saisie était publiée (rien n'est enregistré).
+router.get('/users/:id/portfolio-preview.json', async (req, res, next) => {
+  const u = await one('SELECT id FROM users WHERE id = ?', req.params.id);
+  if (!u) return next();
+  const inv = await one(`SELECT * FROM investments WHERE id = ? AND user_id = ? AND status = 'active'`, /^\d+$/.test(String(req.query.investment_id || '')) ? req.query.investment_id : 0, u.id);
+  const value = req.query.value === '0' ? 0 : parseAmount(req.query.value);
+  const date = isDate(req.query.date) ? req.query.date : null;
+  const at = inv && date && date >= inv.start_date && date <= today() ? valuedAt(date, req.query.time) : null;
+  if (!inv || value === null || !at) return res.status(400).json({ error: 'Position, date, heure et valeur valides obligatoires.' });
+  const tl = await ledger.timeline(u.id, { extra: { investment_id: inv.id, ms: ledger.toMs(at), value_cents: value } });
+  res.set('Cache-Control', 'no-store').json({ points: tl.points.map((p) => [p.t, p.value, p.net]), last: tl.points.length ? tl.points[tl.points.length - 1].value : 0 });
+});
+
+// Publication d'un brouillon : la valorisation devient visible du client.
+router.post('/valuations/:id/publish', async (req, res, next) => {
+  const v = await one('SELECT v.*, i.user_id, i.amount_cents, p.i18n AS p_i18n FROM valuations v JOIN investments i ON i.id = v.investment_id JOIN projects p ON p.id = i.project_id WHERE v.id = ? AND v.published = 0', req.params.id);
+  if (!v) return next();
+  await run('UPDATE valuations SET published = 1 WHERE id = ?', v.id);
+  await audit(req, 'valuation.publish', 'investment', v.investment_id, { valuation: v.id, new_value_cents: Number(v.value_cents), date: v.valued_at || v.valuation_date, from: 'brouillon', reason: v.note });
+  const u = await one('SELECT lang FROM users WHERE id = ?', v.user_id);
+  await notify(v.user_id, 'valuation', { project: parseI18n(v.p_i18n, u.lang).title, date: v.valuation_date }, '/account/investments');
+  req.flash('success', 'Valorisation publiée pour le client.');
+  res.redirect(`/admin/users/${v.user_id}#portfolio`);
+});
+
+// Abandon d'un brouillon jamais publié (le client ne l'a jamais vu) ; l'abandon reste inscrit au journal.
+router.post('/valuations/:id/discard', async (req, res, next) => {
+  const v = await one('SELECT v.*, i.user_id FROM valuations v JOIN investments i ON i.id = v.investment_id WHERE v.id = ? AND v.published = 0', req.params.id);
+  if (!v) return next();
+  await run('DELETE FROM valuations WHERE id = ? AND published = 0', v.id);
+  await audit(req, 'valuation.draft_discard', 'investment', v.investment_id, { valuation: v.id, old_value_cents: Number(v.value_cents), date: v.valued_at || v.valuation_date, reason: v.note });
+  req.flash('success', 'Brouillon abandonné.');
+  res.redirect(`/admin/users/${v.user_id}#portfolio`);
+});
+
 // Valorisation datée (valeur réelle constatée) d'un investissement.
 router.post('/investments/:id/valuations', async (req, res, next) => {
   const inv = await one('SELECT i.*, p.i18n AS p_i18n FROM investments i JOIN projects p ON p.id = i.project_id WHERE i.id = ?', req.params.id);
   if (!inv) return next();
   const value = req.body.value === '0' ? 0 : parseAmount(req.body.value);
   const date = isDate(req.body.date) ? req.body.date : null;
-  const note = String(req.body.note || '').trim().slice(0, 500);
-  if (value === null || !date || date < inv.start_date || date > today()) {
-    req.flash('error', 'Valeur et date valides obligatoires (date comprise entre le début de l\'investissement et aujourd\'hui).');
-    return res.redirect(`/admin/users/${inv.user_id}#invest`);
+  const source = String(req.body.note || '').trim().slice(0, 400);
+  const comment = String(req.body.comment || '').trim().slice(0, 300);
+  const note = [source, comment].filter(Boolean).join(' — ');
+  const publish = req.body.publish === '0' ? 0 : 1;
+  const anchor = req.body.from === 'editor' ? '#portfolio' : '#invest';
+  const fail = (m) => { req.flash('error', m); res.redirect(`/admin/users/${inv.user_id}${anchor}`); };
+  if (inv.status !== 'active') return fail('Cet investissement est clôturé.');
+  if (value === null || !date || date < inv.start_date || date > today()) return fail('Valeur et date valides obligatoires (date comprise entre le début de l\'investissement et aujourd\'hui).');
+  const at = valuedAt(date, req.body.time);
+  if (!at) return fail('Heure invalide ou située dans le futur (format HH:MM, heure UTC).');
+  if (!source) return fail('Indiquez la source ou la référence de la valorisation.');
+  const prev = await one(`SELECT value_cents FROM valuations WHERE investment_id = ? AND published = 1 ORDER BY COALESCE(valued_at, valuation_date || ' 23:59:59') DESC, id DESC LIMIT 1`, inv.id);
+  const info = await run('INSERT INTO valuations (investment_id, value_cents, valuation_date, valued_at, published, note, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    inv.id, value, date, at, publish, note, req.user.id);
+  await audit(req, publish ? 'valuation.create' : 'valuation.draft', 'investment', inv.id, { valuation: info.lastInsertRowid, old_value_cents: prev ? Number(prev.value_cents) : Number(inv.amount_cents), new_value_cents: value, date: at, reason: note });
+  if (publish) {
+    const u = await one('SELECT lang FROM users WHERE id = ?', inv.user_id);
+    await notify(inv.user_id, 'valuation', { project: parseI18n(inv.p_i18n, u.lang).title, date }, '/account/investments');
   }
-  if (!note) {
-    req.flash('error', 'Indiquez la source ou la justification de la valorisation.');
-    return res.redirect(`/admin/users/${inv.user_id}#invest`);
-  }
-  const info = await run('INSERT INTO valuations (investment_id, value_cents, valuation_date, note, created_by) VALUES (?, ?, ?, ?, ?)',
-    inv.id, value, date, note, req.user.id);
-  await audit(req, 'valuation.create', 'investment', inv.id, { valuation: info.lastInsertRowid, new_value_cents: value, date, reason: note });
-  const u = await one('SELECT lang FROM users WHERE id = ?', inv.user_id);
-  await notify(inv.user_id, 'valuation', { project: parseI18n(inv.p_i18n, u.lang).title, date }, '/account/investments');
-  req.flash('success', 'Valorisation enregistrée.');
-  res.redirect(`/admin/users/${inv.user_id}#invest`);
+  req.flash('success', publish ? 'Valorisation publiée : elle apparaît dans le tableau de bord du client.' : 'Valorisation enregistrée en brouillon. Elle n\'est pas visible du client tant qu\'elle n\'est pas publiée.');
+  res.redirect(`/admin/users/${inv.user_id}${anchor}`);
 });
 
 // Correction d'une valorisation erronée : l'ancienne et la nouvelle valeur sont conservées dans le journal d'audit, avec le motif.
@@ -513,7 +564,7 @@ router.post('/users/:id/valuations/import', async (req, res, next) => {
   }
   const ids = await tx(async () => {
     const out = [];
-    for (const r of rows) out.push((await run('INSERT INTO valuations (investment_id, value_cents, valuation_date, note, created_by) VALUES (?, ?, ?, ?, ?)', r.inv.id, r.value, r.date, r.source, req.user.id)).lastInsertRowid);
+    for (const r of rows) out.push((await run('INSERT INTO valuations (investment_id, value_cents, valuation_date, valued_at, note, created_by) VALUES (?, ?, ?, ?, ?, ?)', r.inv.id, r.value, r.date, valuedAt(r.date), r.source, req.user.id)).lastInsertRowid);
     return out;
   });
   for (const [k, r] of rows.entries()) await audit(req, 'valuation.import', 'investment', r.inv.id, { valuation: ids[k], new_value_cents: r.value, date: r.date, reason: r.source });
@@ -578,8 +629,8 @@ router.post('/investments/:id/mature', async (req, res, next) => {
   }
   await tx(async () => {
     await run(`UPDATE investments SET status = 'matured' WHERE id = ?`, inv.id);
-    await run('INSERT INTO valuations (investment_id, value_cents, valuation_date, note, created_by) VALUES (?, ?, ?, ?, ?)',
-      inv.id, payout, date, `Valeur finale à l'échéance — ${note}`, req.user.id);
+    await run('INSERT INTO valuations (investment_id, value_cents, valuation_date, valued_at, note, created_by) VALUES (?, ?, ?, ?, ?, ?)',
+      inv.id, payout, date, valuedAt(date), `Valeur finale à l'échéance — ${note}`, req.user.id);
     if (payout > 0) {
       await run(`INSERT INTO transactions (user_id, type, amount_cents, status, reference, method, investment_id, admin_note, processed_at, processed_by)
            VALUES (?, 'payout', ?, 'confirmed', ?, 'internal', ?, ?, datetime('now'), ?)`,
