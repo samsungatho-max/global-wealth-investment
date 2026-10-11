@@ -536,6 +536,10 @@ module.exports = {
     document_added: "Nouveau document disponible : {title}.",
     message_replied: "L'assistance a répondu à votre message « {subject} ».",
     password_changed: "Le mot de passe de votre compte a été modifié.",
+    admin_message: "{note}",
+    payout_recorded: "Revenu {ref} de {amount} enregistré sur votre compte.",
+    fee_recorded: "Frais {ref} de {amount} enregistrés sur votre compte.",
+    valuation_corrected: "La valorisation de « {project} » au {date} a été corrigée.",
     twofa_changed: "Les paramètres d'authentification à deux facteurs ont été modifiés."
   },
   ux: {

@@ -1,16 +1,29 @@
+<%
+  var auditView = function (raw) {
+    var d = {}; try { d = JSON.parse(raw || '{}') || {}; } catch (e) { d = {}; }
+    var val = function (cents, other) { return cents != null ? usd(Number(cents)) : (other != null ? String(other) : ''); };
+    return {
+      before: val(d.old_value_cents, d.from != null ? d.from : d.old),
+      after: val(d.new_value_cents != null ? d.new_value_cents : (d.amount_cents != null && d.to == null ? d.amount_cents : null), d.to != null ? d.to : (d.status != null ? d.status : (d.value != null ? d.value : d.new))),
+      ref: [d.reference || d.ref, d.external_ref, d.reason || d.note].filter(Boolean).join(' · ')
+    };
+  };
+%>
 <div class="table-wrap">
   <table>
-    <thead><tr><th>#</th><th>Date</th><th>Auteur</th><th>Action</th><th>Cible</th><th>Détails</th><th>IP</th></tr></thead>
+    <thead><tr><th>#</th><th>Date et heure</th><th>Administrateur</th><th>Action</th><th>Cible</th><th>Ancienne valeur</th><th>Nouvelle valeur</th><th>Référence / motif</th><th>IP</th></tr></thead>
     <tbody>
-    <% if (!rows.length) { %><tr><td colspan="7" class="empty">Aucune entrée.</td></tr><% } %>
-    <% rows.forEach(function (a) { %>
+    <% if (!rows.length) { %><tr><td colspan="9" class="empty">Aucune entrée.</td></tr><% } %>
+    <% rows.forEach(function (a) { var v = auditView(a.details); %>
       <tr>
         <td class="mono small"><%= a.id %></td>
         <td class="small" style="white-space:nowrap"><%= fmtDate(a.created_at, true) %></td>
         <td class="small"><%= a.actor_email || '—' %></td>
         <td><span class="chip"><%= a.action %></span></td>
         <td class="small"><%= a.target_type || '' %> <%= a.target_id || '' %></td>
-        <td class="mono small" style="max-width:320px;word-break:break-all"><%= a.details || '' %></td>
+        <td class="small"><%= v.before || '—' %></td>
+        <td class="small"><strong><%= v.after || '—' %></strong></td>
+        <td class="small" style="max-width:300px;word-break:break-word" title="<%= a.details || '' %>"><%= v.ref || '—' %></td>
         <td class="mono small"><%= a.ip || '' %></td>
       </tr>
     <% }) %>

@@ -134,15 +134,71 @@
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="valuations">
       <div class="panel-head"><h2>Historique des valorisations</h2></div>
       <div class="table-wrap"><table>
-        <thead><tr><th>Date</th><th>Projet</th><th class="num">Valeur</th><th class="num">Variation</th><th>Justification</th></tr></thead>
+        <thead><tr><th>Date</th><th>Projet</th><th class="num">Valeur</th><th class="num">Variation</th><th>Justification</th><th>Correction</th></tr></thead>
         <tbody>
-          <% if (!history.length) { %><tr><td colspan="5" class="empty">Aucune valorisation.</td></tr><% } %>
-          <% history.forEach(function (v) { %><tr><td><%= fmtDate(v.valuation_date) %></td><td><%= v.title %></td><td class="num"><%= usd(v.value_cents) %></td><td class="num <%= v.perf >= 0 ? 'pos' : 'neg' %>"><%= pct(v.perf) %></td><td class="small"><%= v.note %></td></tr><% }) %>
+          <% if (!history.length) { %><tr><td colspan="6" class="empty">Aucune valorisation.</td></tr><% } %>
+          <% history.forEach(function (v) { %><tr><td><%= fmtDate(v.valuation_date) %></td><td><%= v.title %></td><td class="num"><%= usd(v.value_cents) %></td><td class="num <%= v.perf >= 0 ? 'pos' : 'neg' %>"><%= pct(v.perf) %></td><td class="small"><%= v.note %></td><td style="min-width:240px"><details class="box"><summary>Corriger</summary><form class="form" method="post" action="/admin/valuations/<%= v.id %>/correct" data-confirm="Corriger cette valorisation ? L'ancienne valeur restera au journal d'audit."><input type="hidden" name="_csrf" value="<%= csrf %>"><div><label>Nouvelle valeur ($)</label><input name="value" type="text" inputmode="decimal" required></div><div><label>Motif / pièce justificative *</label><input name="reason" type="text" required maxlength="500"></div><button class="btn btn-navy btn-sm" type="submit">Corriger</button></form></details></td></tr><% }) %>
         </tbody>
       </table></div>
+    </section>
+
+    <section class="panel">
+      <details class="box"><summary>Importer plusieurs valorisations</summary>
+        <form class="form" method="post" action="/admin/users/<%= u.id %>/valuations/import">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <div><label for="imp-lines">Une ligne par valorisation : n° d'investissement ; date (AAAA-MM-JJ) ; valeur en $ ; source</label>
+            <textarea id="imp-lines" name="lines" rows="4" required placeholder="12 ; 2026-09-30 ; 10450.00 ; Rapport de gestion T3 2026"></textarea>
+            <p class="hint">Le numéro d'investissement figure sous le nom du projet (#…). Si une seule ligne est invalide, rien n'est enregistré.</p></div>
+          <button class="btn btn-navy btn-sm" type="submit">Importer</button>
+        </form>
+      </details>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Évolution du portefeuille (vue du client)</h2></div>
+      <p class="small muted">Calculée automatiquement à partir des transactions confirmées et des valorisations enregistrées. Elle ne peut pas être modifiée directement.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Date et heure</th><th class="num">Valeur du portefeuille</th><th class="num">Variation</th><th class="num">Performance</th></tr></thead>
+        <tbody>
+          <% if (!timeline.length) { %><tr><td colspan="4" class="empty">Aucune écriture.</td></tr><% } %>
+          <% timeline.forEach(function (p) { %><tr><td><%= fmtDate(new Date(p.t).toISOString(), true) %></td><td class="num"><%= usd(p.value) %></td><td class="num <%= p.change >= 0 ? 'pos' : 'neg' %>"><%= (p.change > 0 ? '+' : p.change < 0 ? '−' : '') + usd(Math.abs(p.change)) %></td><td class="num <%= p.perf >= 0 ? 'pos' : 'neg' %>"><%= pct(p.perf) %></td></tr><% }) %>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="panel" id="entries">
+      <div class="panel-head"><h2>Enregistrer un revenu versé ou des frais prélevés</h2></div>
+      <div class="card">
+        <p class="small muted">À utiliser uniquement pour une opération réellement effectuée, pièce à l'appui. L'écriture apparaît dans l'historique du client et au journal d'audit.</p>
+        <form class="form" method="post" action="/admin/users/<%= u.id %>/entries" data-confirm="Enregistrer cette écriture sur le compte du client ?">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <div class="form-row form-row-3">
+            <div><label for="en-type">Type</label><select id="en-type" name="type" required><option value="payout">Revenu / distribution versé au client</option><option value="fee">Frais prélevés</option></select></div>
+            <div><label for="en-amount">Montant ($)</label><input id="en-amount" name="amount" type="text" inputmode="decimal" required></div>
+            <div><label for="en-inv">Investissement concerné</label><select id="en-inv" name="investment_id"><option value="">— aucun —</option><% s.active.forEach(function (i) { %><option value="<%= i.id %>">#<%= i.id %> · <%= i.title %></option><% }) %></select></div>
+          </div>
+          <div class="form-row form-row-2">
+            <div><label for="en-proof">Référence de la pièce (relevé, virement…) *</label><input id="en-proof" name="proof" type="text" required maxlength="120"></div>
+            <div><label for="en-reason">Motif *</label><input id="en-reason" name="reason" type="text" required maxlength="500"></div>
+          </div>
+          <label class="check"><input type="checkbox" name="verified" required> Je confirme avoir contrôlé que cette opération a réellement eu lieu.</label>
+          <div><button class="btn btn-navy btn-sm" type="submit">Enregistrer l'écriture</button></div>
+        </form>
+      </div>
+    </section>
+
+    <section class="panel" id="notify">
+      <div class="panel-head"><h2>Envoyer une notification au client</h2></div>
+      <div class="card">
+        <form class="form" method="post" action="/admin/users/<%= u.id %>/notify">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <div><label for="nt-msg">Message (affiché dans son espace et envoyé par e-mail)</label><textarea id="nt-msg" name="message" rows="3" required maxlength="600"></textarea></div>
+          <div><button class="btn btn-navy btn-sm" type="submit">Envoyer</button></div>
+        </form>
+      </div>
     </section>
 
     <section class="panel">
@@ -164,6 +220,11 @@
           <div><button class="btn btn-navy btn-sm" type="submit">Ajouter et notifier</button></div>
         </form>
       </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Journal d'audit de ce compte</h2><a class="small" href="/admin/audit">Journal complet →</a></div>
+      <%- include('_audit-table', { rows: audits }) %>
     </section>
 
     <section class="panel">

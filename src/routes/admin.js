@@ -229,6 +229,8 @@ router.get('/users/:id', async (req, res, next) => {
     kycs: await all('SELECT * FROM kyc_submissions WHERE user_id = ? ORDER BY id DESC', u.id),
     docs: await all('SELECT * FROM user_documents WHERE user_id = ? ORDER BY created_at DESC', u.id),
     logins: await all('SELECT * FROM login_attempts WHERE lower(email) = lower(?) ORDER BY id DESC LIMIT 15', u.email),
+    timeline: (await ledger.timeline(u.id)).points.slice(-12).reverse(),
+    audits: await all(`SELECT * FROM audit_log WHERE (target_type = 'user' AND target_id = ?) OR (target_type = 'transaction' AND target_id IN (SELECT CAST(id AS TEXT) FROM transactions WHERE user_id = ?)) OR (target_type = 'investment' AND target_id IN (SELECT CAST(id AS TEXT) FROM investments WHERE user_id = ?)) ORDER BY id DESC LIMIT 40`, String(u.id), u.id, u.id),
     openProjects,
     today: today()
   });
@@ -311,7 +313,7 @@ router.post('/users/:id/deposits', async (req, res, next) => {
     if (!settings.get('funds_enabled')) { req.flash('error', 'La réception de fonds n\'est pas activée dans les Paramètres.'); return res.redirect(`/admin/users/${u.id}`); }
     const reference = makeReference('DEP');
     const info = await run(`INSERT INTO transactions (user_id, type, amount_cents, status, reference, method) VALUES (?, 'deposit', ?, 'pending', ?, 'bank_transfer')`, u.id, cents, reference);
-    await audit(req, 'deposit.record', 'transaction', info.lastInsertRowid, { reference, amount_cents: cents, user_id: u.id });
+    await audit(req, 'deposit.record', 'transaction', info.lastInsertRowid, { reference, new_value_cents: cents, user_id: u.id, to: 'pending' });
     req.flash('success', `Dépôt ${reference} enregistré « en attente ». Confirmez-le dans « Dépôts & retraits » après contrôle du relevé bancaire.`);
     res.redirect('/admin/transactions?type=deposit&status=pending');
   } catch (e) { next(e); }
@@ -365,11 +367,103 @@ router.post('/investments/:id/valuations', async (req, res, next) => {
   }
   const info = await run('INSERT INTO valuations (investment_id, value_cents, valuation_date, note, created_by) VALUES (?, ?, ?, ?, ?)',
     inv.id, value, date, note, req.user.id);
-  await audit(req, 'valuation.create', 'investment', inv.id, { valuation: info.lastInsertRowid, value_cents: value, date });
+  await audit(req, 'valuation.create', 'investment', inv.id, { valuation: info.lastInsertRowid, new_value_cents: value, date, reason: note });
   const u = await one('SELECT lang FROM users WHERE id = ?', inv.user_id);
   await notify(inv.user_id, 'valuation', { project: parseI18n(inv.p_i18n, u.lang).title, date }, '/account/investments');
   req.flash('success', 'Valorisation enregistrée.');
   res.redirect(`/admin/users/${inv.user_id}#invest`);
+});
+
+// Correction d'une valorisation erronée : l'ancienne et la nouvelle valeur sont conservées dans le journal d'audit, avec le motif.
+router.post('/valuations/:id/correct', async (req, res, next) => {
+  const v = await one('SELECT v.*, i.user_id, i.start_date, p.i18n AS p_i18n FROM valuations v JOIN investments i ON i.id = v.investment_id JOIN projects p ON p.id = i.project_id WHERE v.id = ?', req.params.id);
+  if (!v) return next();
+  const value = req.body.value === '0' ? 0 : parseAmount(req.body.value);
+  const reason = String(req.body.reason || '').trim().slice(0, 500);
+  const fail = (m) => { req.flash('error', m); res.redirect(`/admin/users/${v.user_id}#valuations`); };
+  if (value === null) return fail('Nouvelle valeur invalide.');
+  if (!reason) return fail('Le motif de la correction est obligatoire (pièce ou source justifiant la nouvelle valeur).');
+  if (Number(value) === Number(v.value_cents)) return fail('La nouvelle valeur est identique à la valeur enregistrée.');
+  await run('UPDATE valuations SET value_cents = ?, note = ? WHERE id = ?', value, `${v.note || ''} — corrigé le ${today()} : ${reason}`.slice(0, 1000), v.id);
+  await audit(req, 'valuation.correct', 'investment', v.investment_id, { valuation: v.id, date: v.valuation_date, old_value_cents: Number(v.value_cents), new_value_cents: value, reason });
+  const u = await one('SELECT lang FROM users WHERE id = ?', v.user_id);
+  await notify(v.user_id, 'valuation_corrected', { project: parseI18n(v.p_i18n, u.lang).title, date: v.valuation_date }, '/account/investments');
+  req.flash('success', 'Valorisation corrigée. L\'ancienne et la nouvelle valeur figurent au journal d\'audit.');
+  res.redirect(`/admin/users/${v.user_id}#valuations`);
+});
+
+// Import de valorisations : une ligne par valorisation « n° investissement ; date ; valeur ; source ». Tout est contrôlé avant enregistrement.
+router.post('/users/:id/valuations/import', async (req, res, next) => {
+  const u = await one('SELECT * FROM users WHERE id = ?', req.params.id);
+  if (!u) return next();
+  const lines = String(req.body.lines || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean).slice(0, 200);
+  const fail = (m) => { req.flash('error', m); res.redirect(`/admin/users/${u.id}#valuations`); };
+  if (!lines.length) return fail('Aucune ligne à importer.');
+  const rows = [];
+  for (const [n, line] of lines.entries()) {
+    const [invId, date, rawValue, ...rest] = line.split(/[;\t]/).map((x) => x.trim());
+    const source = rest.join(' ; ').slice(0, 500);
+    const inv = await one('SELECT * FROM investments WHERE id = ? AND user_id = ?', /^\d+$/.test(invId || '') ? invId : 0, u.id);
+    const value = rawValue === '0' ? 0 : parseAmount(rawValue);
+    if (!inv) return fail(`Ligne ${n + 1} : investissement n° « ${invId} » introuvable pour ce client.`);
+    if (inv.status !== 'active') return fail(`Ligne ${n + 1} : l'investissement n° ${inv.id} est clôturé.`);
+    if (!isDate(date) || date < inv.start_date || date > today()) return fail(`Ligne ${n + 1} : date invalide (AAAA-MM-JJ, entre le début de l'investissement et aujourd'hui).`);
+    if (value === null) return fail(`Ligne ${n + 1} : valeur invalide.`);
+    if (!source) return fail(`Ligne ${n + 1} : la source ou justification est obligatoire.`);
+    rows.push({ inv, date, value, source });
+  }
+  const ids = await tx(async () => {
+    const out = [];
+    for (const r of rows) out.push((await run('INSERT INTO valuations (investment_id, value_cents, valuation_date, note, created_by) VALUES (?, ?, ?, ?, ?)', r.inv.id, r.value, r.date, r.source, req.user.id)).lastInsertRowid);
+    return out;
+  });
+  for (const [k, r] of rows.entries()) await audit(req, 'valuation.import', 'investment', r.inv.id, { valuation: ids[k], new_value_cents: r.value, date: r.date, reason: r.source });
+  req.flash('success', `${rows.length} valorisation(s) importée(s).`);
+  res.redirect(`/admin/users/${u.id}#valuations`);
+});
+
+// Revenu réellement versé ou frais réellement prélevés : écriture confirmée, avec référence de la pièce justificative.
+router.post('/users/:id/entries', async (req, res, next) => {
+  const u = await one('SELECT * FROM users WHERE id = ?', req.params.id);
+  if (!u) return next();
+  const type = ['payout', 'fee'].includes(req.body.type) ? req.body.type : null;
+  const cents = parseAmount(req.body.amount);
+  const proof = String(req.body.proof || '').trim().slice(0, 120);
+  const reason = String(req.body.reason || '').trim().slice(0, 500);
+  const fail = (m) => { req.flash('error', m); res.redirect(`/admin/users/${u.id}#entries`); };
+  if (!type || !cents) return fail('Type et montant valides obligatoires.');
+  if (!proof || !reason || req.body.verified !== 'on') return fail('Référence de la pièce, motif et confirmation du contrôle sont obligatoires.');
+  if (!settings.get('funds_enabled')) return fail('La réception de fonds n\'est pas activée dans les Paramètres.');
+  let invId = null;
+  if (req.body.investment_id) {
+    const inv = await one(`SELECT id FROM investments WHERE id = ? AND user_id = ? AND status = 'active'`, req.body.investment_id, u.id);
+    if (!inv) return fail('Investissement introuvable ou clôturé.');
+    invId = inv.id;
+  }
+  const reference = makeReference(type === 'payout' ? 'RET' : 'FEE');
+  const id = await tx(async () => {
+    await one('SELECT id FROM users WHERE id = ? FOR UPDATE', u.id);
+    if (type === 'fee' && cents > await ledger.availableBalance(u.id)) return null;
+    return (await run(`INSERT INTO transactions (user_id, type, amount_cents, status, reference, method, investment_id, admin_note, external_ref, processed_at, processed_by)
+         VALUES (?, ?, ?, 'confirmed', ?, 'internal', ?, ?, ?, datetime('now'), ?)`, u.id, type, cents, reference, invId, reason, proof, req.user.id)).lastInsertRowid;
+  });
+  if (!id) return fail('Solde disponible insuffisant pour prélever ces frais.');
+  await audit(req, `${type}.record`, 'transaction', id, { reference, user_id: u.id, new_value_cents: cents, external_ref: proof, reason });
+  await notify(u.id, `${type}_recorded`, { ref: reference, amount_cents: cents }, '/account/transactions');
+  req.flash('success', `Écriture ${reference} enregistrée.`);
+  res.redirect(`/admin/users/${u.id}#entries`);
+});
+
+// Message de l'administration au client (notification dans son espace + e-mail).
+router.post('/users/:id/notify', async (req, res, next) => {
+  const u = await one('SELECT * FROM users WHERE id = ?', req.params.id);
+  if (!u) return next();
+  const message = String(req.body.message || '').replace(/\s+/g, ' ').trim().slice(0, 600);
+  if (message.length < 5) { req.flash('error', 'Message trop court.'); return res.redirect(`/admin/users/${u.id}#notify`); }
+  await notify(u.id, 'admin_message', { note: message }, '/account/notifications');
+  await audit(req, 'user.notify', 'user', u.id, { reason: message });
+  req.flash('success', 'Notification envoyée au client.');
+  res.redirect(`/admin/users/${u.id}#notify`);
 });
 
 // Échéance : versement confirmé du montant final sur le compte du client.
@@ -393,7 +487,7 @@ router.post('/investments/:id/mature', async (req, res, next) => {
         inv.user_id, payout, makeReference('PAY'), inv.id, note, req.user.id);
     }
   });
-  await audit(req, 'investment.mature', 'investment', inv.id, { payout_cents: payout, date });
+  await audit(req, 'investment.mature', 'investment', inv.id, { old_value_cents: inv.amount_cents, new_value_cents: payout, date, reason: note });
   const u = await one('SELECT lang FROM users WHERE id = ?', inv.user_id);
   await notify(inv.user_id, 'investment_matured', { amount_cents: payout, project: parseI18n(inv.p_i18n, u.lang).title }, '/account/investments');
   req.flash('success', 'Investissement clôturé à l\'échéance.');
@@ -465,13 +559,13 @@ router.post('/transactions/:id/action', async (req, res, next) => {
     if (row.type === 'withdrawal' && row.amount_cents > await ledger.cashBalance(user.id)) return fail('Solde insuffisant pour exécuter ce retrait.');
     await run(`UPDATE transactions SET status = 'confirmed', external_ref = ?, admin_note = ?, processed_at = datetime('now'), processed_by = ? WHERE id = ?`,
       extRef, note || null, req.user.id, row.id);
-    await audit(req, `${row.type}.confirm`, 'transaction', row.id, { reference: row.reference, amount_cents: row.amount_cents, external_ref: extRef });
+    await audit(req, `${row.type}.confirm`, 'transaction', row.id, { reference: row.reference, amount_cents: row.amount_cents, from: row.status, to: 'confirmed', external_ref: extRef, reason: note || undefined });
     await notify(user.id, `${row.type}_confirmed`, { ref: row.reference, amount_cents: row.amount_cents }, '/account/transactions');
     req.flash('success', `Transaction ${row.reference} confirmée.`);
   } else if (action === 'processing' && row.type === 'withdrawal') {
     if (row.status !== 'pending') return fail('Transaction déjà traitée.');
     await run(`UPDATE transactions SET status = 'processing', admin_note = ?, processed_by = ? WHERE id = ?`, note || null, req.user.id, row.id);
-    await audit(req, 'withdrawal.processing', 'transaction', row.id, { reference: row.reference });
+    await audit(req, 'withdrawal.processing', 'transaction', row.id, { reference: row.reference, from: row.status, to: 'processing', reason: note || undefined });
     await notify(user.id, 'withdrawal_processing', { ref: row.reference }, '/account/withdraw');
     req.flash('success', `Retrait ${row.reference} passé en traitement.`);
   } else if (action === 'reject') {
@@ -479,7 +573,7 @@ router.post('/transactions/:id/action', async (req, res, next) => {
     if (!note) return fail('Un motif est obligatoire pour refuser une transaction.');
     await run(`UPDATE transactions SET status = 'rejected', admin_note = ?, processed_at = datetime('now'), processed_by = ? WHERE id = ?`,
       note, req.user.id, row.id);
-    await audit(req, `${row.type}.reject`, 'transaction', row.id, { reference: row.reference, note });
+    await audit(req, `${row.type}.reject`, 'transaction', row.id, { reference: row.reference, from: row.status, to: 'rejected', reason: note });
     await notify(user.id, `${row.type}_rejected`, { ref: row.reference, note }, '/account/transactions');
     req.flash('success', `Transaction ${row.reference} refusée.`);
   } else {

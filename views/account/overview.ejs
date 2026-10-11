@@ -1,54 +1,136 @@
 <%- include('../partials/top') %>
+<% var A = page; var st = d.stats; var tone = function (x) { return x > 0 ? 'pos' : x < 0 ? 'neg' : ''; }; var sign = function (c) { return (c > 0 ? '+' : c < 0 ? '−' : '') + money(Math.abs(c)); }; %>
 <div class="container dash">
   <%- include('../partials/account-nav') %>
-  <div>
-    <div class="dash-head">
-      <div><p class="muted mb-0"><%= t('account.title') %></p><h1><%= t('account.welcome', { name: user.full_name }) %></h1></div>
-      <div class="actions"><a class="btn btn-gold btn-sm" href="/opportunities"><%= t('hero.cta_discover') %></a></div>
+  <div class="pf" data-pf data-url="/account/portfolio.json" data-locale="<%= lang === 'fr' ? 'fr-FR' : 'en-GB' %>" data-currency="<%= pfCurrency %>" data-rate="<%= pfRate %>" data-points="<%= JSON.stringify(d.points.map(function (p) { return [p.t, p.value, p.net]; })) %>" data-now="<%= now %>">
+    <div class="dash-head pf-head">
+      <div><p class="pf-kicker"><span class="pf-live"></span><%= pick(A.account) %> · <%= user.full_name %></p><h1><%= pick(A.title) %></h1></div>
+      <div class="actions">
+        <a class="btn btn-emerald" href="/account/deposit"><%- include('../partials/icon', { name: 'wallet', size: 17 }) %><%= pick(A.deposit) %></a>
+        <a class="btn btn-line" href="/account/withdraw"><%- include('../partials/icon', { name: 'swap', size: 17 }) %><%= pick(A.withdraw) %></a>
+      </div>
     </div>
 
     <% if (user.kyc_status !== 'approved') { %>
-      <div class="alert alert-warning flex between"><span><strong><%= t('kyc.title') %> — <%= t('kyc.' + user.kyc_status) %>.</strong> <%= t('account.kyc_banner') %></span><% if (user.kyc_status !== 'pending') { %><a class="btn btn-navy btn-sm" href="/account/kyc"><%= t('account.kyc_banner_cta') %></a><% } %></div>
+      <div class="alert alert-warning flex between"><span><strong><%= t('kyc.title') %> — <%= t('kyc.' + user.kyc_status) %>.</strong> <%= t('account.kyc_banner') %></span><% if (user.kyc_status !== 'pending') { %><a class="btn btn-line btn-sm" href="/account/kyc"><%= t('account.nav_kyc') %></a><% } %></div>
     <% } %>
 
-    <div class="kpis">
-      <div class="kpi">
-        <div class="kpi-label"><%= t('account.invested') %></div>
-        <div class="kpi-value"><%= money(s.invested) %></div>
-        <div class="kpi-note"><%= s.active.length %> × <%= t('account.active').toLowerCase() %></div>
+    <!-- Indicateurs -->
+    <div class="pf-stats">
+      <div class="pf-stat pf-stat-main">
+        <span class="pf-lab"><%= pick(A.stats.value) %></span>
+        <strong data-stat="value"><%= money(st.value) %></strong>
+        <small><%= pick(A.stats.valueNote) %></small>
       </div>
-      <div class="kpi dark">
-        <div class="kpi-label"><%= t('account.value') %></div>
-        <div class="kpi-value"><%= money(s.value) %></div>
-        <div class="kpi-note"><% if (s.invested) { %><%= pct((s.value - s.invested) / s.invested) %> · <% } %><%= t('account.value_note') %></div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label"><%= t('account.cash') %></div>
-        <div class="kpi-value"><%= money(s.available) %></div>
-        <div class="kpi-note"><% if (s.reserved) { %><%= t('account.reserved', { amount: money(s.reserved) }) %><% } else { %><%= t('tx.confirmed_only') %><% } %></div>
-      </div>
+      <div class="pf-stat"><span class="pf-lab"><%= pick(A.stats.available) %></span><strong data-stat="available"><%= money(st.available) %></strong><small><% if (d.s.reserved) { %><%= money(d.s.reserved) %> <%= pick(A.stats.reserved) %><% } else { %>&nbsp;<% } %></small></div>
+      <div class="pf-stat"><span class="pf-lab"><%= pick(A.stats.invested) %></span><strong data-stat="invested"><%= money(st.invested) %></strong><small><%= d.s.active.length %> <%= pick(A.stats.positions) %></small></div>
+      <div class="pf-stat"><span class="pf-lab"><%= pick(A.stats.deposits) %></span><strong data-stat="deposits"><%= money(st.deposits) %></strong><small>&nbsp;</small></div>
+      <div class="pf-stat"><span class="pf-lab"><%= pick(A.stats.withdrawals) %></span><strong data-stat="withdrawals"><%= money(st.withdrawals) %></strong><small>&nbsp;</small></div>
+      <div class="pf-stat"><span class="pf-lab"><%= pick(A.stats.pl) %></span><strong class="<%= tone(st.pl) %>" data-stat="pl"><%= sign(st.pl) %></strong><small>&nbsp;</small></div>
+      <div class="pf-stat"><span class="pf-lab"><%= pick(A.stats.perf) %></span><strong class="<%= tone(st.perf) %>" data-stat="perf"><%= pct(st.perf) %></strong><small><%= pick(A.stats.perfNote) %></small></div>
     </div>
-    <% if (s.unvalued) { %><p class="alert alert-info small"><%= t('account.unvalued', { n: s.unvalued }) %></p><% } %>
 
-    <section class="panel">
-      <div class="panel-head"><h2><%= t('account.active') %></h2><a class="small" href="/account/investments"><%= t('account.see_all') %> →</a></div>
-      <%- include('../partials/inv-table', { items: s.active }) %>
+    <!-- Graphique -->
+    <section class="pf-card pf-chart-card">
+      <div class="pf-chart-top">
+        <div>
+          <span class="pf-lab"><%= pick(A.chart.title) %></span>
+          <div class="pf-chart-val"><strong data-chart-value><%= money(st.value) %></strong><em data-chart-change></em></div>
+          <small class="pf-dim" data-chart-date>&nbsp;</small>
+        </div>
+        <div class="pf-ranges" role="group" aria-label="<%= pick(A.chart.title) %>">
+          <% A.chart.ranges.forEach(function (r) { %><button type="button" data-range="<%= r[1] %>" aria-pressed="<%= r[0] === 'ALL' %>"><%= r[0] %></button><% }) %>
+        </div>
+      </div>
+      <div class="pf-legend"><span><i></i><%= pick(A.stats.value) %></span><span><i class="net"></i><%= pick(A.chart.net) %></span></div>
+      <div class="pf-chart" data-chart data-empty="<%= pick(A.chart.empty) %>" data-flat="<%= pick(A.chart.flat) %>" data-change-label="<%= pick(A.chart.change) %>" data-pl-label="<%= pick(A.chart.pl) %>">
+        <svg viewBox="0 0 900 340" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="pf-up" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#12a37a" stop-opacity=".38"/><stop offset="1" stop-color="#12a37a" stop-opacity="0"/></linearGradient>
+            <linearGradient id="pf-down" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff6b5e" stop-opacity=".32"/><stop offset="1" stop-color="#ff6b5e" stop-opacity="0"/></linearGradient>
+          </defs>
+          <g data-grid></g>
+          <path data-area></path>
+          <path class="pf-net" data-net></path>
+          <path class="pf-line" data-line></path>
+          <line class="pf-cross" data-cross x1="0" x2="0" y1="0" y2="340"></line>
+        </svg>
+        <div class="pf-axis-y" data-axis-y></div>
+        <div class="pf-axis-x" data-axis-x></div>
+        <span class="pf-dot" data-dot></span>
+        <p class="pf-empty" data-empty-msg hidden></p>
+      </div>
+      <div class="pf-chart-foot">
+        <span><span class="pf-live"></span><%= pick(A.chart.updated) %> <time data-updated><%= fmtDate(new Date(now).toISOString(), true) %></time> · <%= pick(A.chart.auto) %></span>
+        <span class="pf-dim"><%= pick(A.chart.basis) %></span>
+      </div>
     </section>
 
-    <section class="panel">
-      <div class="panel-head"><h2><%= t('account.perf_title') %></h2><a class="small" href="/account/investments#history"><%= t('account.see_all') %> →</a></div>
-      <%- include('../partials/perf-table', { history: history }) %>
+    <div class="pf-two">
+      <!-- Positions -->
+      <section class="pf-card">
+        <div class="pf-card-head"><h2><%= pick(A.positions.title) %></h2><a href="/account/investments"><%= pick(A.positions.all) %> →</a></div>
+        <% if (!d.s.active.length) { %><p class="pf-none"><%= pick(A.positions.none) %></p><% } else { %>
+        <div class="pf-table"><table>
+          <thead><tr><th><%= pick(A.positions.project) %></th><th class="num"><%= pick(A.positions.invested) %></th><th class="num"><%= pick(A.positions.value) %></th><th class="num"><%= pick(A.positions.perf) %></th></tr></thead>
+          <tbody><% d.s.active.forEach(function (i) { %>
+            <tr><td><b><%= i.title %></b><small><%= i.valued ? pick(A.positions.asOf) + ' ' + fmtDate(i.last_value_date) : pick(A.positions.cost) %></small></td><td class="num"><%= money(i.amount_cents) %></td><td class="num"><b><%= money(i.current_value) %></b></td><td class="num <%= tone(i.perf) %>"><%= pct(i.perf) %></td></tr>
+          <% }) %></tbody>
+        </table></div>
+        <% } %>
+      </section>
+
+      <!-- Retraits -->
+      <section class="pf-card">
+        <div class="pf-card-head"><h2><%= pick(A.withdrawals.title) %></h2><a href="/account/withdraw"><%= pick(A.withdraw) %> →</a></div>
+        <% if (!withdrawals.length) { %><p class="pf-none"><%= pick(A.withdrawals.none) %></p><% } %>
+        <% withdrawals.forEach(function (w) { var step = { pending: 1, processing: 2, confirmed: 4 }[w.status] || 0; %>
+          <div class="pf-wd">
+            <div class="pf-wd-top"><span class="mono"><%= w.reference %></span><b><%= money(w.amount_cents) %></b></div>
+            <% if (step) { %>
+            <ol class="pf-track"><% A.withdrawals.steps.forEach(function (s, i) { %><li class="<%= i < step ? 'done' : '' %><%= i === step - 1 ? ' cur' : '' %>"><i></i><span><%= pick(s) %></span></li><% }) %></ol>
+            <% } else { %><span class="pf-chip neg"><%= pick(A.withdrawals[w.status] || A.withdrawals.rejected) %></span><% if (w.admin_note) { %><small class="pf-dim"> <%= w.admin_note %></small><% } %><% } %>
+            <small class="pf-dim"><%= fmtDate(w.created_at, true) %></small>
+          </div>
+        <% }) %>
+      </section>
+    </div>
+
+    <!-- Historique du portefeuille -->
+    <section class="pf-card">
+      <div class="pf-card-head"><h2><%= pick(A.history.title) %></h2></div>
+      <% var hist = d.points.slice(-10).reverse(); if (!hist.length) { %><p class="pf-none"><%= pick(A.history.none) %></p><% } else { %>
+      <div class="pf-table"><table>
+        <thead><tr><th><%= pick(A.history.time) %></th><th class="num"><%= pick(A.history.value) %></th><th class="num"><%= pick(A.history.change) %></th><th class="num"><%= pick(A.history.perf) %></th></tr></thead>
+        <tbody><% hist.forEach(function (p) { %>
+          <tr><td><%= fmtDate(new Date(p.t).toISOString(), true) %></td><td class="num"><b><%= money(p.value) %></b></td><td class="num <%= tone(p.change) %>"><%= sign(p.change) %></td><td class="num <%= tone(p.perf) %>"><%= pct(p.perf) %></td></tr>
+        <% }) %></tbody>
+      </table></div>
+      <% } %>
     </section>
 
-    <section class="panel">
-      <div class="panel-head"><h2><%= t('account.recent') %></h2><a class="small" href="/account/transactions"><%= t('account.see_all') %> →</a></div>
-      <%- include('../partials/tx-table', { rows: recent }) %>
+    <!-- Transactions -->
+    <section class="pf-card">
+      <div class="pf-card-head"><h2><%= pick(A.tx.title) %></h2><a href="/account/transactions"><%= pick(A.tx.all) %> →</a></div>
+      <% if (!recent.length) { %><p class="pf-none"><%= pick(A.tx.none) %></p><% } else { %>
+      <div class="pf-table"><table>
+        <thead><tr><th><%= pick(A.tx.date) %></th><th><%= pick(A.tx.type) %></th><th><%= pick(A.tx.ref) %></th><th class="num"><%= pick(A.tx.amount) %></th><th><%= pick(A.tx.status) %></th></tr></thead>
+        <tbody><% recent.forEach(function (r) { var credit = r.type === 'deposit' || r.type === 'payout'; %>
+          <tr><td><%= fmtDate(r.created_at, true) %></td><td><span class="pf-type pf-type-<%= r.type %>"><%= t('tx.' + r.type) %></span></td><td class="mono"><%= r.reference %></td>
+            <td class="num <%= r.status === 'confirmed' ? (credit ? 'pos' : 'neg') : 'pf-dim' %>"><b><%= credit ? '+' : '−' %><%= money(r.amount_cents) %></b></td>
+            <td><span class="pf-chip <%= { confirmed: 'pos', rejected: 'neg', cancelled: '' , pending: 'warn', processing: 'warn' }[r.status] %>"><%= t('tx.' + r.status) %></span></td></tr>
+        <% }) %></tbody>
+      </table></div>
+      <% } %>
     </section>
 
-    <section class="panel">
-      <div class="panel-head"><h2><%= t('account.withdrawals_title') %></h2><a class="small" href="/account/withdraw"><%= t('withdraw.title') %> →</a></div>
-      <%- include('../partials/tx-table', { rows: withdrawals }) %>
+    <% if (requests.length) { %>
+    <section class="pf-card">
+      <div class="pf-card-head"><h2><%= pick(A.requests) %></h2><a href="/account/requests"><%= t('account.see_all') %> →</a></div>
+      <%- include('../partials/request-list', { rows: requests }) %>
     </section>
+    <% } %>
   </div>
 </div>
+<script src="/static/js/portfolio.js?v=<%= assetV %>" defer></script>
 <%- include('../partials/bottom') %>

@@ -7,7 +7,8 @@ const { one, all, run, tx } = require('../db');
 const { t } = require('../i18n');
 const { requireAuth, verifyCsrf, makeUploader, sendStoredFile } = require('../lib/security');
 const ledger = require('../lib/ledger');
-const { parseAmount, money } = require('../lib/money');
+const { parseAmount, money, rateFor } = require('../lib/money');
+const accountPage = require('../content/account-page');
 const { notify } = require('../lib/notify');
 const { audit } = require('../lib/audit');
 const { countries, CODES } = require('../lib/countries');
@@ -50,8 +51,6 @@ function withdrawalFee(amountCents) {
 // Demandes du client : celles déposées depuis son compte, ou avec son adresse e-mail (vérifiée).
 const myRequests = (req, limit) => all(`SELECT * FROM requests WHERE user_id = ? OR lower(email) = lower(?) ORDER BY created_at DESC, id DESC LIMIT ${Number(limit) || 50}`, req.user.id, req.user.email);
 const myRequest = (req) => one('SELECT * FROM requests WHERE ref = ? AND (user_id = ? OR lower(email) = lower(?))', String(req.params.ref || ''), req.user.id, req.user.email);
-// Sans service financier ouvert, aucun solde ni portefeuille n'est affiché : l'espace client est centré sur les demandes.
-const fundsOnly = (req, res, next) => (settings.get('funds_enabled') ? next() : res.redirect('/account'));
 
 router.get('/requests', async (req, res) => res.render('account/requests', { title: t(req.lang, 'site.acc_requests'), requests: await myRequests(req) }));
 router.get('/requests/:ref', async (req, res, next) => {
@@ -74,18 +73,36 @@ router.post('/requests/:ref/messages', async (req, res, next) => {
 });
 
 router.get('/', async (req, res) => {
-  if (!settings.get('funds_enabled')) return res.render('account/home', { title: t(req.lang, 'account.title'), requests: await myRequests(req, 5) });
-  const s = await ledger.summary(req.user.id, req.lang);
+  const d = await ledger.dashboard(req.user.id, req.lang);
+  const cur = res.locals.currency;
   res.render('account/overview', {
-    title: t(req.lang, 'account.title'),
-    s,
-    history: (await ledger.valuationHistory(req.user.id, req.lang)).slice(0, 8),
-    recent: await all('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 6', req.user.id),
+    title: accountPage.title[req.lang] || accountPage.title.en,
+    page: accountPage, pick: (v) => (v && (v[req.lang] || v.en)) || '',
+    d, now: Date.now(), pfCurrency: rateFor(cur) ? cur : 'USD', pfRate: rateFor(cur) || 1,
+    requests: await myRequests(req, 5),
+    recent: await all('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 8', req.user.id),
     withdrawals: await all(`SELECT * FROM transactions WHERE user_id = ? AND type = 'withdrawal' ORDER BY created_at DESC LIMIT 5`, req.user.id)
   });
 });
 
-router.get('/investments', fundsOnly, async (req, res) => {
+// Données du graphique, relues toutes les minutes par le tableau de bord : uniquement des écritures enregistrées
+router.get('/portfolio.json', async (req, res) => {
+  const d = await ledger.dashboard(req.user.id, req.lang);
+  const m = res.locals.money, pct = res.locals.pct, tone = (x) => (x > 0 ? 'pos' : x < 0 ? 'neg' : '');
+  const sign = (c) => (c > 0 ? '+' : c < 0 ? '−' : '') + m(Math.abs(c));
+  const st = d.stats;
+  res.set('Cache-Control', 'no-store').json({
+    now: Date.now(), updated: res.locals.fmtDate(new Date().toISOString(), true),
+    points: d.points.map((p) => [p.t, p.value, p.net]),
+    stats: {
+      value: { text: m(st.value) }, available: { text: m(st.available) }, invested: { text: m(st.invested) },
+      deposits: { text: m(st.deposits) }, withdrawals: { text: m(st.withdrawals) },
+      pl: { text: sign(st.pl), tone: tone(st.pl) }, perf: { text: pct(st.perf), tone: tone(st.perf) }
+    }
+  });
+});
+
+router.get('/investments', async (req, res) => {
   res.render('account/investments', {
     title: t(req.lang, 'account.nav_investments'),
     s: await ledger.summary(req.user.id, req.lang),
@@ -93,7 +110,7 @@ router.get('/investments', fundsOnly, async (req, res) => {
   });
 });
 
-router.get('/transactions', fundsOnly, async (req, res) => {
+router.get('/transactions', async (req, res) => {
   res.render('account/transactions', {
     title: t(req.lang, 'tx.title'),
     rows: await all('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC, id DESC', req.user.id),
@@ -175,7 +192,7 @@ async function withdrawContext(req) {
   };
 }
 
-router.get('/withdraw', fundsOnly, async (req, res) => res.render('account/withdraw', await withdrawContext(req)));
+router.get('/withdraw', async (req, res) => res.render('account/withdraw', await withdrawContext(req)));
 
 router.post('/withdraw', async (req, res, next) => {
   const ctx = await withdrawContext(req);
@@ -233,7 +250,7 @@ router.get('/documents/:id', async (req, res, next) => {
 // ---------- KYC ----------
 const kycUpload = makeUploader({ id_file: 'doc', address_file: 'doc' });
 
-router.get('/kyc', fundsOnly, async (req, res) => {
+router.get('/kyc', async (req, res) => {
   res.render('account/kyc', {
     title: t(req.lang, 'kyc.title'),
     last: await one('SELECT * FROM kyc_submissions WHERE user_id = ? ORDER BY id DESC LIMIT 1', req.user.id)

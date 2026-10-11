@@ -2,9 +2,9 @@
   <div class="nav-title"><%= t('account.title') %></div>
   <%
     var items = [['/account', t('account.nav_overview')], ['/account/requests', t('site.acc_requests')]];
-    if (fundsEnabled) items.push(['/account/investments', t('account.nav_investments')], ['/account/transactions', t('account.nav_transactions')], ['/account/deposit', t('account.nav_deposit')], ['/account/withdraw', t('account.nav_withdraw')]);
+    items.push(['/account/investments', t('account.nav_investments')], ['/account/transactions', t('account.nav_transactions')], ['/account/deposit', t('account.nav_deposit')], ['/account/withdraw', t('account.nav_withdraw')]);
     items.push(['/account/documents', t('account.nav_documents')]);
-    if (fundsEnabled) items.push(['/account/kyc', t('account.nav_kyc')]);
+    items.push(['/account/kyc', t('account.nav_kyc')]);
     items.push(['/account/notifications', t('account.nav_notifications')], ['/account/security', t('account.nav_security')]);
     items.forEach(function (item) {
       var full = path.replace(/\/$/, '');

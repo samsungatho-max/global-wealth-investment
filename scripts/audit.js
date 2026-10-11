@@ -308,6 +308,39 @@ async function crawl(client, area, starts, { english = true, allow = () => true 
   // Espace client avec données : portefeuille, transactions, documents, notifications
   const dash = await cli.get('/account'); inspect('Tableau de bord', '/account', dash);
   for (const s of ['$10,400.00', '$15,000.00']) if (!dash.text.includes(s)) note('Tableau de bord', `montant attendu absent : ${s}`);
+  // Tableau de bord du portefeuille : chiffres et graphique dérivés des écritures ; corrections tracées dans le journal d'audit
+  for (const s of ['Portfolio Value', '$25,400.00', 'Profit / Loss', '+$400.00', 'Deposit Funds', 'Withdraw Funds', 'Transaction History']) if (!dash.text.includes(s)) note('Tableau de bord', `élément attendu absent : ${s}`);
+  const pfJson = async () => JSON.parse((await cli.get('/account/portfolio.json')).text);
+  let pf = await pfJson();
+  if (!pf.points.length || pf.points[pf.points.length - 1][1] !== 2540000) note('Tableau de bord', `dernier point du graphique inattendu : ${JSON.stringify(pf.points.slice(-1))}`);
+  if (pf.points.some((p, i) => i && p[0] < pf.points[i - 1][0])) note('Tableau de bord', 'points du graphique non chronologiques');
+  const val = await one('SELECT v.* FROM valuations v JOIN investments i ON i.id = v.investment_id WHERE i.user_id = ?', john.id);
+  if (val) {
+    await adm.get(`/admin/users/${john.id}`);
+    await adm.post(`/admin/valuations/${val.id}/correct`, { value: '10250', reason: '' });
+    if (Number((await one('SELECT value_cents FROM valuations WHERE id = ?', val.id)).value_cents) !== 1040000) note('Traçabilité', 'valorisation corrigée sans motif');
+    await adm.post(`/admin/valuations/${val.id}/correct`, { value: '10250', reason: 'Corrected quarterly report, page 4' });
+    const log = await one(`SELECT * FROM audit_log WHERE action = 'valuation.correct' ORDER BY id DESC LIMIT 1`);
+    const det = log ? JSON.parse(log.details) : {};
+    if (!log || det.old_value_cents !== 1040000 || det.new_value_cents !== 1025000 || !/page 4/.test(det.reason || '') || !log.actor_email) note('Traçabilité', 'correction de valorisation absente ou incomplète dans le journal d’audit');
+    await adm.post(`/admin/users/${john.id}/entries`, { type: 'payout', amount: '120', proof: '', reason: 'Coupon', verified: 'on' });
+    if (await one(`SELECT id FROM transactions WHERE user_id = ? AND type = 'payout'`, john.id)) note('Traçabilité', 'revenu enregistré sans référence de pièce');
+    await adm.post(`/admin/users/${john.id}/entries`, { type: 'payout', amount: '120', proof: 'BANK-STMT-2026-10', reason: 'Quarterly coupon paid', verified: 'on' });
+    await adm.post(`/admin/users/${john.id}/entries`, { type: 'fee', amount: '50', proof: 'INV-2026-044', reason: 'Annual custody fee', verified: 'on' });
+    await adm.post(`/admin/users/${john.id}/valuations/import`, { lines: `${val.investment_id} ; 2026-10-08 ; 10300 ; Manager statement\n${val.investment_id} ; 2031-01-01 ; 99999 ; Future` });
+    if (Number((await one('SELECT COUNT(*) AS n FROM valuations WHERE investment_id = ?', val.investment_id)).n) !== 1) note('Traçabilité', 'import de valorisations partiellement enregistré malgré une ligne invalide');
+    await adm.post(`/admin/users/${john.id}/valuations/import`, { lines: `${val.investment_id} ; 2026-10-08 ; 10300 ; Manager statement` });
+    from = inbox.length;
+    await adm.post(`/admin/users/${john.id}/notify`, { message: 'Your quarterly statement is available.' });
+    if (!mailTo('john.carter@example.org', from).length && !(await one(`SELECT id FROM notifications WHERE user_id = ? AND message LIKE 'Your quarterly statement%'`, john.id))) note('Notifications', 'message de l’administration non transmis au client');
+    pf = await pfJson();
+    // 15 000 + 120 − 50 de liquidités, position valorisée 10 300
+    if (pf.points[pf.points.length - 1][1] !== 2537000) note('Tableau de bord', `valeur après écritures inattendue : ${pf.points[pf.points.length - 1][1]}`);
+    const dash2 = await cli.get('/account'); inspect('Tableau de bord', '/account', dash2);
+    for (const s of ['$25,370.00', '+$370.00', 'Return', 'Fee']) if (!dash2.text.includes(s)) note('Tableau de bord', `après écritures, élément absent : ${s}`);
+    const admUser = await adm.get(`/admin/users/${john.id}`);
+    for (const s of ['valuation.correct', 'Ancienne valeur', 'Corrected quarterly report, page 4', 'payout.record', 'BANK-STMT-2026-10']) if (!admUser.text.includes(s)) note('Traçabilité', `fiche client : élément du journal absent : ${s}`);
+  }
   report.account = await crawl(cli, 'Espace client', ['/account'], { allow: (l) => /^\/account/.test(l) });
   const doc = await one('SELECT * FROM user_documents WHERE user_id = ?', john.id);
   if (!doc) note('Documents', 'document déposé par l’administration non enregistré');
@@ -363,7 +396,7 @@ async function crawl(client, area, starts, { english = true, allow = () => true 
   // ================= 6. Cohérence de la base =================
   const ledger = require('../src/lib/ledger');
   const cash = await ledger.cashBalance(john.id);
-  const expected = 2500000 - 1000000 - (wdr ? Number(wdr.amount_cents) : 0);
+  const expected = 2500000 - 1000000 + 12000 - 5000 - (wdr ? Number(wdr.amount_cents) : 0); // dépôt − investissement + revenu − frais − retrait
   if (cash !== expected) note('Base de données', `solde du client ${cash / 100} $ au lieu de ${expected / 100} $`);
   if (!(await one(`SELECT id FROM audit_log WHERE action = 'project.create'`))) note('Base de données', 'journal d’audit vide');
   try { await run('DELETE FROM audit_log'); if (!(await one('SELECT id FROM audit_log LIMIT 1'))) note('Sécurité', 'le journal d’audit peut être effacé'); } catch { /* attendu : suppression refusée */ }
