@@ -277,7 +277,7 @@ router.get('/users', async (req, res) => {
 router.get('/users/:id', async (req, res, next) => {
   const u = await one('SELECT * FROM users WHERE id = ?', req.params.id);
   if (!u) return next();
-  const openProjects = (await all(`SELECT id, i18n, duration_months, min_ticket_cents FROM projects WHERE status = 'open' ORDER BY created_at DESC`))
+  const openProjects = (await all(`SELECT id, i18n, duration_months, min_ticket_cents FROM projects WHERE status = 'open' AND kind <> 'referenced' AND is_demo = 0 ORDER BY created_at DESC`))
     .map((p) => ({ ...p, title: parseI18n(p.i18n, 'fr').title }));
   res.render('admin/user', {
     title: u.full_name,

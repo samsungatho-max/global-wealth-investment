@@ -261,13 +261,13 @@
         <% if (u.kyc_status !== 'approved') { %>
           <p class="alert alert-warning small mb-0">L'identité de l'investisseur doit être vérifiée avant tout investissement.</p>
         <% } else if (!openProjects.length) { %>
-          <p class="muted small mb-0">Aucun projet ouvert.</p>
+          <p class="alert alert-warning small mb-0">Aucun projet de la plateforme n'est publié. Un investissement ne peut porter que sur l'un de vos propres projets, au statut « publié » (les projets internationaux référencés ne peuvent pas recevoir d'investissement). Publiez d'abord un projet dans « Projets ».</p>
         <% } else { %>
-          <p class="small muted">Le montant est débité du solde disponible de l'investisseur (dépôts confirmés). Fiches de démonstration exclues.</p>
+          <p class="small muted">Conditions : identité du client vérifiée, dépôt confirmé couvrant le montant (disponible : <strong><%= usd(s.available) %></strong>), montant au moins égal au ticket minimum du projet, date d'échéance postérieure à la date de début. Le montant est débité du solde disponible.</p>
           <form class="form" method="post" action="/admin/users/<%= u.id %>/investments" data-confirm="Enregistrer cet investissement ?">
             <input type="hidden" name="_csrf" value="<%= csrf %>">
             <div class="form-row form-row-2">
-              <div><label>Projet</label><select name="project_id" required><% openProjects.forEach(function (p) { %><option value="<%= p.id %>"><%= p.title %></option><% }) %></select></div>
+              <div><label>Projet</label><select name="project_id" required><% openProjects.forEach(function (p) { %><option value="<%= p.id %>"><%= p.title %> — minimum <%= usd(p.min_ticket_cents) %></option><% }) %></select></div>
               <div><label>Montant ($) — disponible : <%= usd(s.available) %></label><input name="amount" type="text" inputmode="decimal" required></div>
             </div>
             <div class="form-row form-row-2">
