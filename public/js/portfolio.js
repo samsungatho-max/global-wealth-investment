@@ -62,7 +62,9 @@
     var t0 = view[0][0], t1 = view[view.length - 1][0], vals = view.map(function (p) { return p[1]; }).concat(view.map(function (p) { return p[2]; }), pv.map(function (p) { return p[1]; }));
     var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
     var pad = (hi - lo) * 0.12 || Math.abs(hi) * 0.05 || 100;
+    var allPos = lo >= 0;
     lo -= pad; hi += pad;
+    if (allPos && lo < 0) lo = 0; // pas d'axe négatif pour un portefeuille qui ne l'a jamais été
     var x = function (t) { return (t - t0) / Math.max(1, t1 - t0) * W; };
     var y = function (v) { return PAD_T + (hi - v) / (hi - lo) * (H - PAD_T - PAD_B); };
     // Tracé en escalier : la valeur reste constante entre deux écritures
